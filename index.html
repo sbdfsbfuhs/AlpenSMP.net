@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="UTF-8">
@@ -159,6 +160,16 @@ body.mode-lite .badge .dot{animation:none}
   border-color:rgba(199,62,62,.35);box-shadow:0 8px 28px rgba(199,62,62,.15);
 }
 .btn-secondary:active{transform:translateY(-1px) scale(.98)}
+.btn-discord{
+  background:#5865F2;color:#fff;border-color:rgba(255,255,255,.1);
+  box-shadow:0 8px 28px rgba(88,101,242,.35);
+}
+.btn-discord:hover{
+  transform:translateY(-3px);
+  background:#4752c4;
+  box-shadow:0 14px 40px rgba(88,101,242,.45);
+}
+.btn-discord svg{flex-shrink:0}
 .btn::before{
   content:'';position:absolute;inset:0;
   background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.2) 50%,transparent 65%);
@@ -269,16 +280,18 @@ section{padding:100px 24px;position:relative}
 .team-card:hover .team-avatar{transform:scale(1.06);box-shadow:0 0 24px rgba(199,62,62,.3)}
 .team-lines{position:absolute;inset:0;z-index:1;pointer-events:none}
 .team-lines svg{width:100%;height:100%}
-.gallery-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin-top:40px}
+.gallery-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:40px}
+@media(max-width:900px){.gallery-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.gallery-grid{grid-template-columns:1fr}}
 .gallery-item{
   aspect-ratio:16/10;border-radius:var(--r);overflow:hidden;border:1px solid var(--border);
   background:linear-gradient(135deg,rgba(199,62,62,.06),var(--bg2));position:relative;
   transition:border-color .35s,box-shadow .35s,transform .5s cubic-bezier(.16,1,.3,1);
   transform-style:preserve-3d;cursor:pointer;
 }
-.gallery-item:hover{border-color:rgba(199,62,62,.4);box-shadow:0 12px 36px rgba(199,62,62,.14);transform:translateY(-4px)}
-.gallery-item img{width:100%;height:100%;object-fit:cover;transition:transform .5s}
-.gallery-item:hover img{transform:scale(1.05)}
+.gallery-item:hover{border-color:rgba(199,62,62,.5);box-shadow:0 16px 40px rgba(199,62,62,.2);transform:translateY(-6px) scale(1.01)}
+.gallery-item img{width:100%;height:100%;object-fit:cover;transition:transform .55s cubic-bezier(.16,1,.3,1)}
+.gallery-item:hover img{transform:scale(1.08)}
 .gallery-ph{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;height:100%;color:var(--muted);font-size:.88rem;text-align:center;padding:20px}
 .gallery-ph .gicon{font-size:1.8rem;opacity:.6}
 
@@ -487,16 +500,12 @@ footer{background:#06080c;border-top:1px solid var(--border);padding:64px 24px 3
     <h1>ALPEN<span>SMP</span></h1>
     <p class="tagline">Vanilla Survival. Faire Community. Persönliche Serverleitung.</p>
     <p class="desc">Gemeinsame Survival-Welt mit Grundstückschutz und Simple Voice Chat – für Java und Bedrock.</p>
-    <ul class="perks">
-      <li>⛏️ Vanilla Survival</li>
-      <li>🌍 Java + Bedrock</li>
-      <li>🎙️ Simple Voice Chat</li>
-      <li>🛡️ Schutz vor Griefing</li>
-      <li>🤝 Faire Community</li>
-    </ul>
     <div class="hero-btns">
       <a href="#join" class="btn btn-primary">JETZT SPIELEN →</a>
-      <a href="https://discord.gg/FfR56Ddtj8" class="btn btn-secondary" target="_blank" rel="noopener noreferrer">DISCORD BEITRETEN</a>
+      <a href="https://discord.gg/FfR56Ddtj8" class="btn btn-discord" target="_blank" rel="noopener noreferrer">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.548-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+        Discord
+      </a>
     </div>
     <button type="button" class="ip-box" onclick="copyIp(true)" aria-label="Server-Adresse alpensmp.falixsrv.me kopieren">
       <span><span class="lbl">Server-Adresse</span><br><span class="val" id="heroIp">alpensmp.falixsrv.me</span></span>
@@ -539,16 +548,17 @@ footer{background:#06080c;border-top:1px solid var(--border);padding:64px 24px 3
 
 <section id="features" aria-labelledby="features-title">
   <div class="container">
-    <div class="reveal" style="text-align:center"><span class="slabel">Features</span><h2 class="stitle" id="features-title">Was dich erwartet</h2></div>
-    <div class="grid-4">
-      <div class="card tilt-card reveal" style="text-align:center"><div class="card-glow" aria-hidden="true"></div><span class="icon" aria-hidden="true">🏔️</span><h3>Survival</h3><p>Klassisches Survival-Erlebnis.</p></div>
-      <div class="card tilt-card reveal rd1" style="text-align:center"><div class="card-glow" aria-hidden="true"></div><span class="icon" aria-hidden="true">🛡️</span><h3>Grundstückschutz</h3><p>GriefPrevention schützt deine Builds.</p></div>
-      <div class="card tilt-card reveal rd2" style="text-align:center"><div class="card-glow" aria-hidden="true"></div><span class="icon" aria-hidden="true">🎙️</span><h3>Simple Voice Chat</h3><p>Sprich direkt im Spiel.</p></div>
-      <div class="card tilt-card reveal rd3" style="text-align:center"><div class="card-glow" aria-hidden="true"></div><span class="icon" aria-hidden="true">⚰️</span><h3>Todesgräber</h3><p>Items bleiben nach dem Tod auffindbar.</p></div>
-      <div class="card tilt-card reveal" style="text-align:center"><div class="card-glow" aria-hidden="true"></div><span class="icon" aria-hidden="true">🏠</span><h3>Homes</h3><p>Setze Homes und kehre jederzeit zurück.</p></div>
-      <div class="card tilt-card reveal rd1" style="text-align:center"><div class="card-glow" aria-hidden="true"></div><span class="icon" aria-hidden="true">🤝</span><h3>TPA</h3><p>Teleportiere dich zu anderen Spielern.</p></div>
-      <div class="card tilt-card reveal rd2" style="text-align:center"><div class="card-glow" aria-hidden="true"></div><span class="icon" aria-hidden="true">↩️</span><h3>/back</h3><p>Zurück zu deinem letzten Tod.</p></div>
-      <div class="card tilt-card reveal rd3" style="text-align:center"><div class="card-glow" aria-hidden="true"></div><span class="icon" aria-hidden="true">🌍</span><h3>Java + Bedrock</h3><p>Beide Editionen spielen zusammen.</p></div>
+    <div class="reveal" style="text-align:center"><span class="slabel">Features</span><h2 class="stitle" id="features-title">Was dich erwartet</h2>
+      <p class="sdesc" style="margin:0 auto">Tippe auf ein Feature für mehr Details.</p></div>
+    <div class="grid-4" id="featureGrid">
+      <div class="card tilt-card reveal feature-card" style="text-align:center;cursor:pointer" data-feature="survival" role="button" tabindex="0"><div class="card-glow" aria-hidden="true"></div><span class="icon" aria-hidden="true">🏔️</span><h3>Survival</h3><p>Klassisches Survival-Erlebnis.</p></div>
+      <div class="card tilt-card reveal rd1 feature-card" style="text-align:center;cursor:pointer" data-feature="claim" role="button" tabindex="0"><div class="card-glow" aria-hidden="true"></div><span class="icon" aria-hidden="true">🛡️</span><h3>Grundstückschutz</h3><p>GriefPrevention schützt deine Builds.</p></div>
+      <div class="card tilt-card reveal rd2 feature-card" style="text-align:center;cursor:pointer" data-feature="voice" role="button" tabindex="0"><div class="card-glow" aria-hidden="true"></div><span class="icon" aria-hidden="true">🎙️</span><h3>Simple Voice Chat</h3><p>Sprich direkt im Spiel.</p></div>
+      <div class="card tilt-card reveal rd3 feature-card" style="text-align:center;cursor:pointer" data-feature="graves" role="button" tabindex="0"><div class="card-glow" aria-hidden="true"></div><span class="icon" aria-hidden="true">⚰️</span><h3>Todesgräber</h3><p>Items bleiben nach dem Tod auffindbar.</p></div>
+      <div class="card tilt-card reveal feature-card" style="text-align:center;cursor:pointer" data-feature="homes" role="button" tabindex="0"><div class="card-glow" aria-hidden="true"></div><span class="icon" aria-hidden="true">🏠</span><h3>Homes</h3><p>Setze Homes und kehre jederzeit zurück.</p></div>
+      <div class="card tilt-card reveal rd1 feature-card" style="text-align:center;cursor:pointer" data-feature="tpa" role="button" tabindex="0"><div class="card-glow" aria-hidden="true"></div><span class="icon" aria-hidden="true">🤝</span><h3>TPA</h3><p>Teleportiere dich zu anderen Spielern.</p></div>
+      <div class="card tilt-card reveal rd2 feature-card" style="text-align:center;cursor:pointer" data-feature="back" role="button" tabindex="0"><div class="card-glow" aria-hidden="true"></div><span class="icon" aria-hidden="true">↩️</span><h3>/back</h3><p>Zurück zu deinem letzten Tod.</p></div>
+      <div class="card tilt-card reveal rd3 feature-card" style="text-align:center;cursor:pointer" data-feature="crossplay" role="button" tabindex="0"><div class="card-glow" aria-hidden="true"></div><span class="icon" aria-hidden="true">🌍</span><h3>Java + Bedrock</h3><p>Beide Editionen spielen zusammen.</p></div>
     </div>
   </div>
 </section>
@@ -558,15 +568,17 @@ footer{background:#06080c;border-top:1px solid var(--border);padding:64px 24px 3
     <div class="reveal" style="text-align:center"><span class="slabel">Statistiken</span><h2 class="stitle" id="stats-title">AlpenSMP in Zahlen</h2>
       <p class="sdesc" style="margin:0 auto">Live-Daten und Community-Zahlen – übersichtlich visualisiert.</p></div>
     <div class="grid-4" style="margin-top:40px">
-      <div class="card tilt-card reveal" style="text-align:center"><div class="card-glow" aria-hidden="true"></div><div class="stat-val" data-target="274" id="statJoined">0</div><div class="stat-lbl">Spieler beigetreten</div><div class="stat-sub">seit dem Start des Servers</div></div>
-      <div class="card tilt-card reveal rd1" style="text-align:center"><div class="card-glow" aria-hidden="true"></div><div class="stat-val" id="statOnline">—</div><div class="stat-lbl">Aktuell online</div><div class="stat-sub">live über den Serverstatus</div></div>
-      <div class="card tilt-card reveal rd2" style="text-align:center"><div class="card-glow" aria-hidden="true"></div><div class="stat-val" id="statDiscord">—</div><div class="stat-lbl">Discord-Mitglieder</div><div class="stat-sub">via Discord Invite API</div></div>
+      <div class="card tilt-card reveal" style="text-align:center"><div class="card-glow" aria-hidden="true"></div><div class="stat-val" data-target="274" id="statJoined">0</div><div class="stat-lbl">Spieler beigetreten</div><div class="stat-sub">seit dem Start</div></div>
+      <div class="card tilt-card reveal rd1" style="text-align:center"><div class="card-glow" aria-hidden="true"></div><div class="stat-val" id="statOnline">—</div><div class="stat-lbl">Aktuell online</div></div>
+      <div class="card tilt-card reveal rd2" style="text-align:center"><div class="card-glow" aria-hidden="true"></div><div class="stat-val" id="statDiscord">—</div><div class="stat-lbl">Discord-Mitglieder</div></div>
       <div class="card tilt-card reveal rd3" style="text-align:center"><div class="card-glow" aria-hidden="true"></div><div class="stat-val" id="statTikTok">—</div><div class="stat-lbl">TikTok</div><div class="stat-sub">@alpensmp</div></div>
     </div>
-    <div class="card reveal" style="margin-top:32px;text-align:center">
+    <div class="card reveal" style="margin-top:32px;text-align:center;padding:28px 20px">
       <h3 style="font-family:var(--font);margin-bottom:8px">Spieler online – Verlauf</h3>
-      <p id="chartMsg" style="color:var(--text2);font-size:.92rem">📈 Daten werden aus echten Server-Abfragen gesammelt. Schau später wieder vorbei!</p>
-      <canvas id="hoursChart" style="display:none" role="img" aria-label="Verlauf der Online-Spielerzahl"></canvas>
+      <p id="chartMsg" style="color:var(--text2);font-size:.92rem">📈 Sobald der Status mehrmals abgerufen wurde, erscheint hier der Verlauf (Zeit × Spieler).</p>
+      <div style="position:relative;max-width:720px;margin:0 auto">
+        <canvas id="hoursChart" style="display:none;width:100%;height:220px" role="img" aria-label="Verlauf der Online-Spielerzahl"></canvas>
+      </div>
     </div>
   </div>
 </section>
@@ -578,8 +590,36 @@ footer{background:#06080c;border-top:1px solid var(--border);padding:64px 24px 3
       <h2 class="stitle" id="community-title" style="margin-bottom:12px">Werde Teil der Community</h2>
       <p class="sdesc" style="margin:0 auto">Updates, Support und gemeinsame Projekte – auf Discord und TikTok.</p>
       <div class="community-btns">
-        <a href="https://discord.gg/FfR56Ddtj8" class="btn btn-primary" target="_blank" rel="noopener noreferrer">DISCORD BEITRETEN</a>
-        <a href="https://www.tiktok.com/@alpensmp" class="btn btn-secondary" target="_blank" rel="noopener noreferrer">TIKTOK FOLGEN</a>
+        <a href="https://discord.gg/FfR56Ddtj8" class="btn btn-discord" target="_blank" rel="noopener noreferrer">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.548-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+          Discord
+        </a>
+        <a href="https://www.tiktok.com/@alpensmp" class="btn btn-secondary" target="_blank" rel="noopener noreferrer">TikTok folgen</a>
+      </div>
+    </div>
+    <div class="grid-3" style="margin-top:32px">
+      <div class="card reveal" style="text-align:center">
+        <div class="card-glow" aria-hidden="true"></div>
+        <span class="icon" aria-hidden="true">💬</span>
+        <h3>Discord</h3>
+        <p id="discordCardCount" style="font-family:var(--font);font-size:1.6rem;font-weight:800;background:linear-gradient(135deg,#e05c5c,#f87171);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:8px 0">—</p>
+        <p style="color:var(--text2);font-size:.9rem">Mitglieder</p>
+        <a href="https://discord.gg/FfR56Ddtj8" class="btn btn-discord" style="margin-top:14px;padding:10px 18px;font-size:.88rem" target="_blank" rel="noopener noreferrer">Beitreten</a>
+      </div>
+      <div class="card reveal rd1" style="text-align:center">
+        <div class="card-glow" aria-hidden="true"></div>
+        <span class="icon" aria-hidden="true">🎵</span>
+        <h3>TikTok</h3>
+        <p style="font-family:var(--font);font-size:1.15rem;font-weight:700;color:var(--text);margin:8px 0">@alpensmp</p>
+        <p style="color:var(--text2);font-size:.9rem">Clips, Builds &amp; Server-Momente</p>
+        <a href="https://www.tiktok.com/@alpensmp" class="btn btn-secondary" style="margin-top:14px;padding:10px 18px;font-size:.88rem" target="_blank" rel="noopener noreferrer">Profil öffnen</a>
+      </div>
+      <div class="card reveal rd2" style="text-align:center">
+        <div class="card-glow" aria-hidden="true"></div>
+        <span class="icon" aria-hidden="true">🏔️</span>
+        <h3>AlpenSMP</h3>
+        <p style="color:var(--text2);font-size:.9rem;margin-top:8px">Faire Community, persönliche Leitung – ohne Pay-to-Win.</p>
+        <a href="#join" class="btn btn-primary" style="margin-top:14px;padding:10px 18px;font-size:.88rem">Jetzt spielen</a>
       </div>
     </div>
   </div>
@@ -804,6 +844,41 @@ footer{background:#06080c;border-top:1px solid var(--border);padding:64px 24px 3
   </div>
 </div>
 
+<!-- Feature detail modal -->
+<div class="modal-bg" id="featureModal" role="dialog" aria-modal="true" aria-labelledby="featureModalTitle">
+  <div class="modal" style="text-align:left;max-width:480px">
+    <h3 id="featureModalTitle" style="text-align:center;margin-bottom:14px"></h3>
+    <p id="featureModalBody" style="color:var(--text2);white-space:pre-line;line-height:1.65;margin-bottom:24px"></p>
+    <div class="modal-btns">
+      <button class="btn btn-primary" onclick="document.getElementById('featureModal').classList.remove('show')">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Owner easter-egg panel -->
+<div class="modal-bg" id="ownerModal" role="dialog" aria-modal="true" aria-labelledby="ownerTitle">
+  <div class="modal" style="max-width:400px">
+    <h3 id="ownerTitle">Owner-Zugang</h3>
+    <div id="ownerLoginBox">
+      <p style="color:var(--text2);margin-bottom:16px;font-size:.92rem">Nur für die Serverleitung.</p>
+      <input id="ownerUser" type="text" placeholder="Benutzername" autocomplete="username" style="width:100%;margin-bottom:10px;padding:12px;border-radius:10px;border:1px solid var(--border);background:rgba(0,0,0,.3);color:var(--text);font-family:var(--body)">
+      <input id="ownerPass" type="password" placeholder="Passwort" autocomplete="current-password" style="width:100%;margin-bottom:16px;padding:12px;border-radius:10px;border:1px solid var(--border);background:rgba(0,0,0,.3);color:var(--text);font-family:var(--body)">
+      <div class="modal-btns">
+        <button class="btn btn-primary" onclick="ownerLogin()">Anmelden</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('ownerModal').classList.remove('show')">Abbrechen</button>
+      </div>
+    </div>
+    <div id="ownerPanelBox" style="display:none">
+      <p style="color:var(--text2);margin-bottom:12px;font-size:.92rem">Spieler beigetreten anpassen (wird lokal gespeichert):</p>
+      <input id="ownerJoinedInput" type="number" min="0" style="width:100%;margin-bottom:16px;padding:12px;border-radius:10px;border:1px solid var(--border);background:rgba(0,0,0,.3);color:var(--text);font-family:var(--body)">
+      <div class="modal-btns">
+        <button class="btn btn-primary" onclick="ownerSave()">Speichern</button>
+        <button class="btn btn-secondary" onclick="ownerLogout()">Abmelden</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Status warn modal -->
 <div class="modal-bg" id="warnModal" role="dialog" aria-modal="true" aria-labelledby="warnTitle">
   <div class="modal">
@@ -836,8 +911,11 @@ const CONFIG = {
   tiktokHandle: '@alpensmp',
   totalJoined: 274,
   recommendedVersion: '1.21.11',
-  galleryPath: 'images/gallery/',
-  galleryCount: 6
+  galleryPath: '',
+  galleryExt: '.png',
+  galleryCount: 8,
+  ownerUser: 'passtu',
+  ownerPass: '1944'
 };
 
 let lastGood = null, failSince = null, warnShown = false;
@@ -1200,26 +1278,67 @@ function drawChart(arr) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     const dpr = window.devicePixelRatio || 1;
-    const w = canvas.clientWidth || 640, h = 200;
+    const w = canvas.clientWidth || 640, h = 220;
     canvas.width = w * dpr;
     canvas.height = h * dpr;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.scale(dpr, dpr);
-    const vals = arr.map(a => a.n);
-    const min = Math.min(...vals);
-    const max = Math.max(...vals, min + 1);
     ctx.clearRect(0, 0, w, h);
 
-    const grad = ctx.createLinearGradient(0, 0, 0, h);
-    grad.addColorStop(0, 'rgba(224,92,92,0.35)');
+    const padL = 40, padR = 16, padT = 16, padB = 36;
+    const plotW = w - padL - padR;
+    const plotH = h - padT - padB;
+    const vals = arr.map(a => a.n);
+    const min = 0;
+    const max = Math.max(...vals, 1);
+    const yMax = Math.max(Math.ceil(max), 1);
+
+    // grid + Y labels (Spieler)
+    ctx.font = '11px Inter, system-ui, sans-serif';
+    ctx.fillStyle = '#6b7280';
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    const ySteps = Math.min(yMax, 6);
+    for (let i = 0; i <= ySteps; i++) {
+      const v = Math.round((yMax / ySteps) * i);
+      const y = padT + plotH - (v / yMax) * plotH;
+      ctx.beginPath();
+      ctx.moveTo(padL, y);
+      ctx.lineTo(w - padR, y);
+      ctx.stroke();
+      ctx.textAlign = 'right';
+      ctx.fillText(String(v), padL - 8, y + 4);
+    }
+
+    // X labels (Zeit relativ)
+    const t0 = arr[0].t;
+    const t1 = arr[arr.length - 1].t;
+    const span = Math.max(t1 - t0, 1);
+    ctx.textAlign = 'center';
+    const xTicks = Math.min(arr.length, 6);
+    for (let i = 0; i < xTicks; i++) {
+      const idx = Math.round(i * (arr.length - 1) / Math.max(xTicks - 1, 1));
+      const mins = Math.round((arr[idx].t - t0) / 60000);
+      const label = mins < 60 ? mins + ' min' : (mins / 60).toFixed(1) + ' h';
+      const x = padL + (idx / (arr.length - 1)) * plotW;
+      ctx.fillText(label, x, h - 10);
+    }
+    ctx.fillText('Spieler →', padL - 4, padT - 2);
+    ctx.textAlign = 'right';
+    ctx.fillText('Zeit →', w - padR, h - 10);
+
+    // area + line
+    const grad = ctx.createLinearGradient(0, padT, 0, padT + plotH);
+    grad.addColorStop(0, 'rgba(224,92,92,0.4)');
     grad.addColorStop(1, 'rgba(224,92,92,0.02)');
     ctx.beginPath();
     vals.forEach((v, i) => {
-      const x = (i / (vals.length - 1)) * (w - 32) + 16;
-      const y = h - 28 - ((v - min) / (max - min)) * (h - 48);
+      const x = padL + (i / (vals.length - 1)) * plotW;
+      const y = padT + plotH - (v / yMax) * plotH;
       i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
     });
-    ctx.lineTo((w - 16), h - 28);
-    ctx.lineTo(16, h - 28);
+    ctx.lineTo(padL + plotW, padT + plotH);
+    ctx.lineTo(padL, padT + plotH);
     ctx.closePath();
     ctx.fillStyle = grad;
     ctx.fill();
@@ -1229,18 +1348,21 @@ function drawChart(arr) {
     ctx.lineJoin = 'round';
     ctx.beginPath();
     vals.forEach((v, i) => {
-      const x = (i / (vals.length - 1)) * (w - 32) + 16;
-      const y = h - 28 - ((v - min) / (max - min)) * (h - 48);
+      const x = padL + (i / (vals.length - 1)) * plotW;
+      const y = padT + plotH - (v / yMax) * plotH;
       i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
     });
     ctx.stroke();
 
-    const lastX = (w - 16);
-    const lastY = h - 28 - ((vals[vals.length - 1] - min) / (max - min)) * (h - 48);
+    const lastX = padL + plotW;
+    const lastY = padT + plotH - (vals[vals.length - 1] / yMax) * plotH;
     ctx.beginPath();
-    ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
+    ctx.arc(lastX, lastY, 5, 0, Math.PI * 2);
     ctx.fillStyle = '#f87171';
     ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
   } catch (e) {}
 }
 drawChart(lsGetJSON('alpensmp_server_history', []));
@@ -1248,7 +1370,7 @@ drawChart(lsGetJSON('alpensmp_server_history', []));
 /* ---------- Discord members (CORS kann blockieren → Timeout + Fallback) ---------- */
 async function fetchDiscord() {
   const el = document.getElementById('statDiscord');
-  if (!el) return;
+  const card = document.getElementById('discordCardCount');
   try {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 5000);
@@ -1261,18 +1383,20 @@ async function fetchDiscord() {
     const data = await res.json();
     const count = data.approximate_member_count;
     if (typeof count === 'number') {
-      el.textContent = count.toLocaleString('de-DE');
+      const txt = count.toLocaleString('de-DE');
+      if (el) el.textContent = txt;
+      if (card) card.textContent = txt;
       return;
     }
-  } catch (e) {
-    /* Discord blockiert oft CORS – Platzhalter ist ok */
-  }
-  el.textContent = '—';
+  } catch (e) {}
+  if (el) el.textContent = '—';
+  if (card) card.textContent = '—';
 }
 
-/* ---------- TikTok placeholder (public API restricted) ---------- */
+/* ---------- TikTok placeholder ---------- */
 function setTikTokPlaceholder() {
   const el = document.getElementById('statTikTok');
+  if (!el) return;
   el.textContent = CONFIG.tiktokHandle;
   el.style.fontSize = '1.15rem';
   el.style.webkitTextFillColor = 'unset';
@@ -1280,12 +1404,14 @@ function setTikTokPlaceholder() {
   el.style.color = 'var(--text)';
 }
 
-/* ---------- Gallery ---------- */
+/* ---------- Gallery (1.png … 8.png im Root) ---------- */
 function initGallery() {
   const grid = document.getElementById('galleryGrid');
+  if (!grid) return;
   const images = [];
+  const validIndices = [];
   for (let i = 1; i <= CONFIG.galleryCount; i++) {
-    const src = CONFIG.galleryPath + i + '.jpg';
+    const src = CONFIG.galleryPath + i + CONFIG.galleryExt;
     images.push(src);
     const item = document.createElement('div');
     item.className = 'gallery-item reveal' + (i > 1 ? ' rd' + ((i - 1) % 3 || 3) : '');
@@ -1299,14 +1425,25 @@ function initGallery() {
     img.onerror = function () {
       this.remove();
       item.innerHTML = '<div class="gallery-ph"><span class="gicon">🏔️</span>Bild ' + i + ' folgt</div>';
+      item.style.cursor = 'default';
+    };
+    img.onload = function () {
+      validIndices.push(i - 1);
     };
     item.appendChild(img);
     const glow = document.createElement('div');
     glow.className = 'card-glow';
     glow.setAttribute('aria-hidden', 'true');
     item.appendChild(glow);
-    item.addEventListener('click', () => openLightbox(i - 1));
-    item.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLightbox(i - 1); } });
+    item.addEventListener('click', () => {
+      if (item.querySelector('img')) openLightbox(i - 1);
+    });
+    item.addEventListener('keydown', e => {
+      if ((e.key === 'Enter' || e.key === ' ') && item.querySelector('img')) {
+        e.preventDefault();
+        openLightbox(i - 1);
+      }
+    });
     grid.appendChild(item);
     revealObserver.observe(item);
   }
@@ -1339,27 +1476,150 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowRight') document.getElementById('lbNext').click();
 });
 
-/* ---------- AI Assistant ---------- */
+/* ---------- Feature-Detail-Popups ---------- */
+const FEATURE_DETAILS = {
+  survival: {
+    title: '🏔️ Survival',
+    body: 'Klassisches Vanilla-Survival auf einer gemeinsamen Welt. Keine Pay-to-Win-Mechaniken, keine überladenen Minigames – du baust, erkundest und spielst, wie Minecraft gedacht ist. Mit fairer Community und persönlicher Serverleitung.'
+  },
+  claim: {
+    title: '🛡️ Grundstückschutz',
+    body: 'Mit GriefPrevention schützt du deine Builds vor Griefing.\n\n• Je länger du online bist, desto mehr Claim-Blöcke bekommst du.\n• Pro 1 Stunde Spielzeit: +1000 Blöcke.\n• Beanspruche dein Gebiet und lade Freunde ein – Fremde können dort nichts abbauen oder platzieren.'
+  },
+  voice: {
+    title: '🎙️ Simple Voice Chat',
+    body: 'Sprich direkt im Spiel mit anderen – ohne extra Discord-Call. Die Reichweite ist positionsbasiert: je näher ihr euch seid, desto besser hört ihr euch. Ideal für gemeinsame Projekte und Exploration.'
+  },
+  graves: {
+    title: '⚰️ Todesgräber',
+    body: 'Wenn du stirbst, bleiben deine Items in einem Todesgrab auffindbar. Du verlierst sie nicht einfach in Lava oder der Leere – hol sie dir in Ruhe zurück (sofern das Grab erreichbar ist).'
+  },
+  homes: {
+    title: '🏠 Homes',
+    body: 'Setze mit /sethome einen Speicherpunkt und kehre jederzeit mit /home zurück. Praktisch für Base, Farm und Shop – ohne lange Wege.'
+  },
+  tpa: {
+    title: '🤝 TPA',
+    body: 'Mit /tpa <Spieler> schickst du eine Teleport-Anfrage. Der andere kann annehmen – so trefft ihr euch schnell, ohne Koordinaten zu tauschen.'
+  },
+  back: {
+    title: '↩️ /back',
+    body: '/back bringt dich zurück zu deinem letzten Todesort. Ideal, um Items zu holen oder den Ort nochmal zu checken.'
+  },
+  crossplay: {
+    title: '🌍 Java + Bedrock',
+    body: 'Java- und Bedrock-Spieler teilen sich dieselbe Welt. Java: Adresse alpensmp.falixsrv.me · Bedrock: dieselbe Adresse + Port 27491. Empfohlene Version: 1.21.11.'
+  }
+};
+function openFeatureModal(key) {
+  const d = FEATURE_DETAILS[key];
+  if (!d) return;
+  const modal = document.getElementById('featureModal');
+  document.getElementById('featureModalTitle').textContent = d.title;
+  document.getElementById('featureModalBody').textContent = d.body;
+  modal.classList.add('show');
+}
+document.querySelectorAll('.feature-card').forEach(card => {
+  const open = () => openFeatureModal(card.dataset.feature);
+  card.addEventListener('click', open);
+  card.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
+  });
+});
+
+/* ---------- Owner Easter Egg (Logo 7× klicken → Login) ---------- */
+let logoClicks = 0, logoTimer = null;
+function onLogoSecretClick() {
+  logoClicks++;
+  clearTimeout(logoTimer);
+  logoTimer = setTimeout(() => { logoClicks = 0; }, 2500);
+  if (logoClicks >= 7) {
+    logoClicks = 0;
+    document.getElementById('ownerModal').classList.add('show');
+  }
+}
+document.querySelectorAll('.logo, .hero-logo').forEach(el => {
+  el.addEventListener('click', e => {
+    if (el.classList.contains('logo') || el.classList.contains('hero-logo')) {
+      /* Logo-Link soll trotzdem scrollen, Secret parallel */
+      onLogoSecretClick();
+    }
+  });
+});
+function ownerLogin() {
+  const u = (document.getElementById('ownerUser').value || '').trim();
+  const p = (document.getElementById('ownerPass').value || '').trim();
+  if (u === CONFIG.ownerUser && p === CONFIG.ownerPass) {
+    document.getElementById('ownerLoginBox').style.display = 'none';
+    document.getElementById('ownerPanelBox').style.display = 'block';
+    document.getElementById('ownerJoinedInput').value = CONFIG.totalJoined;
+    showToast('✓ Owner-Modus aktiv');
+  } else {
+    showToast('✗ Falsche Zugangsdaten');
+  }
+}
+function ownerSave() {
+  const n = parseInt(document.getElementById('ownerJoinedInput').value, 10);
+  if (!isNaN(n) && n >= 0) {
+    CONFIG.totalJoined = n;
+    lsSet('alpensmp_joined_override', String(n));
+    const el = document.getElementById('statJoined');
+    if (el) {
+      el.dataset.target = String(n);
+      el.dataset.done = '';
+      animateNumber(el);
+      el.dataset.done = '1';
+    }
+    showToast('✓ Spielerzahl gespeichert');
+  }
+}
+function ownerLogout() {
+  document.getElementById('ownerPanelBox').style.display = 'none';
+  document.getElementById('ownerLoginBox').style.display = 'block';
+  document.getElementById('ownerModal').classList.remove('show');
+  document.getElementById('ownerUser').value = '';
+  document.getElementById('ownerPass').value = '';
+}
+(function applyJoinedOverride() {
+  const o = lsGet('alpensmp_joined_override');
+  if (o && !isNaN(+o)) {
+    CONFIG.totalJoined = +o;
+  }
+})();
+
+/* ---------- AI Assistant (schlauer) ---------- */
 const AI_KNOWLEDGE = [
-  { keys: ['ip', 'adresse', 'server-adresse', 'serverip'], answer: 'Die Server-Adresse lautet: alpensmp.falixsrv.me' },
-  { keys: ['port', 'bedrock-port', 'bedrock port'], answer: 'Für Bedrock brauchst du den Port 27491.' },
-  { keys: ['version', 'minecraft-version', '1.21'], answer: 'Empfohlen wird Minecraft 1.21.11. Andere Versionen können funktionieren.' },
-  { keys: ['discord', 'support', 'hilfe', 'ticket'], answer: 'Tritt unserem Discord bei: https://discord.gg/FfR56Ddtj8 – dort kannst du Tickets öffnen.' },
-  { keys: ['tiktok'], answer: 'Unser TikTok: https://www.tiktok.com/@alpensmp' },
-  { keys: ['voice', 'voicechat', 'simple voice'], answer: 'Ja, Simple Voice Chat ist aktiv – du kannst direkt im Spiel sprechen.' },
-  { keys: ['grief', 'schutz', 'grundstück', 'claim'], answer: 'Ja, GriefPrevention schützt deine Builds und Grundstücke.' },
-  { keys: ['home', 'tpa', 'back'], answer: 'Homes, TPA und /back sind verfügbar. /back bringt dich zum letzten Tod zurück.' },
-  { keys: ['tod', 'sterben', 'gräber', 'items'], answer: 'Bei Tod bleiben deine Items über Todesgräber auffindbar.' },
-  { keys: ['kostenlos', 'gratis', 'pay', 'kosten'], answer: 'AlpenSMP ist kostenlos – keine Pay-to-Win-Mechaniken.' },
-  { keys: ['bedrock', 'java'], answer: 'Java und Bedrock spielen zusammen auf demselben Server.' },
-  { keys: ['status', 'online', 'offline'], answer: 'Schau oben auf den Live-Serverstatus – der aktualisiert sich automatisch.' }
+  { keys: ['ip', 'adresse', 'server-adresse', 'serverip', 'server adresse'], answer: 'Die Server-Adresse lautet: alpensmp.falixsrv.me – tippe sie unter Mehrspieler ein (Java) bzw. mit Port 27491 (Bedrock).' },
+  { keys: ['port', 'bedrock-port', 'bedrock port'], answer: 'Bedrock-Port: 27491 · Adresse: alpensmp.falixsrv.me' },
+  { keys: ['version', 'minecraft-version', '1.21', 'welche version'], answer: 'Empfohlen: Minecraft 1.21.11. Andere Versionen können gehen; 26.2+ kann Verbindungsprobleme machen.' },
+  { keys: ['discord', 'support', 'hilfe', 'ticket', 'problem'], answer: 'Discord: https://discord.gg/FfR56Ddtj8 – dort Tickets öffnen, Updates lesen und mit der Community schreiben.' },
+  { keys: ['tiktok', 'tik tok'], answer: 'TikTok: https://www.tiktok.com/@alpensmp – Clips, Builds und Server-Momente.' },
+  { keys: ['voice', 'voicechat', 'simple voice', 'mikro', 'sprechen'], answer: 'Simple Voice Chat ist aktiv. Positionsbasiert im Spiel – näher = besser hörbar. Mod/Plugin je nach Client installieren.' },
+  { keys: ['grief', 'schutz', 'grundstück', 'claim', 'blöcke', 'claimblöcke'], answer: 'GriefPrevention schützt deine Builds. Pro 1 Stunde Online-Zeit bekommst du +1000 Claim-Blöcke. So wächst dein geschütztes Gebiet mit der Zeit.' },
+  { keys: ['home', 'sethome', 'homes'], answer: 'Mit /sethome speicherst du einen Punkt, mit /home kehrst du zurück.' },
+  { keys: ['tpa', 'teleport', 'tp'], answer: '/tpa <Spieler> sendet eine Anfrage. Nach Annahme teleportierst du dich zum anderen.' },
+  { keys: ['back', '/back'], answer: '/back bringt dich zum letzten Todesort – praktisch für Item-Recovery.' },
+  { keys: ['tod', 'sterben', 'gräber', 'items', 'todesgrab'], answer: 'Bei Tod bleiben Items in einem Todesgrab. Du kannst sie holen, solange das Grab erreichbar ist.' },
+  { keys: ['kostenlos', 'gratis', 'pay', 'kosten', 'pay to win', 'donate'], answer: 'AlpenSMP ist kostenlos und ohne Pay-to-Win. Spielen geht ohne Zahlung.' },
+  { keys: ['bedrock', 'java', 'crossplay', 'edition'], answer: 'Java und Bedrock spielen auf derselben Welt. Java: alpensmp.falixsrv.me · Bedrock: + Port 27491.' },
+  { keys: ['status', 'online', 'offline', 'spieler'], answer: 'Oben siehst du den Live-Serverstatus (Online/Offline und Spielerzahl). Der aktualisiert sich ca. alle 45 Sekunden.' },
+  { keys: ['regeln', 'rule', 'erlaubt', 'verboten'], answer: 'Fair spielen, nicht griefen, respektvoll bleiben. Details und Support im Discord.' },
+  { keys: ['hallo', 'hi', 'hey', 'moin'], answer: 'Hey! Frag mich z. B. nach IP, Port, Version, Claims, Voice Chat oder Discord. 🏔️' },
+  { keys: ['danke', 'thanks', 'thx'], answer: 'Gern! Viel Spaß auf AlpenSMP. 🏔️' }
 ];
 function aiReply(q) {
-  const lower = q.toLowerCase();
+  const lower = q.toLowerCase().trim();
+  if (!lower) return 'Schreib einfach eine Frage – z. B. „Wie ist die IP?“ oder „Wie funktionieren Claims?“';
+  let best = null, bestScore = 0;
   for (const item of AI_KNOWLEDGE) {
-    if (item.keys.some(k => lower.includes(k))) return item.answer;
+    let score = 0;
+    for (const k of item.keys) {
+      if (lower.includes(k)) score += k.length;
+    }
+    if (score > bestScore) { bestScore = score; best = item; }
   }
-  return 'Schreib uns am besten direkt im Discord – dort antworten wir persönlich! 🏔️\n' + CONFIG.discordUrl;
+  if (best) return best.answer;
+  return 'Dazu habe ich gerade keine feste Antwort. Schreib uns im Discord – dort helfen wir persönlich: ' + CONFIG.discordUrl;
 }
 const aiPanel = document.getElementById('aiPanel');
 const aiToggle = document.getElementById('aiToggle');
@@ -1475,6 +1735,12 @@ if (canHover && !reduceMotion) {
   try { setTikTokPlaceholder(); } catch (e) {}
   try {
     fetchStatus();
+    // Erste Minuten öfter pollen, damit das Diagramm schneller Daten hat
+    let quick = 0;
+    const quickId = setInterval(() => {
+      fetchStatus();
+      if (++quick >= 6) clearInterval(quickId);
+    }, 15000);
     setInterval(fetchStatus, 45000);
   } catch (e) {}
   // Discord & Partikel nicht-blockierend / verzögert
@@ -1488,4 +1754,3 @@ if (canHover && !reduceMotion) {
 </script>
 </body>
 </html>
-AlpenSMP Website: Performance Popup, Logo & Live Stats - Grok
