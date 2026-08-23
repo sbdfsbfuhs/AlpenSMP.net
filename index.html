@@ -121,7 +121,7 @@ body.mode-lite .badge .dot{animation:none}
 .mountains{position:absolute;bottom:0;left:0;width:100%;height:42%;z-index:4;pointer-events:none}
 .mountains svg{width:100%;height:100%;display:block}
 .hero-content{position:relative;z-index:10;text-align:center;max-width:900px;padding:0 24px}
-.hero-logo{width:88px;height:88px;margin:0 auto 20px;border-radius:20px;object-fit:contain;box-shadow:0 12px 40px rgba(199,62,62,.25);opacity:0;animation:fadeUp .8s .1s forwards}
+.hero-logo{width:120px;height:120px;margin:0 auto 16px;border-radius:0;object-fit:contain;box-shadow:none;opacity:0;animation:fadeUp .8s .1s forwards;background:transparent;display:block}
 .badge{display:inline-flex;align-items:center;gap:8px;background:var(--glass);border:1px solid var(--border);backdrop-filter:blur(12px);padding:8px 18px;border-radius:999px;font-size:.85rem;font-weight:500;color:var(--text2);margin-bottom:24px;opacity:0;animation:fadeUp .8s .15s forwards}
 .badge .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 12px var(--ok);animation:pulse 2s infinite}
 @keyframes pulse{50%{opacity:.45}}
@@ -328,11 +328,13 @@ section{padding:100px 24px;position:relative}
 /* Footer */
 footer{background:#06080c;border-top:1px solid var(--border);padding:64px 24px 32px}
 .footer-inner{max-width:1160px;margin:0 auto;display:flex;justify-content:space-between;flex-wrap:wrap;gap:40px;margin-bottom:40px}
-.footer-brand{display:flex;flex-direction:column;gap:12px}
-.footer-brand img{width:48px;height:48px;border-radius:12px}
-.footer-brand h3{font-family:var(--font);font-size:1.4rem;font-weight:800;margin-bottom:4px}
+.footer-brand{display:flex;flex-direction:column;gap:8px}
+.footer-brand h3{font-family:var(--font);font-size:1.5rem;font-weight:800;margin-bottom:2px}
 .footer-brand h3 span{background:linear-gradient(135deg,#e05c5c,#f87171);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.footer-brand p{color:var(--muted);font-size:.94rem;max-width:260px}
+.footer-brand p{color:var(--muted);font-size:.94rem;max-width:280px;line-height:1.55}
+footer{padding-bottom:48px}
+.footer-inner{align-items:flex-start}
+.footer-cols{margin-top:4px}
 .footer-cols{display:flex;gap:48px;flex-wrap:wrap}
 .footer-col h4{font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:14px}
 .footer-col a{display:block;color:var(--text2);text-decoration:none;font-size:.94rem;margin-bottom:10px;transition:color .3s,transform .3s}
@@ -495,7 +497,7 @@ footer{background:#06080c;border-top:1px solid var(--border);padding:64px 24px 3
     </svg>
   </div>
   <div class="hero-content">
-    <img class="hero-logo" src="logo.png" alt="AlpenSMP Logo" width="88" height="88" onerror="this.src='icon.png';this.onerror=null">
+    <img class="hero-logo" src="logo.png" alt="AlpenSMP Logo" width="120" height="120" onerror="this.src='icon.png';this.onerror=null">
     <p class="badge"><span class="dot" aria-hidden="true"></span> Deutschsprachiger Minecraft Survival Server</p>
     <h1>ALPEN<span>SMP</span></h1>
     <p class="tagline">Vanilla Survival. Faire Community. Persönliche Serverleitung.</p>
@@ -552,7 +554,7 @@ footer{background:#06080c;border-top:1px solid var(--border);padding:64px 24px 3
       <p class="sdesc" style="margin:0 auto">Tippe auf ein Feature für mehr Details.</p></div>
     <div class="grid-4" id="featureGrid">
       <div class="card tilt-card reveal feature-card" style="text-align:center;cursor:pointer" data-feature="survival" role="button" tabindex="0"><div class="card-glow" aria-hidden="true"></div><span class="icon" aria-hidden="true">🏔️</span><h3>Survival</h3><p>Klassisches Survival-Erlebnis.</p></div>
-      <div class="card tilt-card reveal rd1 feature-card" style="text-align:center;cursor:pointer" data-feature="claim" role="button" tabindex="0"><div class="card-glow" aria-hidden="true"></div><span class="icon" aria-hidden="true">🛡️</span><h3>Grundstückschutz</h3><p>GriefPrevention schützt deine Builds.</p></div>
+      <div class="card tilt-card reveal rd1 feature-card" style="text-align:center;cursor:pointer" data-feature="claim" role="button" tabindex="0"><div class="card-glow" aria-hidden="true"></div><span class="icon" aria-hidden="true">🛡️</span><h3>Claims</h3><p>GriefPrevention schützt deine Builds.</p></div>
       <div class="card tilt-card reveal rd2 feature-card" style="text-align:center;cursor:pointer" data-feature="voice" role="button" tabindex="0"><div class="card-glow" aria-hidden="true"></div><span class="icon" aria-hidden="true">🎙️</span><h3>Simple Voice Chat</h3><p>Sprich direkt im Spiel.</p></div>
       <div class="card tilt-card reveal rd3 feature-card" style="text-align:center;cursor:pointer" data-feature="graves" role="button" tabindex="0"><div class="card-glow" aria-hidden="true"></div><span class="icon" aria-hidden="true">⚰️</span><h3>Todesgräber</h3><p>Items bleiben nach dem Tod auffindbar.</p></div>
       <div class="card tilt-card reveal feature-card" style="text-align:center;cursor:pointer" data-feature="homes" role="button" tabindex="0"><div class="card-glow" aria-hidden="true"></div><span class="icon" aria-hidden="true">🏠</span><h3>Homes</h3><p>Setze Homes und kehre jederzeit zurück.</p></div>
@@ -567,11 +569,10 @@ footer{background:#06080c;border-top:1px solid var(--border);padding:64px 24px 3
   <div class="container">
     <div class="reveal" style="text-align:center"><span class="slabel">Statistiken</span><h2 class="stitle" id="stats-title">AlpenSMP in Zahlen</h2>
       <p class="sdesc" style="margin:0 auto">Live-Daten und Community-Zahlen – übersichtlich visualisiert.</p></div>
-    <div class="grid-4" style="margin-top:40px">
+    <div class="grid-3" style="margin-top:40px">
       <div class="card tilt-card reveal" style="text-align:center"><div class="card-glow" aria-hidden="true"></div><div class="stat-val" data-target="274" id="statJoined">0</div><div class="stat-lbl">Spieler beigetreten</div><div class="stat-sub">seit dem Start</div></div>
-      <div class="card tilt-card reveal rd1" style="text-align:center"><div class="card-glow" aria-hidden="true"></div><div class="stat-val" id="statOnline">—</div><div class="stat-lbl">Aktuell online</div></div>
-      <div class="card tilt-card reveal rd2" style="text-align:center"><div class="card-glow" aria-hidden="true"></div><div class="stat-val" id="statDiscord">—</div><div class="stat-lbl">Discord-Mitglieder</div></div>
-      <div class="card tilt-card reveal rd3" style="text-align:center"><div class="card-glow" aria-hidden="true"></div><div class="stat-val" id="statTikTok">—</div><div class="stat-lbl">TikTok</div><div class="stat-sub">@alpensmp</div></div>
+      <div class="card tilt-card reveal rd1" style="text-align:center"><div class="card-glow" aria-hidden="true"></div><div class="stat-val" id="statOnline">0</div><div class="stat-lbl">Aktuell online</div></div>
+      <div class="card tilt-card reveal rd2" style="text-align:center"><div class="card-glow" aria-hidden="true"></div><div class="stat-val" id="statDiscord">0</div><div class="stat-lbl">Discord-Mitglieder</div></div>
     </div>
     <div class="card reveal" style="margin-top:32px;text-align:center;padding:28px 20px">
       <h3 style="font-family:var(--font);margin-bottom:8px">Spieler online – Verlauf</h3>
@@ -600,7 +601,9 @@ footer{background:#06080c;border-top:1px solid var(--border);padding:64px 24px 3
     <div class="grid-3" style="margin-top:32px">
       <div class="card reveal" style="text-align:center">
         <div class="card-glow" aria-hidden="true"></div>
-        <span class="icon" aria-hidden="true">💬</span>
+        <span class="icon" aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="#5865F2"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.548-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+        </span>
         <h3>Discord</h3>
         <p id="discordCardCount" style="font-family:var(--font);font-size:1.6rem;font-weight:800;background:linear-gradient(135deg,#e05c5c,#f87171);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:8px 0">—</p>
         <p style="color:var(--text2);font-size:.9rem">Mitglieder</p>
@@ -608,7 +611,9 @@ footer{background:#06080c;border-top:1px solid var(--border);padding:64px 24px 3
       </div>
       <div class="card reveal rd1" style="text-align:center">
         <div class="card-glow" aria-hidden="true"></div>
-        <span class="icon" aria-hidden="true">🎵</span>
+        <span class="icon" aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="#fff"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3.15 15.3a6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.73a8.18 8.18 0 0 0 4.76 1.52V6.79a4.84 4.84 0 0 1-1-.1z"/></svg>
+        </span>
         <h3>TikTok</h3>
         <p style="font-family:var(--font);font-size:1.15rem;font-weight:700;color:var(--text);margin:8px 0">@alpensmp</p>
         <p style="color:var(--text2);font-size:.9rem">Clips, Builds &amp; Server-Momente</p>
@@ -663,7 +668,7 @@ footer{background:#06080c;border-top:1px solid var(--border);padding:64px 24px 3
 <section id="gallery" aria-labelledby="gallery-title">
   <div class="container">
     <div class="reveal" style="text-align:center"><span class="slabel">Galerie</span><h2 class="stitle" id="gallery-title">Einblicke in die Welt</h2>
-      <p class="sdesc" style="margin:0 auto">Klicke auf ein Bild, um es groß anzusehen.</p></div>
+      <p class="sdesc" style="margin:0 auto">Klicke auf ein Bild, um es groß anzusehen. Eigene Screenshots? Schick sie uns im Discord – wir nehmen die besten in die Galerie auf.</p></div>
     <div class="gallery-grid" id="galleryGrid">
       <!-- Images 1–6 loaded via JS from images/gallery/1.jpg … 6.jpg -->
     </div>
@@ -795,9 +800,8 @@ footer{background:#06080c;border-top:1px solid var(--border);padding:64px 24px 3
 <footer>
   <div class="footer-inner">
     <div class="footer-brand">
-      <img src="logo.png" alt="AlpenSMP" width="48" height="48" onerror="this.src='icon.png';this.onerror=null">
       <h3>ALPEN<span>SMP</span></h3>
-      <p>Vanilla Survival, faire Community, persönliche Serverleitung.</p>
+      <p>Vanilla Survival · Java &amp; Bedrock · Faire Community · Persönliche Serverleitung</p>
     </div>
     <div class="footer-cols">
       <div class="footer-col"><h4>Community</h4>
@@ -1133,6 +1137,25 @@ function animateNumber(el) {
     else el.textContent = target.toLocaleString('de-DE') + '+';
   })(start);
 }
+/** Count-up für Live-Zahlen (Online, Discord) – ohne „+“ am Ende */
+function animateStatTo(el, target, suffix) {
+  if (!el) return;
+  const to = Math.max(0, +target || 0);
+  const from = parseInt(String(el.textContent).replace(/[^\d]/g, ''), 10) || 0;
+  if (reduceMotion || from === to) {
+    el.textContent = to.toLocaleString('de-DE') + (suffix || '');
+    return;
+  }
+  const start = performance.now();
+  const dur = 900;
+  (function tick(now) {
+    const p = Math.min((now - start) / dur, 1);
+    const eased = 1 - Math.pow(1 - p, 3);
+    const val = Math.round(from + (to - from) * eased);
+    el.textContent = val.toLocaleString('de-DE') + (suffix || '');
+    if (p < 1) requestAnimationFrame(tick);
+  })(start);
+}
 
 /* ---------- Live-Status ---------- */
 const humor = {
@@ -1169,7 +1192,7 @@ function applyOnline(data) {
     count.textContent = online;
     max.textContent = mx;
     dot.className = 'live-dot on';
-    if (statOnline) statOnline.textContent = online;
+    if (statOnline) animateStatTo(statOnline, online);
     if (data.version) { ver.textContent = 'Version: ' + data.version; ver.style.display = 'block'; }
     else { ver.style.display = 'none'; }
     setHumor('online', online);
@@ -1179,7 +1202,7 @@ function applyOnline(data) {
     count.textContent = '0';
     max.textContent = data.players?.max ?? '—';
     dot.className = 'live-dot off';
-    if (statOnline) statOnline.textContent = '0';
+    if (statOnline) animateStatTo(statOnline, 0);
     ver.style.display = 'none';
     setHumor('off', 0);
     recordServerHistory(0);
@@ -1210,7 +1233,7 @@ function applyProblem() {
   if (statOnline) statOnline.textContent = '—';
   ver.style.display = 'none';
   dot.className = 'live-dot unk';
-  upd.textContent = '';
+  if (upd) upd.textContent = '';
   setHumor('problem', 0);
 }
 
@@ -1256,9 +1279,10 @@ function recordServerHistory(n) {
     let arr = lsGetJSON('alpensmp_server_history', []);
     const ts = Date.now();
     arr.push({ t: ts, n });
-    const cutoff = ts - 24 * 60 * 60 * 1000;
+    // nur letzte 1 Stunde behalten
+    const cutoff = ts - 60 * 60 * 1000;
     arr = arr.filter(x => x.t >= cutoff);
-    if (arr.length > 200) arr = arr.slice(-200);
+    if (arr.length > 120) arr = arr.slice(-120);
     lsSetJSON('alpensmp_server_history', arr);
     drawChart(arr);
   } catch (e) {}
@@ -1268,8 +1292,13 @@ function drawChart(arr) {
     const msg = document.getElementById('chartMsg');
     const canvas = document.getElementById('hoursChart');
     if (!msg || !canvas) return;
-    if (!arr || arr.length < 2) {
+    // immer auf 1h-Fenster filtern
+    const now = Date.now();
+    const cutoff = now - 60 * 60 * 1000;
+    arr = (arr || []).filter(x => x.t >= cutoff);
+    if (arr.length < 2) {
       msg.style.display = 'block';
+      msg.textContent = '📈 Verlauf der letzten Stunde – erscheint nach ein paar Status-Updates (Seite kurz offen lassen).';
       canvas.style.display = 'none';
       return;
     }
@@ -1278,27 +1307,27 @@ function drawChart(arr) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     const dpr = window.devicePixelRatio || 1;
-    const w = canvas.clientWidth || 640, h = 220;
+    const w = canvas.clientWidth || 640, h = 240;
     canvas.width = w * dpr;
     canvas.height = h * dpr;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, w, h);
 
-    const padL = 40, padR = 16, padT = 16, padB = 36;
+    // mehr Padding, damit Labels nicht in die Zahlen laufen
+    const padL = 52, padR = 20, padT = 28, padB = 44;
     const plotW = w - padL - padR;
     const plotH = h - padT - padB;
     const vals = arr.map(a => a.n);
-    const min = 0;
-    const max = Math.max(...vals, 1);
-    const yMax = Math.max(Math.ceil(max), 1);
+    const yMax = Math.max(Math.ceil(Math.max(...vals, 1)), 1);
 
-    // grid + Y labels (Spieler)
     ctx.font = '11px Inter, system-ui, sans-serif';
     ctx.fillStyle = '#6b7280';
     ctx.strokeStyle = 'rgba(255,255,255,0.06)';
     ctx.lineWidth = 1;
-    const ySteps = Math.min(yMax, 6);
+
+    // Y-Achse: Spieler
+    const ySteps = Math.min(Math.max(yMax, 1), 5);
     for (let i = 0; i <= ySteps; i++) {
       const v = Math.round((yMax / ySteps) * i);
       const y = padT + plotH - (v / yMax) * plotH;
@@ -1307,38 +1336,49 @@ function drawChart(arr) {
       ctx.lineTo(w - padR, y);
       ctx.stroke();
       ctx.textAlign = 'right';
-      ctx.fillText(String(v), padL - 8, y + 4);
+      ctx.fillText(String(v), padL - 10, y + 4);
     }
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#9aa3b2';
+    ctx.fillText('Spieler', 8, 14);
 
-    // X labels (Zeit relativ)
-    const t0 = arr[0].t;
-    const t1 = arr[arr.length - 1].t;
-    const span = Math.max(t1 - t0, 1);
+    // X-Achse: feste 1-Stunden-Skala (0 … 60 min)
+    const tEnd = now;
+    const tStart = cutoff;
+    ctx.fillStyle = '#6b7280';
     ctx.textAlign = 'center';
-    const xTicks = Math.min(arr.length, 6);
-    for (let i = 0; i < xTicks; i++) {
-      const idx = Math.round(i * (arr.length - 1) / Math.max(xTicks - 1, 1));
-      const mins = Math.round((arr[idx].t - t0) / 60000);
-      const label = mins < 60 ? mins + ' min' : (mins / 60).toFixed(1) + ' h';
-      const x = padL + (idx / (arr.length - 1)) * plotW;
-      ctx.fillText(label, x, h - 10);
-    }
-    ctx.fillText('Spieler →', padL - 4, padT - 2);
+    const xLabels = [0, 15, 30, 45, 60];
+    xLabels.forEach(m => {
+      const x = padL + (m / 60) * plotW;
+      ctx.fillText(m === 60 ? '60 min' : m + ' min', x, h - 12);
+      ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+      ctx.beginPath();
+      ctx.moveTo(x, padT);
+      ctx.lineTo(x, padT + plotH);
+      ctx.stroke();
+    });
     ctx.textAlign = 'right';
-    ctx.fillText('Zeit →', w - padR, h - 10);
+    ctx.fillStyle = '#9aa3b2';
+    ctx.fillText('letzte 1 h', w - padR, 14);
 
-    // area + line
+    // Punkte nach Zeit positionieren (0–60 min Fenster)
+    function xOf(t) {
+      return padL + ((t - tStart) / (60 * 60 * 1000)) * plotW;
+    }
+    function yOf(v) {
+      return padT + plotH - (v / yMax) * plotH;
+    }
+
     const grad = ctx.createLinearGradient(0, padT, 0, padT + plotH);
     grad.addColorStop(0, 'rgba(224,92,92,0.4)');
     grad.addColorStop(1, 'rgba(224,92,92,0.02)');
     ctx.beginPath();
-    vals.forEach((v, i) => {
-      const x = padL + (i / (vals.length - 1)) * plotW;
-      const y = padT + plotH - (v / yMax) * plotH;
+    arr.forEach((a, i) => {
+      const x = xOf(a.t), y = yOf(a.n);
       i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
     });
-    ctx.lineTo(padL + plotW, padT + plotH);
-    ctx.lineTo(padL, padT + plotH);
+    ctx.lineTo(xOf(arr[arr.length - 1].t), padT + plotH);
+    ctx.lineTo(xOf(arr[0].t), padT + plotH);
     ctx.closePath();
     ctx.fillStyle = grad;
     ctx.fill();
@@ -1347,17 +1387,15 @@ function drawChart(arr) {
     ctx.lineWidth = 2.5;
     ctx.lineJoin = 'round';
     ctx.beginPath();
-    vals.forEach((v, i) => {
-      const x = padL + (i / (vals.length - 1)) * plotW;
-      const y = padT + plotH - (v / yMax) * plotH;
+    arr.forEach((a, i) => {
+      const x = xOf(a.t), y = yOf(a.n);
       i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
     });
     ctx.stroke();
 
-    const lastX = padL + plotW;
-    const lastY = padT + plotH - (vals[vals.length - 1] / yMax) * plotH;
+    const last = arr[arr.length - 1];
     ctx.beginPath();
-    ctx.arc(lastX, lastY, 5, 0, Math.PI * 2);
+    ctx.arc(xOf(last.t), yOf(last.n), 5, 0, Math.PI * 2);
     ctx.fillStyle = '#f87171';
     ctx.fill();
     ctx.strokeStyle = '#fff';
@@ -1383,25 +1421,13 @@ async function fetchDiscord() {
     const data = await res.json();
     const count = data.approximate_member_count;
     if (typeof count === 'number') {
-      const txt = count.toLocaleString('de-DE');
-      if (el) el.textContent = txt;
-      if (card) card.textContent = txt;
+      animateStatTo(el, count);
+      if (card) animateStatTo(card, count);
       return;
     }
   } catch (e) {}
   if (el) el.textContent = '—';
   if (card) card.textContent = '—';
-}
-
-/* ---------- TikTok placeholder ---------- */
-function setTikTokPlaceholder() {
-  const el = document.getElementById('statTikTok');
-  if (!el) return;
-  el.textContent = CONFIG.tiktokHandle;
-  el.style.fontSize = '1.15rem';
-  el.style.webkitTextFillColor = 'unset';
-  el.style.background = 'none';
-  el.style.color = 'var(--text)';
 }
 
 /* ---------- Gallery (1.png … 8.png im Root) ---------- */
@@ -1483,8 +1509,8 @@ const FEATURE_DETAILS = {
     body: 'Klassisches Vanilla-Survival auf einer gemeinsamen Welt. Keine Pay-to-Win-Mechaniken, keine überladenen Minigames – du baust, erkundest und spielst, wie Minecraft gedacht ist. Mit fairer Community und persönlicher Serverleitung.'
   },
   claim: {
-    title: '🛡️ Grundstückschutz',
-    body: 'Mit GriefPrevention schützt du deine Builds vor Griefing.\n\n• Je länger du online bist, desto mehr Claim-Blöcke bekommst du.\n• Pro 1 Stunde Spielzeit: +1000 Blöcke.\n• Beanspruche dein Gebiet und lade Freunde ein – Fremde können dort nichts abbauen oder platzieren.'
+    title: '🛡️ Claims',
+    body: 'Mit GriefPrevention (Claims) schützt du deine Builds vor Griefing.\n\n• Je länger du online bist, desto mehr Claim-Blöcke bekommst du.\n• Pro 1 Stunde Spielzeit: +1000 Blöcke.\n• Beanspruche dein Gebiet und lade Freunde ein – Fremde können dort nichts abbauen oder platzieren.'
   },
   voice: {
     title: '🎙️ Simple Voice Chat',
@@ -1732,7 +1758,6 @@ if (canHover && !reduceMotion) {
     if (joined) joined.dataset.target = String(CONFIG.totalJoined);
   } catch (e) {}
   try { initGallery(); } catch (e) {}
-  try { setTikTokPlaceholder(); } catch (e) {}
   try {
     fetchStatus();
     // Erste Minuten öfter pollen, damit das Diagramm schneller Daten hat
