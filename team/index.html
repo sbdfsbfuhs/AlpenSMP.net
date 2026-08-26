@@ -17,6 +17,7 @@
       --muted: #94a3b8;
       --border: rgba(255,255,255,0.08);
       --ok: #34d399;
+      --warn: #f59e0b;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -37,9 +38,13 @@
       position: sticky;
       top: 0;
       z-index: 100;
+      flex-wrap: wrap;
+      gap: 10px;
     }
     .brand { font-weight: 800; font-size: 1.1rem; }
     .brand span { color: var(--red); }
+    .user-info { font-size: 0.85rem; color: var(--muted); }
+    .user-info strong { color: var(--text); }
     .btn {
       background: var(--red);
       color: white;
@@ -57,6 +62,18 @@
       color: var(--muted);
     }
     .btn-ghost:hover { background: rgba(255,255,255,0.05); color: white; }
+    .btn-sm { padding: 7px 14px; font-size: 0.85rem; }
+    .btn-panic {
+      background: linear-gradient(135deg, #b91c1c, #ef4444);
+      box-shadow: 0 0 20px rgba(239,68,68,0.4);
+      animation: pulsePanic 1.5s infinite;
+      font-size: 1rem;
+      padding: 12px 28px;
+    }
+    @keyframes pulsePanic {
+      0%, 100% { box-shadow: 0 0 15px rgba(239,68,68,0.4); }
+      50% { box-shadow: 0 0 30px rgba(239,68,68,0.7); }
+    }
     .container { max-width: 1100px; margin: 0 auto; padding: 32px 20px 60px; }
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
     @media(max-width: 800px) { .grid { grid-template-columns: 1fr; } }
@@ -105,7 +122,7 @@
     }
     .btn-icon:hover { background: rgba(229,57,53,0.2); color: var(--red); }
     .empty { text-align: center; color: var(--muted); padding: 30px; }
-    #loginScreen {
+    #loginScreen, #forcePwScreen {
       min-height: 100vh;
       display: flex;
       align-items: center;
@@ -118,13 +135,14 @@
       border-radius: 20px;
       padding: 40px 32px;
       width: 100%;
-      max-width: 380px;
+      max-width: 400px;
       text-align: center;
     }
     .login-box h1 { margin-bottom: 8px; }
     .login-box p { color: var(--muted); margin-bottom: 24px; font-size: 0.9rem; }
     .error { color: #f87171; font-size: 0.85rem; margin-top: 12px; display: none; }
     #app { display: none; }
+    #forcePwScreen { display: none; }
     .toast {
       position: fixed; bottom: 24px; left: 50%;
       transform: translateX(-50%) translateY(80px);
@@ -133,6 +151,23 @@
       opacity: 0; transition: 0.3s; z-index: 999;
     }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+    .tab {
+      padding: 8px 16px; border-radius: 10px; border: 1px solid var(--border);
+      background: transparent; color: var(--muted); cursor: pointer; font-weight: 500; font-size: 0.88rem;
+    }
+    .tab.active { background: rgba(229,57,53,0.15); border-color: rgba(229,57,53,0.4); color: var(--red); }
+    .hidden { display: none !important; }
+    .panic-alert {
+      background: rgba(239,68,68,0.15);
+      border: 2px solid #ef4444;
+      border-radius: 14px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      display: none;
+      animation: pulsePanic 1.2s infinite;
+    }
+    .panic-alert.show { display: block; }
   </style>
 </head>
 <body>
@@ -141,11 +176,24 @@
 <div id="loginScreen">
   <div class="login-box">
     <h1>🏔️ Staff Center</h1>
-    <p>AlpenSMP · Nur für Teammitglieder</p>
-    <input type="password" id="pwInput" placeholder="Team-Passwort" style="text-align:center;">
+    <p>AlpenSMP · Team-Login</p>
+    <input type="text" id="loginUser" placeholder="Benutzername" style="text-align:center;">
+    <input type="password" id="loginPass" placeholder="Passwort" style="text-align:center;">
     <button class="btn" style="width:100%;margin-top:8px;" onclick="doLogin()">Anmelden</button>
     <button class="btn btn-ghost" style="width:100%;margin-top:10px;" onclick="location.href='/'">← Zurück</button>
-    <p class="error" id="loginError">Falsches Passwort</p>
+    <p class="error" id="loginError">Falsche Zugangsdaten</p>
+  </div>
+</div>
+
+<!-- ERSTES PASSWORT SETZEN -->
+<div id="forcePwScreen">
+  <div class="login-box">
+    <h1>🔑 Neues Passwort</h1>
+    <p>Beim ersten Login musst du dir ein eigenes Passwort setzen.</p>
+    <input type="password" id="newPw1" placeholder="Neues Passwort" style="text-align:center;">
+    <input type="password" id="newPw2" placeholder="Passwort wiederholen" style="text-align:center;">
+    <button class="btn" style="width:100%;margin-top:8px;" onclick="setOwnPassword()">Passwort speichern</button>
+    <p class="error" id="forcePwError">Passwörter stimmen nicht überein</p>
   </div>
 </div>
 
@@ -153,67 +201,113 @@
 <div id="app">
   <div class="navbar">
     <div class="brand">🏔️ ALPEN SMP <span>// Staff</span></div>
-    <div>
-      <span style="font-size:0.8rem;color:var(--muted);margin-right:12px;" id="statusText">Verbinde...</span>
-      <button class="btn btn-ghost" onclick="doLogout()">Abmelden</button>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <span class="user-info">Angemeldet als <strong id="currentUserName">–</strong></span>
+      <span style="font-size:0.8rem;color:var(--muted);" id="statusText">Verbinde...</span>
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()">Abmelden</button>
     </div>
   </div>
 
   <div class="container">
-    <div class="grid">
 
-      <!-- BANS -->
-      <div class="card">
-        <h2>⛔ Gebannte Spieler</h2>
-        <p class="desc">Alle Teamler sehen diese Liste live.</p>
-        <div class="form-row">
-          <input type="text" id="banName" placeholder="Spielername">
-          <input type="text" id="banReason" placeholder="Grund">
+    <!-- PANIK ALERT (nur für Owner/Admin sichtbar) -->
+    <div class="panic-alert" id="panicAlert">
+      <strong>🚨 PANIK-ALARM</strong>
+      <div id="panicText" style="margin-top:6px;font-size:0.95rem;"></div>
+      <button class="btn btn-sm" style="margin-top:10px;" onclick="clearPanic()">Alarm bestätigen / löschen</button>
+    </div>
+
+    <!-- PANIK BUTTON (für alle) -->
+    <div style="text-align:center;margin-bottom:28px;">
+      <button class="btn btn-panic" onclick="sendPanic()">🚨 PANIK – Brauche Hilfe / mehr Rechte</button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('moderation')">Moderation</button>
+      <button class="tab" id="usersTabBtn" onclick="showTab('users')" style="display:none;">User verwalten</button>
+    </div>
+
+    <!-- MODERATION TAB -->
+    <div id="tab-moderation">
+      <div class="grid">
+
+        <!-- BANS -->
+        <div class="card">
+          <h2>⛔ Bans</h2>
+          <p class="desc">Permanente oder längere Sperren</p>
+          <div class="form-row">
+            <input type="text" id="banName" placeholder="Spielername">
+            <input type="text" id="banReason" placeholder="Grund">
+          </div>
+          <input type="text" id="banDuration" placeholder="Dauer (z.B. Permanent, 7 Tage, 2 Stunden...)">
+          <button class="btn" style="width:100%;" onclick="addBan()">+ Ban eintragen</button>
+          <div class="list" id="banList"></div>
         </div>
-        <select id="banDuration">
-          <option>Permanent</option>
-          <option>30 Tage</option>
-          <option>14 Tage</option>
-          <option>7 Tage</option>
-          <option>1 Tag</option>
-        </select>
-        <button class="btn" style="width:100%;margin-top:8px;" onclick="addBan()">+ Ban eintragen</button>
-        <div class="list" id="banList"></div>
-      </div>
 
-      <!-- NOTIZEN -->
-      <div class="card">
-        <h2>📝 Team-Notizen</h2>
-        <p class="desc">Interne Notizen für das ganze Team.</p>
-        <textarea id="noteText" placeholder="Neue Notiz..."></textarea>
-        <button class="btn" style="width:100%;" onclick="addNote()">+ Notiz speichern</button>
-        <div class="list" id="noteList"></div>
-      </div>
-
-      <!-- WARNUNGEN -->
-      <div class="card" style="grid-column:1/-1;">
-        <h2>⚠️ Warnungen</h2>
-        <p class="desc">Verwarnungen, die noch kein Ban sind.</p>
-        <div class="form-row">
-          <input type="text" id="warnName" placeholder="Spielername">
-          <input type="text" id="warnReason" placeholder="Grund">
-          <button class="btn" onclick="addWarn()">+ Warnung</button>
+        <!-- KICKS -->
+        <div class="card">
+          <h2>👢 Kicks</h2>
+          <p class="desc">Kurze Rauswürfe</p>
+          <div class="form-row">
+            <input type="text" id="kickName" placeholder="Spielername">
+            <input type="text" id="kickReason" placeholder="Grund">
+          </div>
+          <input type="text" id="kickDuration" placeholder="Dauer (z.B. 10 Minuten, 1 Stunde...)">
+          <button class="btn" style="width:100%;" onclick="addKick()">+ Kick eintragen</button>
+          <div class="list" id="kickList"></div>
         </div>
-        <div class="list" id="warnList"></div>
-      </div>
 
+        <!-- WARNUNGEN -->
+        <div class="card">
+          <h2>⚠️ Warnungen</h2>
+          <p class="desc">Verwarnungen</p>
+          <div class="form-row">
+            <input type="text" id="warnName" placeholder="Spielername">
+            <input type="text" id="warnReason" placeholder="Grund">
+          </div>
+          <button class="btn" style="width:100%;" onclick="addWarn()">+ Warnung</button>
+          <div class="list" id="warnList"></div>
+        </div>
+
+        <!-- NOTIZEN -->
+        <div class="card">
+          <h2>📝 Team-Notizen</h2>
+          <p class="desc">Interne Notizen</p>
+          <textarea id="noteText" placeholder="Neue Notiz..."></textarea>
+          <button class="btn" style="width:100%;" onclick="addNote()">+ Notiz speichern</button>
+          <div class="list" id="noteList"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- USERS TAB (nur Owner) -->
+    <div id="tab-users" class="hidden">
+      <div class="card">
+        <h2>👥 Team-Accounts verwalten</h2>
+        <p class="desc">Nur Owner kann Accounts anlegen und löschen.</p>
+        <div class="form-row">
+          <input type="text" id="newUserName" placeholder="Benutzername">
+          <input type="text" id="newUserTempPw" placeholder="Temporäres Passwort">
+          <select id="newUserRole">
+            <option value="mod">Moderator / Supporter</option>
+            <option value="admin">Admin</option>
+          </select>
+          <button class="btn" onclick="createUser()">+ Account anlegen</button>
+        </div>
+        <div class="list" id="userList" style="margin-top:20px;"></div>
+      </div>
     </div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
-<!-- Firebase SDK (Compat-Version) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
 <script>
-  // ========== DEINE FIREBASE CONFIG ==========
   const firebaseConfig = {
     apiKey: "AIzaSyBugFF4T6y_XEhCYde99bwpSyYZOuKbJHc",
     authDomain: "alpensmp-ad844.firebaseapp.com",
@@ -224,54 +318,129 @@
     appId: "1:1089764768356:web:67ab90395c8460cb4c3d71",
     measurementId: "G-M170GKH3LX"
   };
-  // ==========================================
 
-  const TEAM_PASSWORD = "alpen2026"; // ← hier euer Team-Passwort ändern!
+  const OWNER_USER = "owner";
+  const OWNER_PASS = "alpen2026";
 
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
-  // Login
+  let currentUser = null;
+
+  // ---------- LOGIN ----------
   function doLogin() {
-    const pw = document.getElementById("pwInput").value.trim();
-    if (pw === TEAM_PASSWORD) {
-      sessionStorage.setItem("alpensmp_staff", "1");
-      showApp();
+    const user = document.getElementById("loginUser").value.trim().toLowerCase();
+    const pass = document.getElementById("loginPass").value;
+    if (!user || !pass) return showLoginError("Bitte alles ausfüllen");
+
+    if (user === OWNER_USER && pass === OWNER_PASS) {
+      currentUser = { username: OWNER_USER, role: "owner", mustChangePw: false };
+      afterLogin();
+      return;
+    }
+
+    db.ref("staffUsers/" + user).once("value").then(snap => {
+      const data = snap.val();
+      if (!data || data.password !== pass) return showLoginError("Falsche Zugangsdaten");
+      currentUser = { username: user, role: data.role || "mod", mustChangePw: data.mustChangePw === true };
+      afterLogin();
+    }).catch(() => showLoginError("Verbindungsfehler"));
+  }
+
+  function showLoginError(msg) {
+    const el = document.getElementById("loginError");
+    el.textContent = msg;
+    el.style.display = "block";
+  }
+
+  function afterLogin() {
+    sessionStorage.setItem("alpensmp_staff_user", JSON.stringify(currentUser));
+    document.getElementById("loginScreen").style.display = "none";
+    if (currentUser.mustChangePw) {
+      document.getElementById("forcePwScreen").style.display = "flex";
     } else {
-      document.getElementById("loginError").style.display = "block";
+      showApp();
     }
   }
+
+  function setOwnPassword() {
+    const p1 = document.getElementById("newPw1").value;
+    const p2 = document.getElementById("newPw2").value;
+    if (p1.length < 4) {
+      document.getElementById("forcePwError").textContent = "Mindestens 4 Zeichen";
+      document.getElementById("forcePwError").style.display = "block";
+      return;
+    }
+    if (p1 !== p2) {
+      document.getElementById("forcePwError").textContent = "Passwörter stimmen nicht überein";
+      document.getElementById("forcePwError").style.display = "block";
+      return;
+    }
+    db.ref("staffUsers/" + currentUser.username).update({ password: p1, mustChangePw: false }).then(() => {
+      currentUser.mustChangePw = false;
+      sessionStorage.setItem("alpensmp_staff_user", JSON.stringify(currentUser));
+      document.getElementById("forcePwScreen").style.display = "none";
+      showApp();
+      toast("Passwort gespeichert ✓");
+    });
+  }
+
   function doLogout() {
-    sessionStorage.removeItem("alpensmp_staff");
+    sessionStorage.removeItem("alpensmp_staff_user");
     location.reload();
   }
+
   function showApp() {
-    document.getElementById("loginScreen").style.display = "none";
     document.getElementById("app").style.display = "block";
+    document.getElementById("currentUserName").textContent = currentUser.username + " (" + currentUser.role + ")";
+    if (currentUser.role === "owner") {
+      document.getElementById("usersTabBtn").style.display = "inline-block";
+    }
     startListeners();
   }
-  if (sessionStorage.getItem("alpensmp_staff") === "1") showApp();
 
-  document.getElementById("pwInput").addEventListener("keydown", e => {
-    if (e.key === "Enter") doLogin();
-  });
+  const saved = sessionStorage.getItem("alpensmp_staff_user");
+  if (saved) {
+    try {
+      currentUser = JSON.parse(saved);
+      document.getElementById("loginScreen").style.display = "none";
+      if (currentUser.mustChangePw) document.getElementById("forcePwScreen").style.display = "flex";
+      else showApp();
+    } catch(e) {}
+  }
 
-  // Live-Daten
+  document.getElementById("loginPass").addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
+
+  // ---------- TABS ----------
+  function showTab(name) {
+    document.getElementById("tab-moderation").classList.toggle("hidden", name !== "moderation");
+    document.getElementById("tab-users").classList.toggle("hidden", name !== "users");
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    event.target.classList.add("active");
+    if (name === "users") loadUsers();
+  }
+
+  // ---------- LIVE ----------
   function startListeners() {
     document.getElementById("statusText").textContent = "● Live verbunden";
     document.getElementById("statusText").style.color = "var(--ok)";
 
-    db.ref("bans").on("value", snap => {
-      const data = snap.val() || {};
-      renderList("banList", Object.entries(data).reverse(), "ban");
-    });
-    db.ref("notes").on("value", snap => {
-      const data = snap.val() || {};
-      renderList("noteList", Object.entries(data).reverse(), "note");
-    });
-    db.ref("warns").on("value", snap => {
-      const data = snap.val() || {};
-      renderList("warnList", Object.entries(data).reverse(), "warn");
+    db.ref("bans").on("value", snap => renderList("banList", Object.entries(snap.val() || {}).reverse(), "ban"));
+    db.ref("kicks").on("value", snap => renderList("kickList", Object.entries(snap.val() || {}).reverse(), "kick"));
+    db.ref("warns").on("value", snap => renderList("warnList", Object.entries(snap.val() || {}).reverse(), "warn"));
+    db.ref("notes").on("value", snap => renderList("noteList", Object.entries(snap.val() || {}).reverse(), "note"));
+
+    // Panic live
+    db.ref("panic").on("value", snap => {
+      const data = snap.val();
+      const alertBox = document.getElementById("panicAlert");
+      if (data && (currentUser.role === "owner" || currentUser.role === "admin")) {
+        document.getElementById("panicText").innerHTML =
+          `<strong>${esc(data.by)}</strong> braucht Hilfe!<br>${esc(data.msg || "")}<br><small>${formatDate(data.ts)}</small>`;
+        alertBox.classList.add("show");
+      } else {
+        alertBox.classList.remove("show");
+      }
     });
   }
 
@@ -282,65 +451,60 @@
       return;
     }
     el.innerHTML = entries.map(([key, item]) => {
-      if (type === "ban") {
-        return `<div class="item">
-          <div>
-            <div class="name">${esc(item.name)}</div>
-            <div>${esc(item.reason)} · <strong>${esc(item.duration)}</strong></div>
-            <div class="meta">${formatDate(item.ts)}</div>
-          </div>
-          <button class="btn-icon" onclick="removeItem('bans','${key}')">✕</button>
-        </div>`;
-      }
-      if (type === "note") {
-        return `<div class="item">
-          <div>
-            <div>${esc(item.text)}</div>
-            <div class="meta">${formatDate(item.ts)}</div>
-          </div>
-          <button class="btn-icon" onclick="removeItem('notes','${key}')">✕</button>
-        </div>`;
-      }
-      if (type === "warn") {
-        return `<div class="item">
-          <div>
-            <div class="name">${esc(item.name)}</div>
-            <div>${esc(item.reason)}</div>
-            <div class="meta">${formatDate(item.ts)}</div>
-          </div>
-          <button class="btn-icon" onclick="removeItem('warns','${key}')">✕</button>
-        </div>`;
-      }
+      const by = item.by ? ` · von ${esc(item.by)}` : "";
+      const duration = item.duration ? ` · <strong>${esc(item.duration)}</strong>` : "";
+      return `<div class="item">
+        <div>
+          <div class="name">${esc(item.name || "")}</div>
+          <div>${esc(item.reason || item.text || "")}${duration}</div>
+          <div class="meta">${formatDate(item.ts)}${by}</div>
+        </div>
+        <button class="btn-icon" onclick="removeItem('${type === "kick" ? "kicks" : type === "ban" ? "bans" : type === "warn" ? "warns" : "notes"}','${key}')">✕</button>
+      </div>`;
     }).join("");
   }
 
+  // ---------- ACTIONS ----------
   function addBan() {
     const name = document.getElementById("banName").value.trim();
     const reason = document.getElementById("banReason").value.trim() || "–";
-    const duration = document.getElementById("banDuration").value;
+    const duration = document.getElementById("banDuration").value.trim() || "Permanent";
     if (!name) return toast("Name fehlt");
-    db.ref("bans").push({ name, reason, duration, ts: Date.now() });
+    db.ref("bans").push({ name, reason, duration, by: currentUser.username, ts: Date.now() });
     document.getElementById("banName").value = "";
     document.getElementById("banReason").value = "";
+    document.getElementById("banDuration").value = "";
     toast("Ban eingetragen ✓");
   }
 
-  function addNote() {
-    const text = document.getElementById("noteText").value.trim();
-    if (!text) return toast("Notiz leer");
-    db.ref("notes").push({ text, ts: Date.now() });
-    document.getElementById("noteText").value = "";
-    toast("Notiz gespeichert ✓");
+  function addKick() {
+    const name = document.getElementById("kickName").value.trim();
+    const reason = document.getElementById("kickReason").value.trim() || "–";
+    const duration = document.getElementById("kickDuration").value.trim() || "–";
+    if (!name) return toast("Name fehlt");
+    db.ref("kicks").push({ name, reason, duration, by: currentUser.username, ts: Date.now() });
+    document.getElementById("kickName").value = "";
+    document.getElementById("kickReason").value = "";
+    document.getElementById("kickDuration").value = "";
+    toast("Kick eingetragen ✓");
   }
 
   function addWarn() {
     const name = document.getElementById("warnName").value.trim();
     const reason = document.getElementById("warnReason").value.trim() || "–";
     if (!name) return toast("Name fehlt");
-    db.ref("warns").push({ name, reason, ts: Date.now() });
+    db.ref("warns").push({ name, reason, by: currentUser.username, ts: Date.now() });
     document.getElementById("warnName").value = "";
     document.getElementById("warnReason").value = "";
     toast("Warnung eingetragen ✓");
+  }
+
+  function addNote() {
+    const text = document.getElementById("noteText").value.trim();
+    if (!text) return toast("Notiz leer");
+    db.ref("notes").push({ text, by: currentUser.username, ts: Date.now() });
+    document.getElementById("noteText").value = "";
+    toast("Notiz gespeichert ✓");
   }
 
   function removeItem(path, key) {
@@ -349,12 +513,84 @@
     toast("Gelöscht");
   }
 
+  // ---------- PANIK ----------
+  function sendPanic() {
+    const msg = prompt("Kurze Nachricht an Owner/Admins (optional):") || "Brauche Hilfe / mehr Rechte";
+    db.ref("panic").set({
+      by: currentUser.username,
+      msg: msg,
+      ts: Date.now()
+    });
+    toast("🚨 PANIK gesendet!");
+  }
+
+  function clearPanic() {
+    db.ref("panic").remove();
+    toast("Alarm gelöscht");
+  }
+
+  // ---------- USER MANAGEMENT ----------
+  function createUser() {
+    const username = document.getElementById("newUserName").value.trim().toLowerCase();
+    const tempPw = document.getElementById("newUserTempPw").value;
+    const role = document.getElementById("newUserRole").value;
+    if (!username || !tempPw) return toast("Name und Passwort nötig");
+    if (username === OWNER_USER) return toast("Dieser Name ist reserviert");
+
+    db.ref("staffUsers/" + username).once("value").then(snap => {
+      if (snap.exists()) return toast("Benutzer existiert bereits");
+      db.ref("staffUsers/" + username).set({
+        password: tempPw,
+        role: role,
+        mustChangePw: true,
+        createdAt: Date.now(),
+        createdBy: currentUser.username
+      }).then(() => {
+        document.getElementById("newUserName").value = "";
+        document.getElementById("newUserTempPw").value = "";
+        toast("Account angelegt ✓");
+        loadUsers();
+      });
+    });
+  }
+
+  function loadUsers() {
+    db.ref("staffUsers").once("value").then(snap => {
+      const data = snap.val() || {};
+      const el = document.getElementById("userList");
+      const entries = Object.entries(data);
+      if (!entries.length) {
+        el.innerHTML = '<div class="empty">Noch keine Team-Accounts</div>';
+        return;
+      }
+      el.innerHTML = entries.map(([uname, u]) => `
+        <div class="item">
+          <div>
+            <div class="name">${esc(uname)} <span style="color:var(--muted);font-weight:400;">(${esc(u.role)})</span></div>
+            <div class="meta">${u.mustChangePw ? "⚠️ Muss Passwort ändern · " : ""}erstellt ${formatDate(u.createdAt || 0)}</div>
+          </div>
+          <button class="btn-icon" onclick="kickUser('${uname}')">✕</button>
+        </div>
+      `).join("");
+    });
+  }
+
+  function kickUser(username) {
+    if (!confirm(`Account "${username}" wirklich löschen?`)) return;
+    db.ref("staffUsers/" + username).remove().then(() => {
+      toast("User gekickt");
+      loadUsers();
+    });
+  }
+
+  // ---------- HELPERS ----------
   function esc(s) {
     const d = document.createElement("div");
-    d.textContent = s;
+    d.textContent = s || "";
     return d.innerHTML;
   }
   function formatDate(ts) {
+    if (!ts) return "–";
     return new Date(ts).toLocaleString("de-DE", {
       day: "2-digit", month: "2-digit", year: "2-digit",
       hour: "2-digit", minute: "2-digit"
