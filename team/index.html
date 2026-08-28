@@ -158,16 +158,14 @@
     }
     .tab.active { background: rgba(229,57,53,0.15); border-color: rgba(229,57,53,0.4); color: var(--red); }
     .hidden { display: none !important; }
-    .panic-alert {
-      background: rgba(239,68,68,0.15);
-      border: 2px solid #ef4444;
-      border-radius: 14px;
-      padding: 16px 20px;
-      margin-bottom: 24px;
-      display: none;
-      animation: pulsePanic 1.2s infinite;
+    .panic-item {
+      background: rgba(239,68,68,0.12);
+      border: 1px solid rgba(239,68,68,0.4);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
     }
-    .panic-alert.show { display: block; }
+    .online-dot { color: var(--ok); }
   </style>
 </head>
 <body>
@@ -203,6 +201,7 @@
     <div class="brand">🏔️ ALPEN SMP <span>// Staff</span></div>
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
       <span class="user-info">Angemeldet als <strong id="currentUserName">–</strong></span>
+      <span style="font-size:0.8rem;" id="onlineUsers" class="online-dot">Online: –</span>
       <span style="font-size:0.8rem;color:var(--muted);" id="statusText">Verbinde...</span>
       <button class="btn btn-ghost btn-sm" onclick="doLogout()">Abmelden</button>
     </div>
@@ -210,50 +209,44 @@
 
   <div class="container">
 
-    <!-- PANIK ALERT (nur für Owner/Admin sichtbar) -->
-    <div class="panic-alert" id="panicAlert">
-      <strong>🚨 PANIK-ALARM</strong>
-      <div id="panicText" style="margin-top:6px;font-size:0.95rem;"></div>
-      <button class="btn btn-sm" style="margin-top:10px;" onclick="clearPanic()">Alarm bestätigen / löschen</button>
-    </div>
-
-    <!-- PANIK BUTTON (für alle) -->
-    <div style="text-align:center;margin-bottom:28px;">
-      <button class="btn btn-panic" onclick="sendPanic()">🚨 PANIK – Brauche Hilfe / mehr Rechte</button>
+    <!-- PANIK BUTTON -->
+    <div style="text-align:center;margin-bottom:24px;">
+      <button class="btn btn-panic" onclick="sendPanic()">🚨 HILFE – Brauche Unterstützung / mehr Rechte</button>
     </div>
 
     <!-- Tabs -->
     <div class="tabs">
       <button class="tab active" onclick="showTab('moderation')">Moderation</button>
+      <button class="tab" onclick="showTab('help')">Hilfe-Anfragen</button>
+      <button class="tab" onclick="showTab('commands')">Commands</button>
       <button class="tab" id="usersTabBtn" onclick="showTab('users')" style="display:none;">User verwalten</button>
     </div>
 
-    <!-- MODERATION TAB -->
+    <!-- ========== MODERATION ========== -->
     <div id="tab-moderation">
       <div class="grid">
-
-        <!-- BANS -->
+        <!-- BANS (länger) -->
         <div class="card">
-          <h2>⛔ Bans</h2>
-          <p class="desc">Permanente oder längere Sperren</p>
+          <h2>⛔ Bans (länger)</h2>
+          <p class="desc">Längere oder permanente Sperren</p>
           <div class="form-row">
             <input type="text" id="banName" placeholder="Spielername">
             <input type="text" id="banReason" placeholder="Grund">
           </div>
-          <input type="text" id="banDuration" placeholder="Dauer (z.B. Permanent, 7 Tage, 2 Stunden...)">
+          <input type="text" id="banDuration" placeholder="Dauer (z.B. Permanent, 7 Tage, 30 Tage...)">
           <button class="btn" style="width:100%;" onclick="addBan()">+ Ban eintragen</button>
           <div class="list" id="banList"></div>
         </div>
 
-        <!-- KICKS -->
+        <!-- KICKS (kurz) -->
         <div class="card">
-          <h2>👢 Kicks</h2>
+          <h2>👢 Kicks (kurz)</h2>
           <p class="desc">Kurze Rauswürfe</p>
           <div class="form-row">
             <input type="text" id="kickName" placeholder="Spielername">
             <input type="text" id="kickReason" placeholder="Grund">
           </div>
-          <input type="text" id="kickDuration" placeholder="Dauer (z.B. 10 Minuten, 1 Stunde...)">
+          <input type="text" id="kickDuration" placeholder="Dauer (z.B. 5 Minuten, 15 Minuten...)">
           <button class="btn" style="width:100%;" onclick="addKick()">+ Kick eintragen</button>
           <div class="list" id="kickList"></div>
         </div>
@@ -278,15 +271,41 @@
           <button class="btn" style="width:100%;" onclick="addNote()">+ Notiz speichern</button>
           <div class="list" id="noteList"></div>
         </div>
-
       </div>
     </div>
 
-    <!-- USERS TAB (nur Owner) -->
+    <!-- ========== HILFE-ANFRAGEN ========== -->
+    <div id="tab-help" class="hidden">
+      <div class="card">
+        <h2>🚨 Hilfe-Anfragen</h2>
+        <p class="desc">Hier erscheinen alle Hilfe-Rufe. Du kannst antworten. Alte Einträge bleiben erhalten.</p>
+        <div id="helpList" class="list" style="max-height:500px;"></div>
+      </div>
+    </div>
+
+    <!-- ========== COMMANDS ========== -->
+    <div id="tab-commands" class="hidden">
+      <div class="card">
+        <h2>⌨️ Commands</h2>
+        <p class="desc">Wichtige Server-Commands. Owner kann sie bearbeiten, Team sieht sie.</p>
+
+        <div id="commandsOwnerBox" style="display:none;margin-bottom:20px;">
+          <div class="form-row">
+            <input type="text" id="cmdName" placeholder="Command (z.B. /kick)">
+            <input type="text" id="cmdDesc" placeholder="Beschreibung / Beispiel">
+          </div>
+          <button class="btn" onclick="addCommand()">+ Command speichern</button>
+        </div>
+
+        <div class="list" id="commandsList"></div>
+      </div>
+    </div>
+
+    <!-- ========== USER VERWALTEN (nur Owner) ========== -->
     <div id="tab-users" class="hidden">
       <div class="card">
         <h2>👥 Team-Accounts verwalten</h2>
-        <p class="desc">Nur Owner kann Accounts anlegen und löschen.</p>
+        <p class="desc">Nur Owner. Passwörter sind hier sichtbar (falls jemand seines vergisst).</p>
         <div class="form-row">
           <input type="text" id="newUserName" placeholder="Benutzername">
           <input type="text" id="newUserTempPw" placeholder="Temporäres Passwort">
@@ -299,6 +318,7 @@
         <div class="list" id="userList" style="margin-top:20px;"></div>
       </div>
     </div>
+
   </div>
 </div>
 
@@ -324,7 +344,6 @@
 
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
-
   let currentUser = null;
 
   // ---------- LOGIN ----------
@@ -376,7 +395,10 @@
       document.getElementById("forcePwError").style.display = "block";
       return;
     }
-    db.ref("staffUsers/" + currentUser.username).update({ password: p1, mustChangePw: false }).then(() => {
+    db.ref("staffUsers/" + currentUser.username).update({
+      password: p1,
+      mustChangePw: false
+    }).then(() => {
       currentUser.mustChangePw = false;
       sessionStorage.setItem("alpensmp_staff_user", JSON.stringify(currentUser));
       document.getElementById("forcePwScreen").style.display = "none";
@@ -386,6 +408,9 @@
   }
 
   function doLogout() {
+    if (currentUser) {
+      db.ref("presence/" + currentUser.username).remove();
+    }
     sessionStorage.removeItem("alpensmp_staff_user");
     location.reload();
   }
@@ -395,8 +420,10 @@
     document.getElementById("currentUserName").textContent = currentUser.username + " (" + currentUser.role + ")";
     if (currentUser.role === "owner") {
       document.getElementById("usersTabBtn").style.display = "inline-block";
+      document.getElementById("commandsOwnerBox").style.display = "block";
     }
     startListeners();
+    setOnlinePresence();
   }
 
   const saved = sessionStorage.getItem("alpensmp_staff_user");
@@ -409,18 +436,36 @@
     } catch(e) {}
   }
 
-  document.getElementById("loginPass").addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
+  document.getElementById("loginPass").addEventListener("keydown", e => {
+    if (e.key === "Enter") doLogin();
+  });
 
   // ---------- TABS ----------
   function showTab(name) {
-    document.getElementById("tab-moderation").classList.toggle("hidden", name !== "moderation");
-    document.getElementById("tab-users").classList.toggle("hidden", name !== "users");
+    ["moderation","help","commands","users"].forEach(t => {
+      document.getElementById("tab-" + t).classList.toggle("hidden", t !== name);
+    });
     document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
     event.target.classList.add("active");
     if (name === "users") loadUsers();
+    if (name === "help") loadHelp();
+    if (name === "commands") loadCommands();
   }
 
-  // ---------- LIVE ----------
+  // ---------- PRESENCE (Online) ----------
+  function setOnlinePresence() {
+    if (!currentUser) return;
+    const ref = db.ref("presence/" + currentUser.username);
+    ref.set({
+      username: currentUser.username,
+      role: currentUser.role,
+      online: true,
+      lastSeen: firebase.database.ServerValue.TIMESTAMP
+    });
+    ref.onDisconnect().remove();
+  }
+
+  // ---------- LIVE LISTENER ----------
   function startListeners() {
     document.getElementById("statusText").textContent = "● Live verbunden";
     document.getElementById("statusText").style.color = "var(--ok)";
@@ -429,18 +474,16 @@
     db.ref("kicks").on("value", snap => renderList("kickList", Object.entries(snap.val() || {}).reverse(), "kick"));
     db.ref("warns").on("value", snap => renderList("warnList", Object.entries(snap.val() || {}).reverse(), "warn"));
     db.ref("notes").on("value", snap => renderList("noteList", Object.entries(snap.val() || {}).reverse(), "note"));
+    db.ref("helpRequests").on("value", () => { if (!document.getElementById("tab-help").classList.contains("hidden")) loadHelp(); });
+    db.ref("commands").on("value", () => { if (!document.getElementById("tab-commands").classList.contains("hidden")) loadCommands(); });
 
-    // Panic live
-    db.ref("panic").on("value", snap => {
-      const data = snap.val();
-      const alertBox = document.getElementById("panicAlert");
-      if (data && (currentUser.role === "owner" || currentUser.role === "admin")) {
-        document.getElementById("panicText").innerHTML =
-          `<strong>${esc(data.by)}</strong> braucht Hilfe!<br>${esc(data.msg || "")}<br><small>${formatDate(data.ts)}</small>`;
-        alertBox.classList.add("show");
-      } else {
-        alertBox.classList.remove("show");
-      }
+    // Online Users
+    db.ref("presence").on("value", snap => {
+      const data = snap.val() || {};
+      const users = Object.values(data).filter(u => u.online);
+      const el = document.getElementById("onlineUsers");
+      if (!users.length) el.textContent = "Online: niemand";
+      else el.textContent = "Online: " + users.map(u => u.username).join(", ");
     });
   }
 
@@ -453,13 +496,14 @@
     el.innerHTML = entries.map(([key, item]) => {
       const by = item.by ? ` · von ${esc(item.by)}` : "";
       const duration = item.duration ? ` · <strong>${esc(item.duration)}</strong>` : "";
+      const path = type === "kick" ? "kicks" : type === "ban" ? "bans" : type === "warn" ? "warns" : "notes";
       return `<div class="item">
         <div>
           <div class="name">${esc(item.name || "")}</div>
           <div>${esc(item.reason || item.text || "")}${duration}</div>
           <div class="meta">${formatDate(item.ts)}${by}</div>
         </div>
-        <button class="btn-icon" onclick="removeItem('${type === "kick" ? "kicks" : type === "ban" ? "bans" : type === "warn" ? "warns" : "notes"}','${key}')">✕</button>
+        <button class="btn-icon" onclick="removeItem('${path}','${key}')">✕</button>
       </div>`;
     }).join("");
   }
@@ -513,20 +557,103 @@
     toast("Gelöscht");
   }
 
-  // ---------- PANIK ----------
+  // ---------- HILFE-ANFRAGEN (nicht überschreibend) ----------
   function sendPanic() {
-    const msg = prompt("Kurze Nachricht an Owner/Admins (optional):") || "Brauche Hilfe / mehr Rechte";
-    db.ref("panic").set({
+    const msg = prompt("Was brauchst du? (kurz beschreiben)") || "Brauche Hilfe / mehr Rechte";
+    db.ref("helpRequests").push({
       by: currentUser.username,
       msg: msg,
-      ts: Date.now()
+      ts: Date.now(),
+      replies: {}
     });
-    toast("🚨 PANIK gesendet!");
+    toast("🚨 Hilfe-Anfrage gesendet!");
   }
 
-  function clearPanic() {
-    db.ref("panic").remove();
-    toast("Alarm gelöscht");
+  function loadHelp() {
+    db.ref("helpRequests").once("value").then(snap => {
+      const data = snap.val() || {};
+      const entries = Object.entries(data).reverse();
+      const el = document.getElementById("helpList");
+      if (!entries.length) {
+        el.innerHTML = '<div class="empty">Noch keine Hilfe-Anfragen</div>';
+        return;
+      }
+      el.innerHTML = entries.map(([key, item]) => {
+        let repliesHtml = "";
+        if (item.replies) {
+          repliesHtml = Object.values(item.replies).map(r =>
+            `<div style="margin-top:8px;padding:8px;background:rgba(0,0,0,0.3);border-radius:8px;font-size:0.88rem;">
+              <strong>${esc(r.by)}</strong>: ${esc(r.text)} <small style="color:var(--muted)">(${formatDate(r.ts)})</small>
+            </div>`
+          ).join("");
+        }
+        const canReply = currentUser.role === "owner" || currentUser.role === "admin";
+        return `<div class="panic-item">
+          <div><strong>🚨 ${esc(item.by)}</strong> braucht Hilfe</div>
+          <div style="margin:6px 0;">${esc(item.msg)}</div>
+          <div class="meta">${formatDate(item.ts)}</div>
+          ${repliesHtml}
+          ${canReply ? `<div style="margin-top:10px;display:flex;gap:8px;">
+            <input type="text" id="reply-${key}" placeholder="Antwort schreiben..." style="margin:0;">
+            <button class="btn btn-sm" onclick="replyHelp('${key}')">Antworten</button>
+            <button class="btn btn-ghost btn-sm" onclick="removeItem('helpRequests','${key}')">Löschen</button>
+          </div>` : ""}
+        </div>`;
+      }).join("");
+    });
+  }
+
+  function replyHelp(key) {
+    const input = document.getElementById("reply-" + key);
+    const text = input.value.trim();
+    if (!text) return toast("Antwort leer");
+    db.ref("helpRequests/" + key + "/replies").push({
+      by: currentUser.username,
+      text: text,
+      ts: Date.now()
+    }).then(() => {
+      input.value = "";
+      loadHelp();
+      toast("Antwort gesendet ✓");
+    });
+  }
+
+  // ---------- COMMANDS ----------
+  function addCommand() {
+    const name = document.getElementById("cmdName").value.trim();
+    const desc = document.getElementById("cmdDesc").value.trim();
+    if (!name) return toast("Command fehlt");
+    db.ref("commands").push({
+      name, desc: desc || "–",
+      by: currentUser.username,
+      ts: Date.now()
+    });
+    document.getElementById("cmdName").value = "";
+    document.getElementById("cmdDesc").value = "";
+    toast("Command gespeichert ✓");
+    loadCommands();
+  }
+
+  function loadCommands() {
+    db.ref("commands").once("value").then(snap => {
+      const data = snap.val() || {};
+      const entries = Object.entries(data).reverse();
+      const el = document.getElementById("commandsList");
+      if (!entries.length) {
+        el.innerHTML = '<div class="empty">Noch keine Commands hinterlegt</div>';
+        return;
+      }
+      el.innerHTML = entries.map(([key, item]) => `
+        <div class="item">
+          <div>
+            <div class="name">${esc(item.name)}</div>
+            <div>${esc(item.desc)}</div>
+            <div class="meta">${formatDate(item.ts)} · von ${esc(item.by || "")}</div>
+          </div>
+          ${currentUser.role === "owner" ? `<button class="btn-icon" onclick="removeItem('commands','${key}')">✕</button>` : ""}
+        </div>
+      `).join("");
+    });
   }
 
   // ---------- USER MANAGEMENT ----------
@@ -567,7 +694,11 @@
         <div class="item">
           <div>
             <div class="name">${esc(uname)} <span style="color:var(--muted);font-weight:400;">(${esc(u.role)})</span></div>
-            <div class="meta">${u.mustChangePw ? "⚠️ Muss Passwort ändern · " : ""}erstellt ${formatDate(u.createdAt || 0)}</div>
+            <div class="meta">
+              Passwort: <strong style="color:var(--warn)">${esc(u.password || "–")}</strong>
+              ${u.mustChangePw ? " · ⚠️ Muss noch Passwort ändern" : ""}
+              · erstellt ${formatDate(u.createdAt || 0)}
+            </div>
           </div>
           <button class="btn-icon" onclick="kickUser('${uname}')">✕</button>
         </div>
