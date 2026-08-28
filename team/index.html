@@ -1,289 +1,131 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AlpenSMP – Staff Control Center</title>
-  <meta name="robots" content="noindex, nofollow">
-  <link rel="icon" type="image/png" href="../logo.png">
-  <style>
-    :root {
-      --bg: #0b0f19;
-      --card: rgba(15, 23, 42, 0.94);
-      --input: #1e293b;
-      --red: #e53935;
-      --red-hover: #c62828;
-      --text: #f8fafc;
-      --muted: #94a3b8;
-      --border: rgba(255,255,255,0.09);
-      --ok: #34d399;
-      --warn: #f59e0b;
-      --radius: 14px;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background: linear-gradient(rgba(11,15,25,0.88), rgba(11,15,25,0.96)),
-                  url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=1920') center/cover fixed;
-      color: var(--text);
-      min-height: 100vh;
-      font-size: 16px;
-    }
-    .navbar {
-      background: rgba(11,15,25,0.96);
-      backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--border);
-      padding: 14px 28px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-    .brand {
-      font-weight: 800;
-      font-size: 1.2rem;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .brand img {
-      width: 36px;
-      height: 36px;
-      border-radius: 9px;
-      object-fit: contain;
-    }
-    .brand span { color: var(--red); }
-    .user-info { font-size: 0.9rem; color: var(--muted); }
-    .user-info strong { color: var(--text); }
-    .btn {
-      background: var(--red);
-      color: white;
-      border: none;
-      padding: 11px 20px;
-      border-radius: 11px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.25s ease;
-      font-size: 0.95rem;
-    }
-    .btn:hover { background: var(--red-hover); transform: translateY(-1px); }
-    .btn:active { transform: scale(0.97); }
-    .btn-ghost {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--muted);
-    }
-    .btn-ghost:hover { background: rgba(255,255,255,0.06); color: white; }
-    .btn-sm { padding: 8px 14px; font-size: 0.88rem; }
-    .btn-panic {
-      background: linear-gradient(135deg, #b91c1c, #ef4444);
-      box-shadow: 0 0 24px rgba(239,68,68,0.45);
-      animation: pulsePanic 1.6s infinite;
-      font-size: 1.05rem;
-      padding: 14px 32px;
-    }
-    @keyframes pulsePanic {
-      0%, 100% { box-shadow: 0 0 16px rgba(239,68,68,0.4); }
-      50% { box-shadow: 0 0 32px rgba(239,68,68,0.75); }
-    }
-    .container { max-width: 1140px; margin: 0 auto; padding: 36px 24px 70px; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; }
-    @media(max-width: 860px) { .grid { grid-template-columns: 1fr; } }
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 26px;
-      backdrop-filter: blur(12px);
-      animation: fadeUp 0.45s ease both;
-    }
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(14px); }
-      to { opacity: 1; transform: none; }
-    }
-    .card h2 { font-size: 1.3rem; margin-bottom: 8px; }
-    .card .desc { color: var(--muted); font-size: 0.92rem; margin-bottom: 18px; }
-    input, textarea, select {
-      width: 100%;
-      padding: 12px 15px;
-      border-radius: 11px;
-      border: 1px solid var(--border);
-      background: var(--input);
-      color: var(--text);
-      margin-bottom: 11px;
-      outline: none;
-      font-size: 0.95rem;
-      transition: border-color 0.2s;
-    }
-    input:focus, textarea:focus, select:focus { border-color: var(--red); }
-    textarea { min-height: 90px; resize: vertical; }
-    .form-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
-    .form-row > * { flex: 1; min-width: 130px; }
-    .list { max-height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 11px; margin-top: 16px; }
-    .item {
-      background: rgba(0,0,0,0.28);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 15px 17px;
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      transition: border-color 0.2s;
-    }
-    .item:hover { border-color: rgba(229,57,53,0.35); }
-    .item .name { font-weight: 600; font-size: 1.02rem; }
-    .item .meta { font-size: 0.8rem; color: var(--muted); margin-top: 5px; }
-    .btn-icon {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--muted);
-      width: 34px; height: 34px;
-      border-radius: 9px;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-    .btn-icon:hover { background: rgba(229,57,53,0.2); color: var(--red); }
-    .empty { text-align: center; color: var(--muted); padding: 36px; }
-    #loginScreen, #forcePwScreen, #whatsNewScreen {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-    }
-    .login-box {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 22px;
-      padding: 44px 36px;
-      width: 100%;
-      max-width: 420px;
-      text-align: center;
-      animation: fadeUp 0.5s ease;
-    }
-    .login-box h1 { margin-bottom: 10px; font-size: 1.6rem; }
-    .login-box p { color: var(--muted); margin-bottom: 26px; font-size: 0.95rem; }
-    .error { color: #f87171; font-size: 0.88rem; margin-top: 14px; display: none; }
-    #app { display: none; }
-    #forcePwScreen, #whatsNewScreen { display: none; }
-    .toast {
-      position: fixed; bottom: 28px; left: 50%;
-      transform: translateX(-50%) translateY(90px);
-      background: #1e293b; border: 1px solid var(--border);
-      padding: 14px 24px; border-radius: 14px;
-      opacity: 0; transition: 0.35s; z-index: 999;
-      font-weight: 500;
-    }
-    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-    .tabs { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
-    .tab {
-      padding: 10px 18px; border-radius: 11px; border: 1px solid var(--border);
-      background: transparent; color: var(--muted); cursor: pointer;
-      font-weight: 500; font-size: 0.92rem; transition: 0.2s; position: relative;
-    }
-    .tab:hover { color: var(--text); }
-    .tab.active { background: rgba(229,57,53,0.15); border-color: rgba(229,57,53,0.45); color: var(--red); }
-    .badge {
-      position: absolute; top: -6px; right: -6px;
-      background: var(--red); color: white;
-      font-size: 0.7rem; font-weight: 700;
-      min-width: 18px; height: 18px; border-radius: 99px;
-      display: flex; align-items: center; justify-content: center;
-      padding: 0 5px;
-    }
-    .hidden { display: none !important; }
-    .panic-item {
-      background: rgba(239,68,68,0.12);
-      border: 1px solid rgba(239,68,68,0.4);
-      border-radius: 13px;
-      padding: 16px 18px;
-      margin-bottom: 12px;
-      animation: fadeUp 0.35s ease;
-    }
-    .online-dot { color: var(--ok); font-size: 0.88rem; }
-    .whats-new-list { text-align: left; margin: 20px 0; }
-    .whats-new-list li { margin-bottom: 10px; color: var(--text); line-height: 1.45; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AlpenSMP – Staff Control Center</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="../logo.png">
+<style>
+:root{--bg:#0b0f19;--card:rgba(15,23,42,.94);--input:#1e293b;--red:#e53935;--red-h:#c62828;--text:#f8fafc;--muted:#94a3b8;--border:rgba(255,255,255,.09);--ok:#34d399;--warn:#f59e0b;--r:14px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(rgba(11,15,25,.88),rgba(11,15,25,.96)),url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=1920') center/cover fixed;color:var(--text);min-height:100vh;font-size:16px}
+.navbar{background:rgba(11,15,25,.96);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100;flex-wrap:wrap;gap:12px}
+.brand{font-weight:800;font-size:1.2rem;display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;cursor:pointer}
+.brand img{width:36px;height:36px;border-radius:9px;object-fit:contain}
+.brand span{color:var(--red)}
+.user-info{font-size:.9rem;color:var(--muted)}.user-info strong{color:var(--text)}
+.btn{background:var(--red);color:#fff;border:none;padding:11px 20px;border-radius:11px;font-weight:600;cursor:pointer;transition:.25s;font-size:.95rem}
+.btn:hover{background:var(--red-h);transform:translateY(-1px)}.btn:active{transform:scale(.97)}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}.btn-ghost:hover{background:rgba(255,255,255,.06);color:#fff}
+.btn-sm{padding:8px 14px;font-size:.88rem}
+.btn-quick{padding:6px 12px;font-size:.8rem;margin:2px;background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--muted);border-radius:8px;cursor:pointer}
+.btn-quick:hover{border-color:var(--red);color:var(--red)}
+.btn-panic{background:linear-gradient(135deg,#b91c1c,#ef4444);box-shadow:0 0 24px rgba(239,68,68,.45);animation:pulse 1.6s infinite;font-size:1.05rem;padding:14px 32px}
+@keyframes pulse{0%,100%{box-shadow:0 0 16px rgba(239,68,68,.4)}50%{box-shadow:0 0 32px rgba(239,68,68,.75)}}
+.container{max-width:1140px;margin:0 auto;padding:36px 24px 70px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:26px}@media(max-width:860px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:26px;backdrop-filter:blur(12px);animation:fadeUp .45s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.card h2{font-size:1.3rem;margin-bottom:8px}.card .desc{color:var(--muted);font-size:.92rem;margin-bottom:18px}
+input,textarea,select{width:100%;padding:12px 15px;border-radius:11px;border:1px solid var(--border);background:var(--input);color:var(--text);margin-bottom:11px;outline:none;font-size:.95rem}
+input:focus,textarea:focus,select:focus{border-color:var(--red)}
+textarea{min-height:90px;resize:vertical}
+.form-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px}.form-row>*{flex:1;min-width:130px}
+.list{max-height:400px;overflow-y:auto;display:flex;flex-direction:column;gap:11px;margin-top:16px}
+.item{background:rgba(0,0,0,.28);border:1px solid var(--border);border-radius:12px;padding:15px 17px;display:flex;justify-content:space-between;gap:12px;transition:.2s}
+.item:hover{border-color:rgba(229,57,53,.35)}.item.expired{opacity:.55;border-color:rgba(255,255,255,.05)}
+.item .name{font-weight:600;font-size:1.02rem}.item .meta{font-size:.8rem;color:var(--muted);margin-top:5px}
+.countdown{color:var(--warn);font-weight:600;font-size:.88rem}
+.btn-icon{background:transparent;border:1px solid var(--border);color:var(--muted);width:34px;height:34px;border-radius:9px;cursor:pointer;transition:.2s}
+.btn-icon:hover{background:rgba(229,57,53,.2);color:var(--red)}
+.empty{text-align:center;color:var(--muted);padding:36px}
+#loginScreen,#forcePwScreen,#whatsNewScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.login-box{background:var(--card);border:1px solid var(--border);border-radius:22px;padding:44px 36px;width:100%;max-width:420px;text-align:center;animation:fadeUp .5s ease}
+.login-box h1{margin-bottom:10px;font-size:1.6rem}.login-box p{color:var(--muted);margin-bottom:26px;font-size:.95rem}
+.error{color:#f87171;font-size:.88rem;margin-top:14px;display:none}
+#app{display:none}#forcePwScreen,#whatsNewScreen{display:none}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(90px);background:#1e293b;border:1px solid var(--border);padding:14px 24px;border-radius:14px;opacity:0;transition:.35s;z-index:999;font-weight:500}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.tabs{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap}
+.tab{padding:10px 18px;border-radius:11px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-weight:500;font-size:.92rem;transition:.2s;position:relative}
+.tab:hover{color:var(--text)}.tab.active{background:rgba(229,57,53,.15);border-color:rgba(229,57,53,.45);color:var(--red)}
+.badge{position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;font-size:.7rem;font-weight:700;min-width:18px;height:18px;border-radius:99px;display:flex;align-items:center;justify-content:center;padding:0 5px}
+.hidden{display:none!important}
+.panic-item{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.4);border-radius:13px;padding:16px 18px;margin-bottom:12px;animation:fadeUp .35s ease}
+.online-dot{color:var(--ok);font-size:.88rem}
+.player-hint{font-size:.85rem;color:var(--warn);margin:-4px 0 12px;min-height:1.2em}
+.search{margin-bottom:12px}
+</style>
 </head>
 <body>
 
-<!-- LOGIN -->
 <div id="loginScreen">
   <div class="login-box">
-    <img src="../logo.png" alt="Logo" style="width:64px;height:64px;margin:0 auto 16px;border-radius:14px;">
+    <a href="https://alpensmp.net"><img src="../logo.png" alt="Logo" style="width:64px;height:64px;margin:0 auto 16px;border-radius:14px;display:block"></a>
     <h1>Staff Center</h1>
     <p>AlpenSMP · Team-Login</p>
-    <input type="text" id="loginUser" placeholder="Benutzername" style="text-align:center;">
-    <input type="password" id="loginPass" placeholder="Passwort" style="text-align:center;">
-    <button class="btn" style="width:100%;margin-top:8px;" onclick="doLogin()">Anmelden</button>
-    <button class="btn btn-ghost" style="width:100%;margin-top:12px;" onclick="location.href='/'">← Zurück</button>
+    <input type="text" id="loginUser" placeholder="Benutzername" style="text-align:center">
+    <input type="password" id="loginPass" placeholder="Passwort" style="text-align:center">
+    <button class="btn" style="width:100%;margin-top:8px" onclick="doLogin()">Anmelden</button>
+    <button class="btn btn-ghost" style="width:100%;margin-top:12px" onclick="location.href='https://alpensmp.net'">← Zurück</button>
     <p class="error" id="loginError">Falsche Zugangsdaten</p>
   </div>
 </div>
 
-<!-- ERSTES PASSWORT -->
 <div id="forcePwScreen">
   <div class="login-box">
     <h1>🔑 Neues Passwort</h1>
-    <p>Beim ersten Login musst du dir ein eigenes Passwort setzen.</p>
-    <input type="password" id="newPw1" placeholder="Neues Passwort" style="text-align:center;">
-    <input type="password" id="newPw2" placeholder="Passwort wiederholen" style="text-align:center;">
-    <button class="btn" style="width:100%;margin-top:8px;" onclick="setOwnPassword()">Passwort speichern</button>
-    <p class="error" id="forcePwError">Passwörter stimmen nicht überein</p>
+    <p>Beim ersten Login eigenes Passwort setzen.</p>
+    <input type="password" id="newPw1" placeholder="Neues Passwort" style="text-align:center">
+    <input type="password" id="newPw2" placeholder="Wiederholen" style="text-align:center">
+    <button class="btn" style="width:100%;margin-top:8px" onclick="setOwnPassword()">Speichern</button>
+    <p class="error" id="forcePwError"></p>
   </div>
 </div>
 
-<!-- WHAT'S NEW (einmalig) -->
 <div id="whatsNewScreen">
-  <div class="login-box" style="max-width:480px;text-align:left;">
-    <h1 style="text-align:center;">✨ Was ist neu?</h1>
-    <p style="text-align:center;">Diese Funktionen sind neu im Staff Center:</p>
-    <ul class="whats-new-list">
-      <li>🚨 Hilfe-Anfragen mit Antworten + roter Badge</li>
-      <li>👥 Rollen: Owner / Admin / Helper</li>
-      <li>⌨️ Commands-Liste (Owner kann bearbeiten)</li>
-      <li>🟢 Live „Wer ist online“</li>
-      <li>⚙️ Eigenes Passwort jederzeit ändern</li>
-      <li>📋 Texte kopieren bei Bans/Kicks</li>
-      <li>🔧 Owner kann Rollen & Passwörter ändern</li>
+  <div class="login-box" style="max-width:500px;text-align:left">
+    <h1 style="text-align:center">✨ Was ist neu?</h1>
+    <ul style="margin:20px 0;line-height:1.6">
+      <li>Live-Countdown bei Bans & Kicks</li>
+      <li>Schnell-Buttons (5min–5h)</li>
+      <li>Abgelaufene → Archiv (Owner)</li>
+      <li>Spieler-Historie beim Tippen</li>
+      <li>Suche + sicheres Passwort ändern</li>
+      <li>Temporärer Owner möglich</li>
+      <li>Zuletzt aktiv bei Online-Usern</li>
     </ul>
-    <button class="btn" style="width:100%;" onclick="closeWhatsNew()">Verstanden – weiter</button>
+    <button class="btn" style="width:100%" onclick="closeWhatsNew()">Verstanden</button>
   </div>
 </div>
 
-<!-- APP -->
 <div id="app">
   <div class="navbar">
-    <div class="brand">
+    <a class="brand" href="https://alpensmp.net">
       <img src="../logo.png" alt="Logo">
       ALPEN SMP <span>// Staff</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+    </a>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
       <span class="user-info">Angemeldet als <strong id="currentUserName">–</strong></span>
       <span class="online-dot" id="onlineUsers">Online: –</span>
-      <span style="font-size:0.85rem;color:var(--muted);" id="statusText">Verbinde...</span>
+      <span style="font-size:.85rem;color:var(--muted)" id="statusText">Verbinde...</span>
       <button class="btn btn-ghost btn-sm" onclick="doLogout()">Abmelden</button>
     </div>
   </div>
 
   <div class="container">
-    <div style="text-align:center;margin-bottom:26px;">
+    <div style="text-align:center;margin-bottom:26px">
       <button class="btn btn-panic" onclick="sendPanic()">🚨 HILFE – Brauche Unterstützung</button>
     </div>
 
     <div class="tabs">
       <button class="tab active" onclick="showTab('moderation')">Moderation</button>
-      <button class="tab" onclick="showTab('help')" id="helpTabBtn">
-        Hilfe-Anfragen
-        <span class="badge" id="helpBadge" style="display:none;">0</span>
-      </button>
+      <button class="tab" onclick="showTab('help')" id="helpTabBtn">Hilfe <span class="badge" id="helpBadge" style="display:none">0</span></button>
       <button class="tab" onclick="showTab('commands')">Commands</button>
       <button class="tab" onclick="showTab('settings')">Einstellungen</button>
-      <button class="tab" id="usersTabBtn" onclick="showTab('users')" style="display:none;">User verwalten</button>
+      <button class="tab" id="archiveTabBtn" onclick="showTab('archive')" style="display:none">Archiv</button>
+      <button class="tab" id="usersTabBtn" onclick="showTab('users')" style="display:none">User verwalten</button>
     </div>
 
     <!-- MODERATION -->
@@ -291,25 +133,48 @@
       <div class="grid">
         <div class="card">
           <h2>⛔ Bans (länger)</h2>
-          <p class="desc">Längere oder permanente Sperren</p>
+          <p class="desc">Längere / permanente Sperren · Live-Countdown</p>
+          <input type="text" class="search" id="banSearch" placeholder="🔍 Suche Spieler..." oninput="filterLists()">
           <div class="form-row">
-            <input type="text" id="banName" placeholder="Spielername">
+            <input type="text" id="banName" placeholder="Spielername" oninput="checkPlayerHistory('ban')">
             <input type="text" id="banReason" placeholder="Grund">
           </div>
-          <input type="text" id="banDuration" placeholder="Dauer (z.B. Permanent, 7 Tage...)">
-          <button class="btn" style="width:100%;" onclick="addBan()">+ Ban eintragen</button>
+          <div id="banHint" class="player-hint"></div>
+          <input type="text" id="banDuration" placeholder="Dauer (z.B. 30 Tage, Permanent...)">
+          <div style="margin-bottom:10px">
+            <button class="btn-quick" onclick="setDur('ban','5 Minuten')">5min</button>
+            <button class="btn-quick" onclick="setDur('ban','10 Minuten')">10min</button>
+            <button class="btn-quick" onclick="setDur('ban','15 Minuten')">15min</button>
+            <button class="btn-quick" onclick="setDur('ban','1 Stunde')">1h</button>
+            <button class="btn-quick" onclick="setDur('ban','2 Stunden')">2h</button>
+            <button class="btn-quick" onclick="setDur('ban','5 Stunden')">5h</button>
+            <button class="btn-quick" onclick="setDur('ban','1 Tag')">1d</button>
+            <button class="btn-quick" onclick="setDur('ban','7 Tage')">7d</button>
+            <button class="btn-quick" onclick="setDur('ban','Permanent')">Permanent</button>
+          </div>
+          <button class="btn" style="width:100%" onclick="addBan()">+ Ban eintragen</button>
           <div class="list" id="banList"></div>
         </div>
 
         <div class="card">
           <h2>👢 Kicks (kurz)</h2>
-          <p class="desc">Kurze Rauswürfe</p>
+          <p class="desc">Kurze Rauswürfe · Live-Countdown</p>
+          <input type="text" class="search" id="kickSearch" placeholder="🔍 Suche Spieler..." oninput="filterLists()">
           <div class="form-row">
-            <input type="text" id="kickName" placeholder="Spielername">
+            <input type="text" id="kickName" placeholder="Spielername" oninput="checkPlayerHistory('kick')">
             <input type="text" id="kickReason" placeholder="Grund">
           </div>
+          <div id="kickHint" class="player-hint"></div>
           <input type="text" id="kickDuration" placeholder="Dauer (z.B. 10 Minuten...)">
-          <button class="btn" style="width:100%;" onclick="addKick()">+ Kick eintragen</button>
+          <div style="margin-bottom:10px">
+            <button class="btn-quick" onclick="setDur('kick','5 Minuten')">5min</button>
+            <button class="btn-quick" onclick="setDur('kick','10 Minuten')">10min</button>
+            <button class="btn-quick" onclick="setDur('kick','15 Minuten')">15min</button>
+            <button class="btn-quick" onclick="setDur('kick','1 Stunde')">1h</button>
+            <button class="btn-quick" onclick="setDur('kick','2 Stunden')">2h</button>
+            <button class="btn-quick" onclick="setDur('kick','5 Stunden')">5h</button>
+          </div>
+          <button class="btn" style="width:100%" onclick="addKick()">+ Kick eintragen</button>
           <div class="list" id="kickList"></div>
         </div>
 
@@ -317,10 +182,11 @@
           <h2>⚠️ Warnungen</h2>
           <p class="desc">Verwarnungen</p>
           <div class="form-row">
-            <input type="text" id="warnName" placeholder="Spielername">
+            <input type="text" id="warnName" placeholder="Spielername" oninput="checkPlayerHistory('warn')">
             <input type="text" id="warnReason" placeholder="Grund">
           </div>
-          <button class="btn" style="width:100%;" onclick="addWarn()">+ Warnung</button>
+          <div id="warnHint" class="player-hint"></div>
+          <button class="btn" style="width:100%" onclick="addWarn()">+ Warnung</button>
           <div class="list" id="warnList"></div>
         </div>
 
@@ -328,18 +194,18 @@
           <h2>📝 Team-Notizen</h2>
           <p class="desc">Interne Notizen</p>
           <textarea id="noteText" placeholder="Neue Notiz..."></textarea>
-          <button class="btn" style="width:100%;" onclick="addNote()">+ Notiz speichern</button>
+          <button class="btn" style="width:100%" onclick="addNote()">+ Notiz speichern</button>
           <div class="list" id="noteList"></div>
         </div>
       </div>
     </div>
 
-    <!-- HILFE -->
+    <!-- HELP -->
     <div id="tab-help" class="hidden">
       <div class="card">
         <h2>🚨 Hilfe-Anfragen</h2>
-        <p class="desc">Alle Anfragen bleiben erhalten. Owner & Admins können antworten.</p>
-        <div id="helpList" class="list" style="max-height:520px;"></div>
+        <p class="desc">Bleiben erhalten. Owner/Admin können antworten.</p>
+        <div id="helpList" class="list" style="max-height:520px"></div>
       </div>
     </div>
 
@@ -347,45 +213,57 @@
     <div id="tab-commands" class="hidden">
       <div class="card">
         <h2>⌨️ Commands</h2>
-        <p class="desc">Server-Commands. Owner kann hinzufügen und bearbeiten.</p>
-        <div id="commandsOwnerBox" style="display:none;margin-bottom:20px;">
+        <p class="desc">Owner kann hinzufügen & bearbeiten.</p>
+        <div id="commandsOwnerBox" style="display:none;margin-bottom:20px">
           <div class="form-row">
             <input type="text" id="cmdName" placeholder="Command (z.B. /kick)">
-            <input type="text" id="cmdDesc" placeholder="Beschreibung / Beispiel">
+            <input type="text" id="cmdDesc" placeholder="Beschreibung">
           </div>
           <input type="hidden" id="cmdEditKey">
-          <button class="btn" id="cmdSaveBtn" onclick="saveCommand()">+ Command speichern</button>
+          <button class="btn" id="cmdSaveBtn" onclick="saveCommand()">+ Speichern</button>
         </div>
         <div class="list" id="commandsList"></div>
       </div>
     </div>
 
-    <!-- EINSTELLUNGEN -->
+    <!-- SETTINGS -->
     <div id="tab-settings" class="hidden">
-      <div class="card" style="max-width:480px;">
-        <h2>⚙️ Eigenes Passwort ändern</h2>
-        <p class="desc">Hier kannst du dein Passwort jederzeit ändern.</p>
+      <div class="card" style="max-width:480px">
+        <h2>⚙️ Passwort ändern</h2>
+        <p class="desc">Altes + neues Passwort eingeben.</p>
+        <input type="password" id="settingsOldPw" placeholder="Altes Passwort">
         <input type="password" id="settingsPw1" placeholder="Neues Passwort">
-        <input type="password" id="settingsPw2" placeholder="Passwort wiederholen">
-        <button class="btn" style="width:100%;" onclick="changeOwnPassword()">Passwort speichern</button>
+        <input type="password" id="settingsPw2" placeholder="Neues Passwort wiederholen">
+        <button class="btn" style="width:100%" onclick="changeOwnPassword()">Passwort speichern</button>
       </div>
     </div>
 
-    <!-- USER VERWALTEN -->
+    <!-- ARCHIVE (Owner) -->
+    <div id="tab-archive" class="hidden">
+      <div class="card">
+        <h2>📦 Archiv (abgelaufen)</h2>
+        <p class="desc">Nur für Owner sichtbar. Abgelaufene Einträge nach 2 Tagen landen hier.</p>
+        <div class="list" id="archiveList" style="max-height:500px"></div>
+      </div>
+    </div>
+
+    <!-- USERS -->
     <div id="tab-users" class="hidden">
       <div class="card">
         <h2>👥 Team-Accounts</h2>
-        <p class="desc">Nur Owner. Passwörter & Rollen sichtbar und änderbar.</p>
+        <p class="desc">Rollen, Passwörter, temporärer Owner.</p>
         <div class="form-row">
           <input type="text" id="newUserName" placeholder="Benutzername">
-          <input type="text" id="newUserTempPw" placeholder="Temporäres Passwort">
+          <input type="text" id="newUserTempPw" placeholder="Temp. Passwort">
           <select id="newUserRole">
             <option value="helper">Helper</option>
             <option value="admin">Admin</option>
+            <option value="owner">Owner (temporär möglich)</option>
           </select>
-          <button class="btn" onclick="createUser()">+ Account anlegen</button>
         </div>
-        <div class="list" id="userList" style="margin-top:20px;"></div>
+        <input type="text" id="newUserOwnerUntil" placeholder="Owner bis (optional, z.B. 7 Tage oder leer = dauerhaft)">
+        <button class="btn" onclick="createUser()">+ Account anlegen</button>
+        <div class="list" id="userList" style="margin-top:20px"></div>
       </div>
     </div>
   </div>
@@ -396,516 +274,320 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyBugFF4T6y_XEhCYde99bwpSyYZOuKbJHc",
-    authDomain: "alpensmp-ad844.firebaseapp.com",
-    databaseURL: "https://alpensmp-ad844-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "alpensmp-ad844",
-    storageBucket: "alpensmp-ad844.firebasestorage.app",
-    messagingSenderId: "1089764768356",
-    appId: "1:1089764768356:web:67ab90395c8460cb4c3d71",
-    measurementId: "G-M170GKH3LX"
-  };
+const firebaseConfig={apiKey:"AIzaSyBugFF4T6y_XEhCYde99bwpSyYZOuKbJHc",authDomain:"alpensmp-ad844.firebaseapp.com",databaseURL:"https://alpensmp-ad844-default-rtdb.europe-west1.firebasedatabase.app",projectId:"alpensmp-ad844",storageBucket:"alpensmp-ad844.firebasestorage.app",messagingSenderId:"1089764768356",appId:"1:1089764768356:web:67ab90395c8460cb4c3d71",measurementId:"G-M170GKH3LX"};
+const OWNER_USER="owner",OWNER_PASS="alpen2026",WHATS_NEW_VERSION="v3";
+firebase.initializeApp(firebaseConfig);
+const db=firebase.database();
+let currentUser=null, allBans={}, allKicks={}, allWarns={}, countdownTimer=null;
 
-  const OWNER_USER = "owner";
-  const OWNER_PASS = "alpen2026";
-  const WHATS_NEW_VERSION = "v2"; // erhöhen wenn neue Features kommen
+function parseDuration(str){
+  if(!str||/permanent|perm|∞/i.test(str)) return null;
+  const s=str.toLowerCase().trim();
+  let ms=0;
+  const d=s.match(/(\d+)\s*(tage?|days?|d)/); if(d) ms+=parseInt(d[1])*864e5;
+  const h=s.match(/(\d+)\s*(stunden?|hours?|h)/); if(h) ms+=parseInt(h[1])*360e4;
+  const m=s.match(/(\d+)\s*(minuten?|mins?|m)/); if(m) ms+=parseInt(m[1])*6e4;
+  const sec=s.match(/(\d+)\s*(sekunden?|secs?|s)/); if(sec) ms+=parseInt(sec[1])*1e3;
+  if(!ms){ const n=parseInt(s); if(!isNaN(n)) ms=n*6e4; }
+  return ms>0 ? Date.now()+ms : null;
+}
+function formatRemaining(endsAt){
+  if(!endsAt) return "Permanent";
+  const diff=endsAt-Date.now();
+  if(diff<=0) return "abgelaufen";
+  const d=Math.floor(diff/864e5), h=Math.floor((diff%864e5)/360e4), m=Math.floor((diff%360e4)/6e4), s=Math.floor((diff%6e4)/1e3);
+  if(d>0) return d+"T "+h+"h "+m+"m";
+  if(h>0) return h+"h "+m+"m "+s+"s";
+  if(m>0) return m+"m "+s+"s";
+  return s+"s";
+}
+function setDur(type,val){ document.getElementById(type+"Duration").value=val; }
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
-  let currentUser = null;
-
-  // ---------- LOGIN ----------
-  function doLogin() {
-    const user = document.getElementById("loginUser").value.trim().toLowerCase();
-    const pass = document.getElementById("loginPass").value;
-    if (!user || !pass) return showLoginError("Bitte alles ausfüllen");
-
-    if (user === OWNER_USER && pass === OWNER_PASS) {
-      currentUser = { username: OWNER_USER, role: "owner", mustChangePw: false };
-      afterLogin();
-      return;
-    }
-
-    db.ref("staffUsers/" + user).once("value").then(snap => {
-      const data = snap.val();
-      if (!data || data.password !== pass) return showLoginError("Falsche Zugangsdaten");
-      currentUser = { username: user, role: data.role || "helper", mustChangePw: data.mustChangePw === true };
-      afterLogin();
-    }).catch(() => showLoginError("Verbindungsfehler"));
-  }
-
-  function showLoginError(msg) {
-    const el = document.getElementById("loginError");
-    el.textContent = msg;
-    el.style.display = "block";
-  }
-
-  function afterLogin() {
-    sessionStorage.setItem("alpensmp_staff_user", JSON.stringify(currentUser));
-    document.getElementById("loginScreen").style.display = "none";
-    if (currentUser.mustChangePw) {
-      document.getElementById("forcePwScreen").style.display = "flex";
-    } else {
-      maybeShowWhatsNew();
-    }
-  }
-
-  function setOwnPassword() {
-    const p1 = document.getElementById("newPw1").value;
-    const p2 = document.getElementById("newPw2").value;
-    if (p1.length < 4) {
-      document.getElementById("forcePwError").textContent = "Mindestens 4 Zeichen";
-      document.getElementById("forcePwError").style.display = "block";
-      return;
-    }
-    if (p1 !== p2) {
-      document.getElementById("forcePwError").textContent = "Passwörter stimmen nicht überein";
-      document.getElementById("forcePwError").style.display = "block";
-      return;
-    }
-    db.ref("staffUsers/" + currentUser.username).update({ password: p1, mustChangePw: false }).then(() => {
-      currentUser.mustChangePw = false;
-      sessionStorage.setItem("alpensmp_staff_user", JSON.stringify(currentUser));
-      document.getElementById("forcePwScreen").style.display = "none";
-      maybeShowWhatsNew();
-      toast("Passwort gespeichert ✓");
-    });
-  }
-
-  function maybeShowWhatsNew() {
-    const key = "alpensmp_whatsnew_" + currentUser.username;
-    if (localStorage.getItem(key) === WHATS_NEW_VERSION) {
-      showApp();
-    } else {
-      document.getElementById("whatsNewScreen").style.display = "flex";
-    }
-  }
-
-  function closeWhatsNew() {
-    localStorage.setItem("alpensmp_whatsnew_" + currentUser.username, WHATS_NEW_VERSION);
-    document.getElementById("whatsNewScreen").style.display = "none";
-    showApp();
-  }
-
-  function doLogout() {
-    if (currentUser) db.ref("presence/" + currentUser.username).remove();
-    sessionStorage.removeItem("alpensmp_staff_user");
-    location.reload();
-  }
-
-  function showApp() {
-    document.getElementById("app").style.display = "block";
-    document.getElementById("currentUserName").textContent = currentUser.username + " (" + currentUser.role + ")";
-    if (currentUser.role === "owner") {
-      document.getElementById("usersTabBtn").style.display = "inline-block";
-      document.getElementById("commandsOwnerBox").style.display = "block";
-    }
-    startListeners();
-    setOnlinePresence();
-  }
-
-  const saved = sessionStorage.getItem("alpensmp_staff_user");
-  if (saved) {
-    try {
-      currentUser = JSON.parse(saved);
-      document.getElementById("loginScreen").style.display = "none";
-      if (currentUser.mustChangePw) document.getElementById("forcePwScreen").style.display = "flex";
-      else maybeShowWhatsNew();
-    } catch(e) {}
-  }
-
-  document.getElementById("loginPass").addEventListener("keydown", e => {
-    if (e.key === "Enter") doLogin();
+function doLogin(){
+  const user=document.getElementById("loginUser").value.trim().toLowerCase();
+  const pass=document.getElementById("loginPass").value;
+  if(!user||!pass) return showLoginError("Bitte alles ausfüllen");
+  if(user===OWNER_USER&&pass===OWNER_PASS){ currentUser={username:OWNER_USER,role:"owner",mustChangePw:false}; afterLogin(); return; }
+  db.ref("staffUsers/"+user).once("value").then(snap=>{
+    const data=snap.val();
+    if(!data||data.password!==pass) return showLoginError("Falsche Zugangsdaten");
+    let role=data.role||"helper";
+    if(role==="owner"&&data.ownerUntil&&Date.now()>data.ownerUntil){ role="admin"; db.ref("staffUsers/"+user).update({role:"admin"}); }
+    currentUser={username:user,role,mustChangePw:data.mustChangePw===true};
+    afterLogin();
+  }).catch(()=>showLoginError("Verbindungsfehler"));
+}
+function showLoginError(msg){ const el=document.getElementById("loginError"); el.textContent=msg; el.style.display="block"; }
+function afterLogin(){
+  sessionStorage.setItem("alpensmp_staff_user",JSON.stringify(currentUser));
+  document.getElementById("loginScreen").style.display="none";
+  if(currentUser.mustChangePw) document.getElementById("forcePwScreen").style.display="flex";
+  else maybeShowWhatsNew();
+}
+function setOwnPassword(){
+  const p1=document.getElementById("newPw1").value, p2=document.getElementById("newPw2").value;
+  if(p1.length<4){ document.getElementById("forcePwError").textContent="Min. 4 Zeichen"; document.getElementById("forcePwError").style.display="block"; return; }
+  if(p1!==p2){ document.getElementById("forcePwError").textContent="Stimmt nicht überein"; document.getElementById("forcePwError").style.display="block"; return; }
+  db.ref("staffUsers/"+currentUser.username).update({password:p1,mustChangePw:false}).then(()=>{
+    currentUser.mustChangePw=false; sessionStorage.setItem("alpensmp_staff_user",JSON.stringify(currentUser));
+    document.getElementById("forcePwScreen").style.display="none"; maybeShowWhatsNew(); toast("Passwort gespeichert ✓");
   });
+}
+function maybeShowWhatsNew(){
+  if(localStorage.getItem("alpensmp_whatsnew_"+currentUser.username)===WHATS_NEW_VERSION) showApp();
+  else document.getElementById("whatsNewScreen").style.display="flex";
+}
+function closeWhatsNew(){ localStorage.setItem("alpensmp_whatsnew_"+currentUser.username,WHATS_NEW_VERSION); document.getElementById("whatsNewScreen").style.display="none"; showApp(); }
+function doLogout(){ if(currentUser) db.ref("presence/"+currentUser.username).remove(); sessionStorage.removeItem("alpensmp_staff_user"); location.reload(); }
+function showApp(){
+  document.getElementById("app").style.display="block";
+  document.getElementById("currentUserName").textContent=currentUser.username+" ("+currentUser.role+")";
+  if(currentUser.role==="owner"){ document.getElementById("usersTabBtn").style.display="inline-block"; document.getElementById("archiveTabBtn").style.display="inline-block"; document.getElementById("commandsOwnerBox").style.display="block"; }
+  startListeners(); setOnlinePresence();
+  if(countdownTimer) clearInterval(countdownTimer);
+  countdownTimer=setInterval(()=>{ renderList("banList",Object.entries(allBans).reverse(),"ban"); renderList("kickList",Object.entries(allKicks).reverse(),"kick"); },1000);
+}
+const saved=sessionStorage.getItem("alpensmp_staff_user");
+if(saved){ try{ currentUser=JSON.parse(saved); document.getElementById("loginScreen").style.display="none"; if(currentUser.mustChangePw) document.getElementById("forcePwScreen").style.display="flex"; else maybeShowWhatsNew(); }catch(e){} }
+document.getElementById("loginPass").addEventListener("keydown",e=>{ if(e.key==="Enter") doLogin(); });
 
-  // ---------- TABS ----------
-  function showTab(name) {
-    ["moderation","help","commands","settings","users"].forEach(t => {
-      const el = document.getElementById("tab-" + t);
-      if (el) el.classList.toggle("hidden", t !== name);
-    });
-    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-    event.target.classList.add("active");
-    if (name === "users") loadUsers();
-    if (name === "help") loadHelp();
-    if (name === "commands") loadCommands();
-  }
+function showTab(name){
+  ["moderation","help","commands","settings","archive","users"].forEach(t=>{ const el=document.getElementById("tab-"+t); if(el) el.classList.toggle("hidden",t!==name); });
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active")); event.target.classList.add("active");
+  if(name==="users") loadUsers(); if(name==="help") loadHelp(); if(name==="commands") loadCommands(); if(name==="archive") loadArchive();
+}
 
-  // ---------- PRESENCE ----------
-  function setOnlinePresence() {
-    if (!currentUser) return;
-    const ref = db.ref("presence/" + currentUser.username);
-    ref.set({
-      username: currentUser.username,
-      role: currentUser.role,
-      online: true,
-      lastSeen: firebase.database.ServerValue.TIMESTAMP
-    });
-    ref.onDisconnect().remove();
-  }
+function setOnlinePresence(){
+  if(!currentUser) return;
+  const ref=db.ref("presence/"+currentUser.username);
+  ref.set({username:currentUser.username,role:currentUser.role,online:true,lastSeen:firebase.database.ServerValue.TIMESTAMP});
+  ref.onDisconnect().remove();
+  setInterval(()=>ref.update({lastSeen:firebase.database.ServerValue.TIMESTAMP}),60000);
+}
 
-  // ---------- LISTENERS ----------
-  function startListeners() {
-    document.getElementById("statusText").textContent = "● Live verbunden";
-    document.getElementById("statusText").style.color = "var(--ok)";
+function startListeners(){
+  document.getElementById("statusText").textContent="● Live verbunden"; document.getElementById("statusText").style.color="var(--ok)";
+  db.ref("bans").on("value",snap=>{ allBans=snap.val()||{}; cleanupExpired("bans",allBans); renderList("banList",Object.entries(allBans).reverse(),"ban"); });
+  db.ref("kicks").on("value",snap=>{ allKicks=snap.val()||{}; cleanupExpired("kicks",allKicks); renderList("kickList",Object.entries(allKicks).reverse(),"kick"); });
+  db.ref("warns").on("value",snap=>{ allWarns=snap.val()||{}; renderList("warnList",Object.entries(allWarns).reverse(),"warn"); });
+  db.ref("notes").on("value",snap=>renderList("noteList",Object.entries(snap.val()||{}).reverse(),"note"));
+  db.ref("helpRequests").on("value",snap=>{ updateHelpBadge(snap.val()||{}); if(!document.getElementById("tab-help").classList.contains("hidden")) loadHelp(); });
+  db.ref("commands").on("value",()=>{ if(!document.getElementById("tab-commands").classList.contains("hidden")) loadCommands(); });
+  db.ref("presence").on("value",snap=>{
+    const data=snap.val()||{};
+    const users=Object.values(data).filter(u=>u.online);
+    const el=document.getElementById("onlineUsers");
+    if(!users.length) el.textContent="Online: niemand";
+    else el.textContent="Online: "+users.map(u=>{
+      const ago=u.lastSeen?Math.floor((Date.now()-u.lastSeen)/60000):0;
+      return u.username+(ago>0?" (vor "+ago+" Min)":"");
+    }).join(", ");
+  });
+}
 
-    db.ref("bans").on("value", snap => renderList("banList", Object.entries(snap.val() || {}).reverse(), "ban"));
-    db.ref("kicks").on("value", snap => renderList("kickList", Object.entries(snap.val() || {}).reverse(), "kick"));
-    db.ref("warns").on("value", snap => renderList("warnList", Object.entries(snap.val() || {}).reverse(), "warn"));
-    db.ref("notes").on("value", snap => renderList("noteList", Object.entries(snap.val() || {}).reverse(), "note"));
-    db.ref("helpRequests").on("value", snap => {
-      updateHelpBadge(snap.val() || {});
-      if (!document.getElementById("tab-help").classList.contains("hidden")) loadHelp();
-    });
-    db.ref("commands").on("value", () => {
-      if (!document.getElementById("tab-commands").classList.contains("hidden")) loadCommands();
-    });
-    db.ref("presence").on("value", snap => {
-      const data = snap.val() || {};
-      const users = Object.values(data).filter(u => u.online);
-      const el = document.getElementById("onlineUsers");
-      el.textContent = users.length ? "Online: " + users.map(u => u.username).join(", ") : "Online: niemand";
-    });
-  }
-
-  function updateHelpBadge(data) {
-    const count = Object.keys(data).length;
-    const badge = document.getElementById("helpBadge");
-    if (count > 0) {
-      badge.style.display = "flex";
-      badge.textContent = count;
-    } else {
-      badge.style.display = "none";
+function cleanupExpired(path,data){
+  const now=Date.now(), twoDays=2*864e5;
+  Object.entries(data).forEach(([key,item])=>{
+    if(item.endsAt&&item.endsAt<now-twoDays&&!item.archived){
+      db.ref(path+"/"+key).update({archived:true});
     }
-  }
+  });
+}
 
-  function renderList(id, entries, type) {
-    const el = document.getElementById(id);
-    if (!entries.length) {
-      el.innerHTML = '<div class="empty">Noch keine Einträge</div>';
-      return;
-    }
-    el.innerHTML = entries.map(([key, item]) => {
-      const by = item.by ? ` · von ${esc(item.by)}` : "";
-      const duration = item.duration ? ` · <strong>${esc(item.duration)}</strong>` : "";
-      const path = type === "kick" ? "kicks" : type === "ban" ? "bans" : type === "warn" ? "warns" : "notes";
-      const textToCopy = type === "note"
-        ? (item.text || "")
-        : `${item.name || ""} | ${item.reason || ""} | ${item.duration || ""} | ${item.by || ""}`;
-      return `<div class="item">
-        <div>
-          <div class="name">${esc(item.name || "")}</div>
-          <div>${esc(item.reason || item.text || "")}${duration}</div>
-          <div class="meta">${formatDate(item.ts)}${by}</div>
-        </div>
-        <div style="display:flex;gap:6px;">
-          <button class="btn-icon" title="Kopieren" onclick="copyText(\`${esc(textToCopy)}\`)">📋</button>
-          <button class="btn-icon" onclick="removeItem('${path}','${key}')">✕</button>
-        </div>
-      </div>`;
+function updateHelpBadge(data){
+  const count=Object.keys(data).length; const badge=document.getElementById("helpBadge");
+  if(count>0){ badge.style.display="flex"; badge.textContent=count; } else badge.style.display="none";
+}
+
+function filterLists(){ renderList("banList",Object.entries(allBans).reverse(),"ban"); renderList("kickList",Object.entries(allKicks).reverse(),"kick"); }
+
+function renderList(id,entries,type){
+  const el=document.getElementById(id); if(!el) return;
+  const search=(document.getElementById(type==="ban"?"banSearch":type==="kick"?"kickSearch":null)?.value||"").toLowerCase();
+  let filtered=entries.filter(([k,item])=>!item.archived);
+  if(search) filtered=filtered.filter(([k,item])=>(item.name||"").toLowerCase().includes(search));
+  if(!filtered.length){ el.innerHTML='<div class="empty">Keine Einträge</div>'; return; }
+  el.innerHTML=filtered.map(([key,item])=>{
+    const expired=item.endsAt&&item.endsAt<=Date.now();
+    const rem=item.endsAt?formatRemaining(item.endsAt):(item.duration||"");
+    const by=item.by?" · von "+esc(item.by):"";
+    const path=type==="kick"?"kicks":type==="ban"?"bans":type==="warn"?"warns":"notes";
+    const copyTxt=type==="note"?(item.text||""):`${item.name||""} | ${item.reason||""} | ${item.duration||""}`;
+    return `<div class="item ${expired?"expired":""}">
+      <div>
+        <div class="name">${esc(item.name||"")}${expired?' <span style="color:var(--muted)">(abgelaufen)</span>':""}</div>
+        <div>${esc(item.reason||item.text||"")}</div>
+        <div class="countdown">${esc(rem)}</div>
+        <div class="meta">${formatDate(item.ts)}${by}</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn-icon" onclick="copyText(\`${esc(copyTxt)}\`)">📋</button>
+        <button class="btn-icon" onclick="removeItem('${path}','${key}')">✕</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function checkPlayerHistory(type){
+  const name=(document.getElementById(type+"Name")?.value||"").trim().toLowerCase();
+  const hint=document.getElementById(type+"Hint"); if(!hint) return;
+  if(name.length<2){ hint.textContent=""; return; }
+  let bans=0,kicks=0,warns=0,activeBan=false,activeKick=false;
+  Object.values(allBans).forEach(i=>{ if((i.name||"").toLowerCase()===name){ bans++; if(i.endsAt?i.endsAt>Date.now():true) activeBan=true; }});
+  Object.values(allKicks).forEach(i=>{ if((i.name||"").toLowerCase()===name){ kicks++; if(i.endsAt?i.endsAt>Date.now():false) activeKick=true; }});
+  Object.values(allWarns).forEach(i=>{ if((i.name||"").toLowerCase()===name) warns++; });
+  if(!bans&&!kicks&&!warns){ hint.textContent=""; return; }
+  let t=[];
+  if(activeBan) t.push("⚠️ Gerade gebannt");
+  if(activeKick) t.push("⚠️ Gerade gekickt");
+  if(bans) t.push(bans+"× Ban");
+  if(kicks) t.push(kicks+"× Kick");
+  if(warns) t.push(warns+"× Warnung");
+  hint.textContent="Historie: "+t.join(" · ");
+}
+
+function copyText(txt){ navigator.clipboard.writeText(txt).then(()=>toast("Kopiert ✓")).catch(()=>toast("Fehler")); }
+
+function addBan(){
+  const name=document.getElementById("banName").value.trim(), reason=document.getElementById("banReason").value.trim()||"–", duration=document.getElementById("banDuration").value.trim()||"Permanent";
+  if(!name) return toast("Name fehlt");
+  const endsAt=parseDuration(duration);
+  db.ref("bans").push({name,reason,duration,endsAt,by:currentUser.username,ts:Date.now()});
+  ["banName","banReason","banDuration"].forEach(id=>document.getElementById(id).value=""); document.getElementById("banHint").textContent=""; toast("Ban ✓");
+}
+function addKick(){
+  const name=document.getElementById("kickName").value.trim(), reason=document.getElementById("kickReason").value.trim()||"–", duration=document.getElementById("kickDuration").value.trim()||"–";
+  if(!name) return toast("Name fehlt");
+  const endsAt=parseDuration(duration);
+  db.ref("kicks").push({name,reason,duration,endsAt,by:currentUser.username,ts:Date.now()});
+  ["kickName","kickReason","kickDuration"].forEach(id=>document.getElementById(id).value=""); document.getElementById("kickHint").textContent=""; toast("Kick ✓");
+}
+function addWarn(){
+  const name=document.getElementById("warnName").value.trim(), reason=document.getElementById("warnReason").value.trim()||"–";
+  if(!name) return toast("Name fehlt");
+  db.ref("warns").push({name,reason,by:currentUser.username,ts:Date.now()});
+  document.getElementById("warnName").value=""; document.getElementById("warnReason").value=""; document.getElementById("warnHint").textContent=""; toast("Warnung ✓");
+}
+function addNote(){
+  const text=document.getElementById("noteText").value.trim(); if(!text) return toast("Leer");
+  db.ref("notes").push({text,by:currentUser.username,ts:Date.now()}); document.getElementById("noteText").value=""; toast("Notiz ✓");
+}
+function removeItem(path,key){ if(!confirm("Löschen?")) return; db.ref(path+"/"+key).remove(); toast("Gelöscht"); }
+
+function sendPanic(){
+  const msg=prompt("Was brauchst du?")||"Brauche Hilfe";
+  db.ref("helpRequests").push({by:currentUser.username,msg,ts:Date.now(),replies:{}}); toast("🚨 Gesendet!");
+}
+function loadHelp(){
+  db.ref("helpRequests").once("value").then(snap=>{
+    const data=snap.val()||{}, entries=Object.entries(data).reverse(), el=document.getElementById("helpList");
+    if(!entries.length){ el.innerHTML='<div class="empty">Keine Anfragen</div>'; return; }
+    const canReply=currentUser.role==="owner"||currentUser.role==="admin";
+    el.innerHTML=entries.map(([key,item])=>{
+      let replies="";
+      if(item.replies) replies=Object.values(item.replies).map(r=>`<div style="margin-top:8px;padding:10px;background:rgba(0,0,0,.3);border-radius:9px;font-size:.9rem"><strong>${esc(r.by)}</strong>: ${esc(r.text)} <small style="color:var(--muted)">(${formatDate(r.ts)})</small></div>`).join("");
+      return `<div class="panic-item"><div><strong>🚨 ${esc(item.by)}</strong></div><div style="margin:8px 0">${esc(item.msg)}</div><div class="meta">${formatDate(item.ts)}</div>${replies}
+        ${canReply?`<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><input type="text" id="reply-${key}" placeholder="Antwort..." style="margin:0;flex:1"><button class="btn btn-sm" onclick="replyHelp('${key}')">Antworten</button><button class="btn btn-ghost btn-sm" onclick="removeItem('helpRequests','${key}')">Löschen</button></div>`:""}</div>`;
     }).join("");
-  }
+  });
+}
+function replyHelp(key){
+  const input=document.getElementById("reply-"+key), text=input.value.trim(); if(!text) return toast("Leer");
+  db.ref("helpRequests/"+key+"/replies").push({by:currentUser.username,text,ts:Date.now()}).then(()=>{ input.value=""; loadHelp(); toast("Antwort ✓"); });
+}
 
-  function copyText(txt) {
-    navigator.clipboard.writeText(txt).then(() => toast("Kopiert ✓")).catch(() => toast("Kopieren fehlgeschlagen"));
-  }
+function saveCommand(){
+  const name=document.getElementById("cmdName").value.trim(), desc=document.getElementById("cmdDesc").value.trim(), editKey=document.getElementById("cmdEditKey").value;
+  if(!name) return toast("Command fehlt");
+  const payload={name,desc:desc||"–",by:currentUser.username,ts:Date.now()};
+  (editKey?db.ref("commands/"+editKey).update(payload):db.ref("commands").push(payload)).then(()=>{ resetCmdForm(); toast("Gespeichert ✓"); loadCommands(); });
+}
+function resetCmdForm(){ document.getElementById("cmdName").value=""; document.getElementById("cmdDesc").value=""; document.getElementById("cmdEditKey").value=""; document.getElementById("cmdSaveBtn").textContent="+ Speichern"; }
+function editCommand(key,name,desc){ document.getElementById("cmdName").value=name; document.getElementById("cmdDesc").value=desc; document.getElementById("cmdEditKey").value=key; document.getElementById("cmdSaveBtn").textContent="Änderungen speichern"; }
+function loadCommands(){
+  db.ref("commands").once("value").then(snap=>{
+    const data=snap.val()||{}, entries=Object.entries(data).reverse(), el=document.getElementById("commandsList");
+    if(!entries.length){ el.innerHTML='<div class="empty">Keine Commands</div>'; return; }
+    el.innerHTML=entries.map(([key,item])=>`<div class="item"><div><div class="name">${esc(item.name)}</div><div>${esc(item.desc)}</div><div class="meta">${formatDate(item.ts)} · ${esc(item.by||"")}</div></div>
+      <div style="display:flex;gap:6px"><button class="btn-icon" onclick="copyText('${esc(item.name)} ${esc(item.desc)}')">📋</button>
+      ${currentUser.role==="owner"?`<button class="btn-icon" onclick="editCommand('${key}','${esc(item.name)}','${esc(item.desc)}')">✏️</button><button class="btn-icon" onclick="removeItem('commands','${key}')">✕</button>`:""}</div></div>`).join("");
+  });
+}
 
-  // ---------- ACTIONS ----------
-  function addBan() {
-    const name = document.getElementById("banName").value.trim();
-    const reason = document.getElementById("banReason").value.trim() || "–";
-    const duration = document.getElementById("banDuration").value.trim() || "Permanent";
-    if (!name) return toast("Name fehlt");
-    db.ref("bans").push({ name, reason, duration, by: currentUser.username, ts: Date.now() });
-    ["banName","banReason","banDuration"].forEach(id => document.getElementById(id).value = "");
-    toast("Ban eingetragen ✓");
+function changeOwnPassword(){
+  const oldPw=document.getElementById("settingsOldPw").value, p1=document.getElementById("settingsPw1").value, p2=document.getElementById("settingsPw2").value;
+  if(p1.length<4) return toast("Min. 4 Zeichen"); if(p1!==p2) return toast("Stimmt nicht überein");
+  if(currentUser.username===OWNER_USER){
+    if(oldPw!==OWNER_PASS) return toast("Altes Passwort falsch");
+    toast("Owner-Passwort im Code ändern (OWNER_PASS)"); return;
   }
-
-  function addKick() {
-    const name = document.getElementById("kickName").value.trim();
-    const reason = document.getElementById("kickReason").value.trim() || "–";
-    const duration = document.getElementById("kickDuration").value.trim() || "–";
-    if (!name) return toast("Name fehlt");
-    db.ref("kicks").push({ name, reason, duration, by: currentUser.username, ts: Date.now() });
-    ["kickName","kickReason","kickDuration"].forEach(id => document.getElementById(id).value = "");
-    toast("Kick eingetragen ✓");
-  }
-
-  function addWarn() {
-    const name = document.getElementById("warnName").value.trim();
-    const reason = document.getElementById("warnReason").value.trim() || "–";
-    if (!name) return toast("Name fehlt");
-    db.ref("warns").push({ name, reason, by: currentUser.username, ts: Date.now() });
-    document.getElementById("warnName").value = "";
-    document.getElementById("warnReason").value = "";
-    toast("Warnung eingetragen ✓");
-  }
-
-  function addNote() {
-    const text = document.getElementById("noteText").value.trim();
-    if (!text) return toast("Notiz leer");
-    db.ref("notes").push({ text, by: currentUser.username, ts: Date.now() });
-    document.getElementById("noteText").value = "";
-    toast("Notiz gespeichert ✓");
-  }
-
-  function removeItem(path, key) {
-    if (!confirm("Wirklich löschen?")) return;
-    db.ref(path + "/" + key).remove();
-    toast("Gelöscht");
-  }
-
-  // ---------- HILFE ----------
-  function sendPanic() {
-    const msg = prompt("Was brauchst du? (kurz)") || "Brauche Hilfe / mehr Rechte";
-    db.ref("helpRequests").push({
-      by: currentUser.username,
-      msg,
-      ts: Date.now(),
-      replies: {}
+  db.ref("staffUsers/"+currentUser.username).once("value").then(snap=>{
+    if(snap.val()?.password!==oldPw) return toast("Altes Passwort falsch");
+    db.ref("staffUsers/"+currentUser.username).update({password:p1}).then(()=>{
+      ["settingsOldPw","settingsPw1","settingsPw2"].forEach(id=>document.getElementById(id).value=""); toast("Passwort geändert ✓");
     });
-    toast("🚨 Hilfe-Anfrage gesendet!");
-  }
+  });
+}
 
-  function loadHelp() {
-    db.ref("helpRequests").once("value").then(snap => {
-      const data = snap.val() || {};
-      const entries = Object.entries(data).reverse();
-      const el = document.getElementById("helpList");
-      if (!entries.length) {
-        el.innerHTML = '<div class="empty">Noch keine Hilfe-Anfragen</div>';
-        return;
-      }
-      const canReply = currentUser.role === "owner" || currentUser.role === "admin";
-      el.innerHTML = entries.map(([key, item]) => {
-        let repliesHtml = "";
-        if (item.replies) {
-          repliesHtml = Object.values(item.replies).map(r =>
-            `<div style="margin-top:8px;padding:10px;background:rgba(0,0,0,0.3);border-radius:9px;font-size:0.9rem;">
-              <strong>${esc(r.by)}</strong>: ${esc(r.text)}
-              <small style="color:var(--muted)"> (${formatDate(r.ts)})</small>
-            </div>`
-          ).join("");
-        }
-        return `<div class="panic-item">
-          <div><strong>🚨 ${esc(item.by)}</strong> braucht Hilfe</div>
-          <div style="margin:8px 0;">${esc(item.msg)}</div>
-          <div class="meta">${formatDate(item.ts)}</div>
-          ${repliesHtml}
-          ${canReply ? `<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
-            <input type="text" id="reply-${key}" placeholder="Antwort schreiben..." style="margin:0;flex:1;">
-            <button class="btn btn-sm" onclick="replyHelp('${key}')">Antworten</button>
-            <button class="btn btn-ghost btn-sm" onclick="removeItem('helpRequests','${key}')">Löschen</button>
-          </div>` : ""}
-        </div>`;
-      }).join("");
+function createUser(){
+  const username=document.getElementById("newUserName").value.trim().toLowerCase(), tempPw=document.getElementById("newUserTempPw").value, role=document.getElementById("newUserRole").value;
+  const untilStr=document.getElementById("newUserOwnerUntil").value.trim();
+  if(!username||!tempPw) return toast("Name + Passwort nötig"); if(username===OWNER_USER) return toast("Reserviert");
+  const ownerUntil=role==="owner"?parseDuration(untilStr||"Permanent"):null;
+  db.ref("staffUsers/"+username).once("value").then(snap=>{
+    if(snap.exists()) return toast("Existiert schon");
+    const data={password:tempPw,role,mustChangePw:true,createdAt:Date.now(),createdBy:currentUser.username};
+    if(ownerUntil) data.ownerUntil=ownerUntil;
+    db.ref("staffUsers/"+username).set(data).then(()=>{
+      document.getElementById("newUserName").value=""; document.getElementById("newUserTempPw").value=""; document.getElementById("newUserOwnerUntil").value="";
+      toast("Account angelegt ✓"); loadUsers();
     });
-  }
+  });
+}
+function loadUsers(){
+  db.ref("staffUsers").once("value").then(snap=>{
+    const data=snap.val()||{}, el=document.getElementById("userList"), entries=Object.entries(data);
+    if(!entries.length){ el.innerHTML='<div class="empty">Keine Accounts</div>'; return; }
+    el.innerHTML=entries.map(([uname,u])=>{
+      const until=u.ownerUntil?(" · Owner bis "+formatRemaining(u.ownerUntil)):"";
+      return `<div class="item"><div style="flex:1"><div class="name">${esc(uname)} <span style="color:var(--muted)">(${esc(u.role)})</span></div>
+        <div class="meta">PW: <strong style="color:var(--warn)">${esc(u.password||"–")}</strong>${u.mustChangePw?" · ⚠️ muss ändern":""}${until} · ${formatDate(u.createdAt||0)}</div>
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+          <select id="role-${uname}" style="width:auto;margin:0;padding:7px 10px">
+            <option value="helper" ${u.role==="helper"?"selected":""}>Helper</option>
+            <option value="admin" ${u.role==="admin"?"selected":""}>Admin</option>
+            <option value="owner" ${u.role==="owner"?"selected":""}>Owner</option>
+          </select>
+          <input type="text" id="pw-${uname}" placeholder="Neues PW" style="width:120px;margin:0;padding:7px 10px">
+          <input type="text" id="until-${uname}" placeholder="Owner bis (optional)" style="width:140px;margin:0;padding:7px 10px">
+          <button class="btn btn-sm" onclick="updateUser('${uname}')">Speichern</button>
+          <button class="btn btn-ghost btn-sm" onclick="kickUser('${uname}')">Kicken</button>
+        </div></div></div>`;
+    }).join("");
+  });
+}
+function updateUser(username){
+  const role=document.getElementById("role-"+username).value, newPw=document.getElementById("pw-"+username).value.trim(), untilStr=document.getElementById("until-"+username).value.trim();
+  const updates={role}; if(newPw) updates.password=newPw;
+  if(role==="owner"&&untilStr) updates.ownerUntil=parseDuration(untilStr); else if(role!=="owner") updates.ownerUntil=null;
+  db.ref("staffUsers/"+username).update(updates).then(()=>{ toast("Aktualisiert ✓"); loadUsers(); });
+}
+function kickUser(username){ if(!confirm(`"${username}" löschen?`)) return; db.ref("staffUsers/"+username).remove().then(()=>{ toast("Gekickt"); loadUsers(); }); }
 
-  function replyHelp(key) {
-    const input = document.getElementById("reply-" + key);
-    const text = input.value.trim();
-    if (!text) return toast("Antwort leer");
-    db.ref("helpRequests/" + key + "/replies").push({
-      by: currentUser.username,
-      text,
-      ts: Date.now()
-    }).then(() => {
-      input.value = "";
-      loadHelp();
-      toast("Antwort gesendet ✓");
-    });
-  }
+function loadArchive(){
+  const el=document.getElementById("archiveList");
+  const archived=[];
+  Object.entries(allBans).forEach(([k,v])=>{ if(v.archived||(v.endsAt&&v.endsAt<Date.now()-2*864e5)) archived.push({...v,type:"Ban",key:k,path:"bans"}); });
+  Object.entries(allKicks).forEach(([k,v])=>{ if(v.archived||(v.endsAt&&v.endsAt<Date.now()-2*864e5)) archived.push({...v,type:"Kick",key:k,path:"kicks"}); });
+  archived.sort((a,b)=>(b.ts||0)-(a.ts||0));
+  if(!archived.length){ el.innerHTML='<div class="empty">Archiv leer</div>'; return; }
+  el.innerHTML=archived.map(item=>`<div class="item expired"><div><div class="name">[${item.type}] ${esc(item.name||"")}</div><div>${esc(item.reason||"")}</div><div class="meta">${formatDate(item.ts)} · ${esc(item.by||"")} · ${esc(item.duration||"")}</div></div>
+    <button class="btn-icon" onclick="removeItem('${item.path}','${item.key}')">✕</button></div>`).join("");
+}
 
-  // ---------- COMMANDS ----------
-  function saveCommand() {
-    const name = document.getElementById("cmdName").value.trim();
-    const desc = document.getElementById("cmdDesc").value.trim();
-    const editKey = document.getElementById("cmdEditKey").value;
-    if (!name) return toast("Command fehlt");
-
-    if (editKey) {
-      db.ref("commands/" + editKey).update({
-        name, desc: desc || "–",
-        by: currentUser.username,
-        ts: Date.now()
-      }).then(() => {
-        resetCmdForm();
-        toast("Command aktualisiert ✓");
-        loadCommands();
-      });
-    } else {
-      db.ref("commands").push({
-        name, desc: desc || "–",
-        by: currentUser.username,
-        ts: Date.now()
-      }).then(() => {
-        resetCmdForm();
-        toast("Command gespeichert ✓");
-        loadCommands();
-      });
-    }
-  }
-
-  function resetCmdForm() {
-    document.getElementById("cmdName").value = "";
-    document.getElementById("cmdDesc").value = "";
-    document.getElementById("cmdEditKey").value = "";
-    document.getElementById("cmdSaveBtn").textContent = "+ Command speichern";
-  }
-
-  function editCommand(key, name, desc) {
-    document.getElementById("cmdName").value = name;
-    document.getElementById("cmdDesc").value = desc;
-    document.getElementById("cmdEditKey").value = key;
-    document.getElementById("cmdSaveBtn").textContent = "Änderungen speichern";
-    document.getElementById("cmdName").focus();
-  }
-
-  function loadCommands() {
-    db.ref("commands").once("value").then(snap => {
-      const data = snap.val() || {};
-      const entries = Object.entries(data).reverse();
-      const el = document.getElementById("commandsList");
-      if (!entries.length) {
-        el.innerHTML = '<div class="empty">Noch keine Commands hinterlegt</div>';
-        return;
-      }
-      el.innerHTML = entries.map(([key, item]) => `
-        <div class="item">
-          <div>
-            <div class="name">${esc(item.name)}</div>
-            <div>${esc(item.desc)}</div>
-            <div class="meta">${formatDate(item.ts)} · von ${esc(item.by || "")}</div>
-          </div>
-          <div style="display:flex;gap:6px;">
-            <button class="btn-icon" title="Kopieren" onclick="copyText('${esc(item.name)} ${esc(item.desc)}')">📋</button>
-            ${currentUser.role === "owner" ? `
-              <button class="btn-icon" title="Bearbeiten" onclick="editCommand('${key}','${esc(item.name)}','${esc(item.desc)}')">✏️</button>
-              <button class="btn-icon" onclick="removeItem('commands','${key}')">✕</button>
-            ` : ""}
-          </div>
-        </div>
-      `).join("");
-    });
-  }
-
-  // ---------- SETTINGS ----------
-  function changeOwnPassword() {
-    const p1 = document.getElementById("settingsPw1").value;
-    const p2 = document.getElementById("settingsPw2").value;
-    if (p1.length < 4) return toast("Mindestens 4 Zeichen");
-    if (p1 !== p2) return toast("Passwörter stimmen nicht überein");
-
-    if (currentUser.username === OWNER_USER) {
-      toast("Owner-Passwort bitte im Code ändern (OWNER_PASS)");
-      return;
-    }
-
-    db.ref("staffUsers/" + currentUser.username).update({ password: p1 }).then(() => {
-      document.getElementById("settingsPw1").value = "";
-      document.getElementById("settingsPw2").value = "";
-      toast("Passwort geändert ✓");
-    });
-  }
-
-  // ---------- USER MANAGEMENT ----------
-  function createUser() {
-    const username = document.getElementById("newUserName").value.trim().toLowerCase();
-    const tempPw = document.getElementById("newUserTempPw").value;
-    const role = document.getElementById("newUserRole").value;
-    if (!username || !tempPw) return toast("Name und Passwort nötig");
-    if (username === OWNER_USER) return toast("Dieser Name ist reserviert");
-
-    db.ref("staffUsers/" + username).once("value").then(snap => {
-      if (snap.exists()) return toast("Benutzer existiert bereits");
-      db.ref("staffUsers/" + username).set({
-        password: tempPw,
-        role,
-        mustChangePw: true,
-        createdAt: Date.now(),
-        createdBy: currentUser.username
-      }).then(() => {
-        document.getElementById("newUserName").value = "";
-        document.getElementById("newUserTempPw").value = "";
-        toast("Account angelegt ✓");
-        loadUsers();
-      });
-    });
-  }
-
-  function loadUsers() {
-    db.ref("staffUsers").once("value").then(snap => {
-      const data = snap.val() || {};
-      const el = document.getElementById("userList");
-      const entries = Object.entries(data);
-      if (!entries.length) {
-        el.innerHTML = '<div class="empty">Noch keine Team-Accounts</div>';
-        return;
-      }
-      el.innerHTML = entries.map(([uname, u]) => `
-        <div class="item">
-          <div style="flex:1;">
-            <div class="name">${esc(uname)} <span style="color:var(--muted);font-weight:400;">(${esc(u.role)})</span></div>
-            <div class="meta">
-              Passwort: <strong style="color:var(--warn)">${esc(u.password || "–")}</strong>
-              ${u.mustChangePw ? " · ⚠️ Muss Passwort ändern" : ""}
-              · ${formatDate(u.createdAt || 0)}
-            </div>
-            <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
-              <select id="role-${uname}" style="width:auto;margin:0;padding:7px 10px;">
-                <option value="helper" ${u.role==="helper"?"selected":""}>Helper</option>
-                <option value="admin" ${u.role==="admin"?"selected":""}>Admin</option>
-              </select>
-              <input type="text" id="pw-${uname}" placeholder="Neues Passwort" style="width:140px;margin:0;padding:7px 10px;">
-              <button class="btn btn-sm" onclick="updateUser('${uname}')">Speichern</button>
-              <button class="btn btn-ghost btn-sm" onclick="kickUser('${uname}')">Kicken</button>
-            </div>
-          </div>
-        </div>
-      `).join("");
-    });
-  }
-
-  function updateUser(username) {
-    const role = document.getElementById("role-" + username).value;
-    const newPw = document.getElementById("pw-" + username).value.trim();
-    const updates = { role };
-    if (newPw) updates.password = newPw;
-    db.ref("staffUsers/" + username).update(updates).then(() => {
-      toast("User aktualisiert ✓");
-      loadUsers();
-    });
-  }
-
-  function kickUser(username) {
-    if (!confirm(`Account "${username}" wirklich löschen?`)) return;
-    db.ref("staffUsers/" + username).remove().then(() => {
-      toast("User gekickt");
-      loadUsers();
-    });
-  }
-
-  // ---------- HELPERS ----------
-  function esc(s) {
-    const d = document.createElement("div");
-    d.textContent = s || "";
-    return d.innerHTML;
-  }
-  function formatDate(ts) {
-    if (!ts) return "–";
-    return new Date(ts).toLocaleString("de-DE", {
-      day: "2-digit", month: "2-digit", year: "2-digit",
-      hour: "2-digit", minute: "2-digit"
-    });
-  }
-  function toast(msg) {
-    const t = document.getElementById("toast");
-    t.textContent = msg;
-    t.classList.add("show");
-    setTimeout(() => t.classList.remove("show"), 2300);
-  }
+function esc(s){ const d=document.createElement("div"); d.textContent=s||""; return d.innerHTML; }
+function formatDate(ts){ if(!ts) return "–"; return new Date(ts).toLocaleString("de-DE",{day:"2-digit",month:"2-digit",year:"2-digit",hour:"2-digit",minute:"2-digit"}); }
+function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),2300); }
 </script>
 </body>
 </html>
