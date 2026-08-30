@@ -138,6 +138,7 @@ textarea{min-height:90px;resize:vertical}
       <button class="tab" onclick="showTab('help')" id="helpTabBtn">Hilfe <span class="badge" id="helpBadge" style="display:none">0</span></button>
       <button class="tab" onclick="showTab('commands')">Commands</button>
       <button class="tab" onclick="showTab('settings')">Einstellungen</button>
+      <button class="tab" onclick="showTab('community')" id="communityTabBtn">Community <span class="badge" id="communityBadge" style="display:none">0</span></button>
       <button class="tab" id="websiteTabBtn" onclick="showTab('website')" style="display:none">Website</button>
       <button class="tab" id="archiveTabBtn" onclick="showTab('archive')" style="display:none">Archiv</button>
       <button class="tab" id="usersTabBtn" onclick="showTab('users')" style="display:none">User verwalten</button>
@@ -238,6 +239,26 @@ textarea{min-height:90px;resize:vertical}
           <button class="btn" id="cmdSaveBtn" onclick="saveCommand()">+ Speichern</button>
         </div>
         <div class="list" id="commandsList"></div>
+      </div>
+    </div>
+
+    <!-- COMMUNITY -->
+    <div id="tab-community" class="hidden">
+      <div class="card" style="margin-bottom:26px">
+        <h2>⭐ Rezensionen</h2>
+        <p class="desc">Nur Freigegebenes erscheint auf der Startseite unter Stimmen.</p>
+        <div class="form-row" style="margin-bottom:12px">
+          <button class="btn-quick" onclick="communityFilter='pending'; renderCommunity()">Offen</button>
+          <button class="btn-quick" onclick="communityFilter='approved'; renderCommunity()">Freigegeben</button>
+          <button class="btn-quick" onclick="communityFilter='rejected'; renderCommunity()">Abgelehnt</button>
+          <button class="btn-quick" onclick="communityFilter='all'; renderCommunity()">Alle</button>
+        </div>
+        <div class="list" id="communityReviewList" style="max-height:480px"></div>
+      </div>
+      <div class="card">
+        <h2>🖼️ Screenshots</h2>
+        <p class="desc">Freigegebene Bilder landen in der Galerie.</p>
+        <div class="list" id="communityImageList" style="max-height:480px"></div>
       </div>
     </div>
 
@@ -359,6 +380,7 @@ const OWNER_USER="owner",OWNER_PASS="Fisch22*",WHATS_NEW_VERSION="v3";
 firebase.initializeApp(firebaseConfig);
 const db=firebase.database();
 let currentUser=null, allBans={}, allKicks={}, allWarns={}, countdownTimer=null;
+let allReviews={}, allImages={}, communityFilter="pending";
 
 function parseDuration(str){
   if(!str||/permanent|perm|∞/i.test(str)) return null;
@@ -437,9 +459,9 @@ if(saved){ try{ currentUser=JSON.parse(saved); document.getElementById("loginScr
 document.getElementById("loginPass").addEventListener("keydown",e=>{ if(e.key==="Enter") doLogin(); });
 
 function showTab(name){
-  ["moderation","help","commands","settings","website","archive","users"].forEach(t=>{ const el=document.getElementById("tab-"+t); if(el) el.classList.toggle("hidden",t!==name); });
+  ["moderation","help","commands","settings","community","website","archive","users"].forEach(t=>{ const el=document.getElementById("tab-"+t); if(el) el.classList.toggle("hidden",t!==name); });
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active")); event.target.classList.add("active");
-  if(name==="users") loadUsers(); if(name==="help") loadHelp(); if(name==="commands") loadCommands(); if(name==="archive") loadArchive(); if(name==="website") loadWebsitePanel();
+  if(name==="users") loadUsers(); if(name==="help") loadHelp(); if(name==="commands") loadCommands(); if(name==="archive") loadArchive(); if(name==="website") loadWebsitePanel(); if(name==="community") renderCommunity();
 }
 
 function setOnlinePresence(){
@@ -458,6 +480,8 @@ function startListeners(){
   db.ref("notes").on("value",snap=>renderList("noteList",Object.entries(snap.val()||{}).reverse(),"note"));
   db.ref("helpRequests").on("value",snap=>{ updateHelpBadge(snap.val()||{}); if(!document.getElementById("tab-help").classList.contains("hidden")) loadHelp(); });
   db.ref("commands").on("value",()=>{ if(!document.getElementById("tab-commands").classList.contains("hidden")) loadCommands(); });
+  db.ref("community_reviews").on("value",snap=>{ allReviews=snap.val()||{}; updateCommunityBadge(); if(!document.getElementById("tab-community").classList.contains("hidden")) renderCommunity(); });
+  db.ref("community_images").on("value",snap=>{ allImages=snap.val()||{}; updateCommunityBadge(); if(!document.getElementById("tab-community").classList.contains("hidden")) renderCommunity(); });
   db.ref("presence").on("value",snap=>{
     const data=snap.val()||{};
     const users=Object.values(data).filter(u=>u.online);
@@ -668,6 +692,48 @@ function loadArchive(){
   if(!archived.length){ el.innerHTML='<div class="empty">Archiv leer</div>'; return; }
   el.innerHTML=archived.map(item=>`<div class="item expired"><div><div class="name">[${item.type}] ${esc(item.name||"")}</div><div>${esc(item.reason||"")}</div><div class="meta">${formatDate(item.ts)} · ${esc(item.by||"")} · ${esc(item.duration||"")}</div></div>
     <button class="btn-icon" onclick="removeItem('${item.path}','${item.key}')">✕</button></div>`).join("");
+}
+
+function updateCommunityBadge(){
+  const n=Object.values(allReviews||{}).filter(x=>x.status==="pending").length
+    +Object.values(allImages||{}).filter(x=>x.status==="pending").length;
+  const badge=document.getElementById("communityBadge");
+  if(!badge) return;
+  if(n>0){ badge.style.display="flex"; badge.textContent=n; } else badge.style.display="none";
+}
+function renderCommunity(){
+  const revEl=document.getElementById("communityReviewList");
+  const imgEl=document.getElementById("communityImageList");
+  if(!revEl||!imgEl) return;
+  const filt=communityFilter||"pending";
+  const revs=Object.entries(allReviews||{}).reverse().filter(([k,r])=>filt==="all"||r.status===filt);
+  const imgs=Object.entries(allImages||{}).reverse().filter(([k,r])=>filt==="all"||r.status===filt);
+  revEl.innerHTML=revs.length?revs.map(([key,r])=>{
+    const stars="★".repeat(Math.min(5,Number(r.rating)||5));
+    const pic=r.imageUrl?`<div style="margin:8px 0"><img src="${esc(r.imageUrl)}" alt="" style="max-width:220px;border-radius:10px"></div>`:"";
+    return `<div class="item"><div><div class="name">${esc(r.name||"–")} · ${stars} · <span style="color:var(--muted)">${esc(r.status||"")}</span></div>
+      <div>${esc(r.text||"")}</div>${pic}<div class="meta">${formatDate(r.ts)}</div>
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-sm" onclick="setCommunityStatus('community_reviews','${key}','approved')">Freigeben</button>
+        <button class="btn btn-ghost btn-sm" onclick="setCommunityStatus('community_reviews','${key}','rejected')">Ablehnen</button>
+        <button class="btn btn-ghost btn-sm" onclick="removeItem('community_reviews','${key}')">Löschen</button>
+      </div></div></div>`;
+  }).join(""):'<div class="empty">Keine Rezensionen in diesem Filter</div>';
+  imgEl.innerHTML=imgs.length?imgs.map(([key,r])=>{
+    const pic=r.imageUrl?`<div style="margin:8px 0"><img src="${esc(r.imageUrl)}" alt="" style="max-width:260px;border-radius:10px"></div>`:"";
+    return `<div class="item"><div><div class="name">${esc(r.name||"–")} · <span style="color:var(--muted)">${esc(r.status||"")}</span></div>
+      <div>${esc(r.caption||"")}</div>${pic}<div class="meta">${formatDate(r.ts)}</div>
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-sm" onclick="setCommunityStatus('community_images','${key}','approved')">In Galerie</button>
+        <button class="btn btn-ghost btn-sm" onclick="setCommunityStatus('community_images','${key}','rejected')">Ablehnen</button>
+        <button class="btn btn-ghost btn-sm" onclick="removeItem('community_images','${key}')">Löschen</button>
+      </div></div></div>`;
+  }).join(""):'<div class="empty">Keine Bilder in diesem Filter</div>';
+}
+function setCommunityStatus(path,key,status){
+  if(!currentUser) return toast("Nicht angemeldet");
+  db.ref(path+"/"+key).update({status,moderatedBy:currentUser.username,moderatedAt:Date.now()})
+    .then(()=>toast(status==="approved"?"Freigegeben ✓":"Abgelehnt"));
 }
 
 function requireOwner(){
