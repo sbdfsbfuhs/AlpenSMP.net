@@ -191,34 +191,6 @@ textarea{min-height:90px;resize:vertical}
         </div>
 
         <div class="card">
-          <h2>👢 Kicks (kurz)</h2>
-          <p class="desc">Kurze Rauswürfe · Live-Countdown</p>
-          <input type="text" class="search" id="kickSearch" placeholder="🔍 Suche Spieler..." oninput="filterLists()">
-          <div class="form-row">
-            <input type="text" id="kickName" placeholder="Spielername" oninput="checkPlayerHistory('kick')">
-            <input type="text" id="kickReason" placeholder="Grund">
-          </div>
-          <div id="kickHint" class="player-hint"></div>
-          <input type="text" id="kickDuration" placeholder="Dauer (z.B. 10 Minuten...)">
-          <div style="margin-bottom:10px">
-            <button class="btn-quick" onclick="setDur('kick','5 Minuten')">5min</button>
-            <button class="btn-quick" onclick="setDur('kick','10 Minuten')">10min</button>
-            <button class="btn-quick" onclick="setDur('kick','15 Minuten')">15min</button>
-            <button class="btn-quick" onclick="setDur('kick','1 Stunde')">1h</button>
-            <button class="btn-quick" onclick="setDur('kick','2 Stunden')">2h</button>
-            <button class="btn-quick" onclick="setDur('kick','5 Stunden')">5h</button>
-          </div>
-          <button class="btn" style="width:100%" onclick="addKick()">+ Kick eintragen</button>
-          <div class="filter-row">
-            <button class="btn-quick" onclick="modFilter.kick='active';filterLists()">Aktiv</button>
-            <button class="btn-quick" onclick="modFilter.kick='expired';filterLists()">Abgelaufen</button>
-            <button class="btn-quick" onclick="modFilter.kick='archived';filterLists()">Archiv</button>
-            <button class="btn-quick" onclick="modFilter.kick='all';filterLists()">Alle</button>
-          </div>
-          <div class="list" id="kickList"></div>
-        </div>
-
-        <div class="card">
           <h2>⚠️ Warnungen</h2>
           <p class="desc">Verwarnungen</p>
           <div class="form-row">
@@ -424,7 +396,7 @@ const firebaseConfig={apiKey:"AIzaSyBugFF4T6y_XEhCYde99bwpSyYZOuKbJHc",authDomai
 const OWNER_USER="owner",OWNER_PASS="Fisch22*",WHATS_NEW_VERSION="v3";
 firebase.initializeApp(firebaseConfig);
 const db=firebase.database();
-let currentUser=null, allBans={}, allKicks={}, allWarns={}, countdownTimer=null;
+let currentUser=null, allBans={}, allKicks={}, allWarns={}, allHelp={}, countdownTimer=null;
 let allReviews={}, allImages={}, communityFilter="pending";
 let modFilter={ban:"active",kick:"active"};
 let pendingArchive=null;
@@ -499,7 +471,7 @@ function showApp(){
   }
   startListeners(); setOnlinePresence();
   if(countdownTimer) clearInterval(countdownTimer);
-  countdownTimer=setInterval(()=>{ renderList("banList",Object.entries(allBans).reverse(),"ban"); renderList("kickList",Object.entries(allKicks).reverse(),"kick"); },1000);
+  countdownTimer=setInterval(()=>{ renderList("banList",Object.entries(allBans).reverse(),"ban"); },1000);
 }
 const saved=sessionStorage.getItem("alpensmp_staff_user");
 if(saved){ try{ currentUser=JSON.parse(saved); document.getElementById("loginScreen").style.display="none"; if(currentUser.mustChangePw) document.getElementById("forcePwScreen").style.display="flex"; else maybeShowWhatsNew(); }catch(e){} }
@@ -525,7 +497,7 @@ function startListeners(){
   db.ref("kicks").on("value",snap=>{ allKicks=snap.val()||{}; cleanupExpired("kicks",allKicks); renderList("kickList",Object.entries(allKicks).reverse(),"kick"); });
   db.ref("warns").on("value",snap=>{ allWarns=snap.val()||{}; renderList("warnList",Object.entries(allWarns).reverse(),"warn"); });
   db.ref("notes").on("value",snap=>renderList("noteList",Object.entries(snap.val()||{}).reverse(),"note"));
-  db.ref("helpRequests").on("value",snap=>{ updateHelpBadge(snap.val()||{}); if(!document.getElementById("tab-help").classList.contains("hidden")) loadHelp(); });
+  db.ref("helpRequests").on("value",snap=>{ allHelp=snap.val()||{}; updateHelpBadge(allHelp); if(!document.getElementById("tab-help").classList.contains("hidden")) loadHelp(); });
   db.ref("commands").on("value",()=>{ if(!document.getElementById("tab-commands").classList.contains("hidden")) loadCommands(); });
   db.ref("community_reviews").on("value",snap=>{ allReviews=snap.val()||{}; updateCommunityBadge(); if(!document.getElementById("tab-community").classList.contains("hidden")) renderCommunity(); });
   db.ref("community_images").on("value",snap=>{ allImages=snap.val()||{}; updateCommunityBadge(); if(!document.getElementById("tab-community").classList.contains("hidden")) renderCommunity(); });
@@ -556,7 +528,7 @@ function playerHistText(name){
 }
 
 function updateHelpBadge(data){
-  const count=Object.keys(data).length; const badge=document.getElementById("helpBadge");
+  const count=Object.values(data||{}).filter(x=>!x.archived).length; const badge=document.getElementById("helpBadge");
   if(count>0){ badge.style.display="flex"; badge.textContent=count; } else badge.style.display="none";
 }
 
@@ -651,9 +623,9 @@ function addNote(){
 }
 function askArchive(path,key,type){
   pendingArchive={path,key,type};
-  const map=path==="kicks"?allKicks:path==="bans"?allBans:path==="warns"?allWarns:{};
+  const map=path==="kicks"?allKicks:path==="bans"?allBans:path==="warns"?allWarns:path==="helpRequests"?allHelp:{};
   const item=(map||{})[key]||{};
-  document.getElementById("archiveModalInfo").textContent=`${item.name||"Eintrag"} · ${item.reason||""} · ${item.duration||""}`;
+  document.getElementById("archiveModalInfo").textContent=`${item.name||item.by||"Eintrag"} · ${item.reason||item.msg||item.text||""} · ${item.duration||item.ticketCode||""}`;
   document.getElementById("archiveModalHist").textContent=playerHistText(item.name||"");
   document.getElementById("archiveReason").value="";
   const m=document.getElementById("archiveModal");
@@ -678,9 +650,13 @@ function hardDelete(path,key){
   db.ref(path+"/"+key).remove().then(()=>toast("Endgültig weg"));
 }
 function removeItem(path,key){
-  if(path==="helpRequests"||path==="commands"||path==="notes"||path==="community_reviews"||path==="community_images"){
+  if(path==="commands"||path==="community_reviews"||path==="community_images"){
     if(!confirm("Wirklich entfernen?")) return;
     db.ref(path+"/"+key).remove(); toast("Entfernt");
+    return;
+  }
+  if(path==="helpRequests"||path==="notes"){
+    askArchive(path,key,path==="notes"?"note":"help");
     return;
   }
   askArchive(path,key,path==="kicks"?"kick":"ban");
@@ -692,8 +668,8 @@ function sendPanic(){
 }
 function loadHelp(){
   db.ref("helpRequests").once("value").then(snap=>{
-    const data=snap.val()||{}, entries=Object.entries(data).reverse(), el=document.getElementById("helpList");
-    if(!entries.length){ el.innerHTML='<div class="empty">Keine Anfragen</div>'; return; }
+    const data=snap.val()||{}, entries=Object.entries(data).filter(([k,v])=>!v.archived).reverse(), el=document.getElementById("helpList");
+    if(!entries.length){ el.innerHTML='<div class="empty">Keine offenen Anfragen</div>'; return; }
     const canReply=currentUser.role==="owner"||currentUser.role==="admin";
     el.innerHTML=entries.map(([key,item])=>{
       let replies="";
@@ -705,7 +681,13 @@ function loadHelp(){
 }
 function replyHelp(key){
   const input=document.getElementById("reply-"+key), text=input.value.trim(); if(!text) return toast("Leer");
-  db.ref("helpRequests/"+key+"/replies").push({by:currentUser.username,text,ts:Date.now()}).then(()=>{ input.value=""; loadHelp(); toast("Antwort ✓"); });
+  const payload={by:currentUser.username,text,ts:Date.now()};
+  db.ref("helpRequests/"+key+"/replies").push(payload).then(()=>{
+    return db.ref("helpRequests/"+key+"/ticketCode").once("value");
+  }).then(snap=>{
+    const code=snap.val();
+    if(code) return db.ref("tickets/"+code+"/replies").push(payload).then(()=>db.ref("tickets/"+code+"/status").set("beantwortet"));
+  }).then(()=>{ input.value=""; loadHelp(); toast("Antwort ✓"); });
 }
 
 function saveCommand(){
@@ -790,7 +772,8 @@ function loadArchive(){
   const el=document.getElementById("archiveList");
   const archived=[];
   Object.entries(allBans).forEach(([k,v])=>{ if(v.archived) archived.push({...v,type:"Ban",key:k,path:"bans"}); });
-  Object.entries(allKicks).forEach(([k,v])=>{ if(v.archived) archived.push({...v,type:"Kick",key:k,path:"kicks"}); });
+  Object.entries(allKicks||{}).forEach(([k,v])=>{ if(v.archived) archived.push({...v,type:"Kick",key:k,path:"kicks"}); });
+  Object.entries(allHelp||{}).forEach(([k,v])=>{ if(v.archived) archived.push({...v,name:v.by,reason:v.msg,type:"Hilfe",key:k,path:"helpRequests"}); });
   archived.sort((a,b)=>(b.archivedAt||b.ts||0)-(a.archivedAt||a.ts||0));
   if(!archived.length){ el.innerHTML='<div class="empty">Archiv leer</div>'; return; }
   const canHard=currentUser&&currentUser.role==="owner";
