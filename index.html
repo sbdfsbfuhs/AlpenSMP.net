@@ -344,6 +344,8 @@ footer{padding-bottom:48px}
 .footer-col h4{font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:14px}
 .footer-col a{display:block;color:var(--text2);text-decoration:none;font-size:.94rem;margin-bottom:10px;transition:color .3s,transform .3s}
 .footer-col a:hover{color:var(--red2);transform:translateX(3px)}
+.footer-team-link{opacity:.45;font-size:.82rem!important;letter-spacing:.04em}
+.footer-team-link:hover{opacity:1}
 .footer-bottom{max-width:1160px;margin:0 auto;padding-top:24px;border-top:1px solid var(--border);display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:.85rem;color:var(--muted)}
 
 /* Toast / Modals / FAB */
@@ -474,7 +476,6 @@ ALPEN<span>SMP</span>
 <li><a href="#join" data-sec="join">Beitreten</a></li>
 <li><a href="#faq" data-sec="faq">FAQ</a></li>
 <li><a href="#join" class="nav-cta btn btn-primary">SPIELEN</a></li>
-<li><a href="/team">Team</a></li>
 </ul>
 <button class="hamburger" id="hamburger" aria-label="Menü öffnen" aria-expanded="false" aria-controls="mobileMenu">
 <span></span><span></span><span></span>
@@ -864,7 +865,8 @@ Discord
 <a href="https://discord.gg/FfR56Ddtj8" target="_blank" rel="noopener noreferrer">Discord</a>
 <a href="https://www.tiktok.com/@alpensmp" target="_blank" rel="noopener noreferrer">TikTok</a>
 </div>
-<div class="footer-col"><h4>Rechtliches</h4><a href="#impressum">Kontakt</a></div>
+<div class="footer-col"><h4>Rechtliches</h4><a href="#impressum">Kontakt</a>
+<a href="/team" class="footer-team-link" title="Staff">Staff</a></div>
 </div>
 </div>
 <div class="footer-bottom"><span>© 2026 AlpenSMP</span><span>Made with ❤️ for the community</span></div>
@@ -1059,7 +1061,8 @@ function fetchSiteStatus() {
   if (!banner) return;
   db.ref('site_status/active').on('value', (snap) => {
     const data = snap.val();
-    if (!data || !data.is_active || data.type === 'online') {
+    const expired = data && data.expires_at && Number(data.expires_at) > 0 && Date.now() > Number(data.expires_at);
+    if (!data || !data.is_active || data.type === 'online' || expired) {
       banner.style.display = 'none';
       banner.className = 'site-status-banner';
       return;
@@ -1072,6 +1075,58 @@ function fetchSiteStatus() {
   }, () => {
     banner.style.display = 'none';
   });
+}
+
+function fetchSiteSettings() {
+  const db = initFirebase();
+  if (!db) return;
+  db.ref('site_settings').on('value', (snap) => {
+    const data = snap.val();
+    if (!data || typeof data !== 'object') return;
+    const ip = data.server_ip || (data.server_ip && data.server_ip.value);
+    const port = data.bedrock_port || (data.bedrock_port && data.bedrock_port.value);
+    const ver = data.recommended_version || (data.recommended_version && data.recommended_version.value);
+    const getVal = (node) => {
+      if (node == null) return '';
+      if (typeof node === 'string' || typeof node === 'number') return String(node);
+      if (typeof node === 'object' && node.value != null) return String(node.value);
+      return '';
+    };
+    const sip = getVal(data.server_ip);
+    const sport = getVal(data.bedrock_port);
+    const sver = getVal(data.recommended_version);
+    if (sip) CONFIG.serverIp = sip;
+    if (sport) CONFIG.bedrockPort = sport;
+    if (sver) CONFIG.recommendedVersion = sver;
+    try { applyConfigToDom(); } catch (e) {}
+  }, () => {});
+}
+
+function fetchStatsHistory() {
+  const db = initFirebase();
+  if (!db) return;
+  db.ref('site_stats_history').limitToLast(120).on('value', (snap) => {
+    const data = snap.val();
+    if (!data) return;
+    const remote = Object.values(data).map((x) => ({
+      t: Number(x.t || x.ts || 0),
+      n: Number(x.n || x.online_count || 0)
+    })).filter((x) => x.t > 0);
+    if (!remote.length) return;
+    const local = lsGetJSON('alpensmp_server_history', []);
+    const merged = [...remote, ...local].sort((a, b) => a.t - b.t);
+    const seen = new Set();
+    const dedup = [];
+    merged.forEach((p) => {
+      const k = String(p.t) + ':' + String(p.n);
+      if (seen.has(k)) return;
+      seen.add(k);
+      dedup.push(p);
+    });
+    const cutoff = Date.now() - 60 * 60 * 1000;
+    const lastHour = dedup.filter((x) => x.t >= cutoff);
+    drawChart(lastHour.length ? lastHour : dedup.slice(-120));
+  }, () => {});
 }
 
 
@@ -1994,6 +2049,8 @@ try { onScroll(); } catch (e) {}
 try { applyConfigToDom(); } catch (e) {}
 try { fetchTotalPlayersEver(); } catch (e) {}
 try { fetchSiteStatus(); } catch (e) {}
+try { fetchSiteSettings(); } catch (e) {}
+try { fetchStatsHistory(); } catch (e) {}
 
 try {
 const joined = document.getElementById('statJoined');
