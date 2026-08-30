@@ -1,0 +1,50 @@
+name: inject-upload-fix
+on:
+  push:
+    paths:
+      - upload-fix.js
+      - .github/workflows/inject-fix.yml
+  workflow_dispatch:
+jobs:
+  inject:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch index.html
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          t = p.read_text(encoding='utf-8')
+          changed = False
+          if 'upload-fix.js' not in t:
+              t = t.replace('</body>', '<script src="upload-fix.js"></script>\n</body>', 1)
+              changed = True
+          old = 'if (file.size > 8 * 1024 * 1024) return reject(new Error(\'Max. 8 MB\'));'
+          if old in t:
+              t = t.replace(old, '')
+              changed = True
+          old2 = "hint.textContent = 'Klappt gerade nicht. Bild als URL schicken oder Ticket/Discord.';"
+          new2 = "hint.textContent = 'Fehler: ' + ((err && err.message) ? err.message : 'Senden fehlgeschlagen') + '. Seite neu laden und nochmal senden.';"
+          if old2 in t:
+              t = t.replace(old2, new2)
+              changed = True
+          if changed:
+              p.write_text(t, encoding='utf-8')
+              print('patched')
+          else:
+              print('already patched')
+          PY
+      - name: Commit if needed
+        run: |
+          git config user.name "alpensmp-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "no changes"
+          else
+            git commit -m "Apply upload-fix to index.html (8MB-Limit weg, Script-Hook)"
+            git push
+          fi
