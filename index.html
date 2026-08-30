@@ -550,13 +550,23 @@ ALPEN<span>SMP</span>
   </div>
 </div>
 <style>
-.site-status-banner{position:relative;z-index:900;padding:10px 16px;text-align:center;font-size:.9rem;border-bottom:1px solid var(--border)}
-.site-status-banner .site-status-inner{max-width:900px;margin:0 auto;display:flex;flex-wrap:wrap;gap:8px 14px;justify-content:center;align-items:center}
-.site-status-banner.down{background:rgba(239,68,68,.15);color:#fecaca}
-.site-status-banner.restarting,.site-status-banner.maintenance{background:rgba(245,158,11,.14);color:#fde68a}
-.site-status-banner.bedrock_update{background:rgba(249,115,22,.14);color:#fdba74}
-.site-status-banner.custom{background:rgba(34,211,238,.12);color:#a5f3fc}
-.site-status-banner strong{font-family:var(--font)}
+.site-status-banner{position:sticky;top:64px;z-index:900;padding:16px 18px;text-align:center;border-bottom:1px solid rgba(255,255,255,.12);box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.site-status-banner .site-status-inner{max-width:820px;margin:0 auto;display:flex;flex-direction:column;gap:4px;align-items:center}
+.site-status-banner strong{font-family:var(--font);font-size:1.15rem;letter-spacing:.04em;text-transform:uppercase}
+.site-status-banner span{font-size:1rem;line-height:1.45;max-width:640px}
+.site-status-banner.down{background:#7f1d1d;color:#fff}
+.site-status-banner.restarting,.site-status-banner.maintenance{background:#b45309;color:#fff}
+.site-status-banner.bedrock_update{background:#c2410c;color:#fff}
+.site-status-banner.custom{background:#0e7490;color:#fff}
+.site-status-banner.online{background:#166534;color:#fff}
+.ticket-box input,.ticket-box textarea,.ticket-box select{
+width:100%;margin-bottom:12px;padding:12px 14px;border-radius:12px;border:1px solid var(--border);
+background:rgba(8,10,14,.9)!important;color:var(--text)!important;font-family:var(--body);font-size:.95rem;color-scheme:dark;
+}
+.file-drop{display:block;border:1px dashed rgba(199,62,62,.4);border-radius:14px;padding:16px;text-align:center;color:var(--text2);margin-bottom:12px;cursor:pointer;background:rgba(0,0,0,.25)}
+.file-drop input{position:absolute;opacity:0;width:0;height:0}
+.file-drop strong{color:var(--text);display:block;margin-bottom:4px}
+#revPreview{display:none;max-width:100%;max-height:160px;border-radius:10px;margin:8px auto 0}
 </style>
 
 <section class="hero" id="home" aria-label="Willkommen bei AlpenSMP">
@@ -788,8 +798,13 @@ Discord
 <option value="review">Nur Rezension</option>
 </select>
 <textarea id="revText" maxlength="600" placeholder="Was gefällt dir am Server? (max. 600 Zeichen)"></textarea>
-<input id="revImageUrl" type="url" placeholder="Bild-URL (optional, z. B. Discord/Imgur)">
-<input id="revFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
+<input id="revImageUrl" type="url" placeholder="Oder Bild-URL (Discord/Imgur)">
+<label class="file-drop">
+<strong>Bild auswählen</strong>
+<span id="revFileLabel">PNG, JPG oder WebP – wird automatisch verkleinert</span>
+<input id="revFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" onchange="previewRevFile(this)">
+<img id="revPreview" alt="">
+</label>
 <input class="hp-field" id="revCompany" tabindex="-1" autocomplete="off" aria-hidden="true">
 <button class="btn btn-primary" type="submit" id="revSubmit" style="width:100%">Absenden zur Freigabe</button>
 <p class="form-note" id="revHint">Wird nicht sofort öffentlich. Maximal 1 Beitrag pro Minute.</p>
@@ -943,16 +958,23 @@ Discord
 <section id="impressum" aria-labelledby="impressum-title">
 <div class="container">
 <div class="reveal"><span class="slabel">Support</span><h2 class="stitle" id="impressum-title">Kontakt & Ticket</h2></div>
-<div class="card reveal" style="max-width:640px;margin-top:24px">
-<p style="color:var(--text2);line-height:1.7;margin-bottom:16px">Ticket hier oder auf Discord. Das Team sieht es im Staff-Center unter Hilfe.</p>
+<div class="card reveal ticket-box" style="max-width:640px;margin-top:24px">
+<p style="color:var(--text2);line-height:1.7;margin-bottom:16px">Ticket hier oder auf Discord. Du bekommst einen Code und kannst die Antwort unten nachlesen.</p>
 <form id="ticketForm" onsubmit="return submitTicket(event)">
 <input id="ticketName" maxlength="32" required placeholder="Name / Ingame">
 <input id="ticketTopic" maxlength="80" placeholder="Thema (z.B. Join-Problem)">
-<textarea id="ticketMsg" maxlength="800" required placeholder="Was ist passiert?" style="width:100%;min-height:90px;margin:10px 0;padding:12px;border-radius:12px;border:1px solid var(--border);background:rgba(0,0,0,.28);color:var(--text);font-family:var(--body)"></textarea>
+<textarea id="ticketMsg" maxlength="800" required placeholder="Was ist passiert?"></textarea>
 <input class="hp-field" id="ticketCompany" tabindex="-1" autocomplete="off">
 <button class="btn btn-primary" type="submit" id="ticketBtn">Ticket senden</button>
 <p class="form-note" id="ticketHint"></p>
 </form>
+<div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border)">
+<h3 style="font-family:var(--font);margin-bottom:8px">Antwort prüfen</h3>
+<p style="color:var(--text2);font-size:.9rem;margin-bottom:10px">Code eingeben, den du nach dem Senden bekommen hast.</p>
+<input id="ticketLookup" placeholder="z. B. ALP-4K2P" maxlength="16">
+<button class="btn btn-secondary" type="button" onclick="lookupTicket()">Status laden</button>
+<div id="ticketStatusBox" style="margin-top:12px;color:var(--text2);font-size:.92rem"></div>
+</div>
 <a href="https://discord.gg/FfR56Ddtj8" class="btn btn-discord" target="_blank" rel="noopener noreferrer" style="margin-top:14px">Oder Discord öffnen</a>
 <p style="color:var(--muted);font-size:.88rem;margin-top:16px">AlpenSMP ist ein privater, nicht-kommerzieller Minecraft-Server.</p>
 </div>
@@ -1190,7 +1212,8 @@ function fetchSiteStatus() {
     }
     const type = String(data.type || 'custom');
     banner.className = 'site-status-banner ' + type;
-    if (titleEl) titleEl.textContent = data.title || '';
+    const icons = {restarting:'🔄', maintenance:'🛠️', down:'⛔', bedrock_update:'📱', online:'✅', custom:'ℹ️'};
+    if (titleEl) titleEl.textContent = (icons[type] || 'ℹ️') + '  ' + (data.title || 'Hinweis');
     if (msgEl) msgEl.textContent = data.message || '';
     banner.style.display = '';
   }, () => {
@@ -1894,27 +1917,55 @@ function loadCommunityGallery(grid) {
     if (shotEl) shotEl.textContent = String(approved.length);
   }, () => { renderGalleryEmpty(grid); });
 }
+function previewRevFile(input) {
+  const file = input.files && input.files[0];
+  const lab = document.getElementById('revFileLabel');
+  const prev = document.getElementById('revPreview');
+  if (!file) { if (lab) lab.textContent = 'PNG, JPG oder WebP'; if (prev) prev.style.display = 'none'; return; }
+  if (lab) lab.textContent = file.name + ' · ' + Math.round(file.size / 1024) + ' KB';
+  if (prev) {
+    prev.src = URL.createObjectURL(file);
+    prev.style.display = 'block';
+  }
+}
 function compressImageFile(file) {
   return new Promise((resolve, reject) => {
-    if (!file || !file.type || file.type.indexOf('image/') !== 0) return reject(new Error('Keine Bilddatei'));
-    if (file.size > 6 * 1024 * 1024) return reject(new Error('Max. 6 MB'));
+    if (!file || !/^image\//.test(file.type || '')) return reject(new Error('Keine Bilddatei'));
+    if (file.size > 8 * 1024 * 1024) return reject(new Error('Max. 8 MB'));
     const img = new Image();
     const url = URL.createObjectURL(file);
     img.onload = () => {
-      const max = 1280;
-      let w = img.width, h = img.height;
-      if (w > max) { h = Math.round(h * max / w); w = max; }
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      URL.revokeObjectURL(url);
-      canvas.toBlob((blob) => {
-        if (!blob) return reject(new Error('Komprimieren fehlgeschlagen'));
-        resolve(blob);
-      }, 'image/jpeg', 0.72);
+      let max = 1100, q = 0.7;
+      const tryOnce = () => {
+        let w = img.width, h = img.height;
+        if (w > max) { h = Math.round(h * max / w); w = max; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        canvas.toBlob((blob) => {
+          if (!blob) return reject(new Error('Komprimieren fehlgeschlagen'));
+          if (blob.size > 180 * 1024 && (max > 640 || q > 0.45)) {
+            max = Math.max(640, Math.round(max * 0.82));
+            q = Math.max(0.42, q - 0.12);
+            tryOnce();
+            return;
+          }
+          URL.revokeObjectURL(url);
+          resolve(blob);
+        }, 'image/jpeg', q);
+      };
+      tryOnce();
     };
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Bild unlesbar')); };
     img.src = url;
+  });
+}
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = () => reject(new Error('Lesefehler'));
+    r.readAsDataURL(blob);
   });
 }
 async function uploadCommunityImage(blob) {
@@ -1924,15 +1975,23 @@ async function uploadCommunityImage(blob) {
       const ref = window._fbStorage.ref().child(name);
       await ref.put(blob);
       return await ref.getDownloadURL();
-    } catch (e) { /* Storage oft ohne Rules → Fallback */ }
+    } catch (e) { /* Storage-Rules oft zu → Data-URL */ }
   }
-  if (blob.size > 220 * 1024) throw new Error('Bild zu groß für direkten Upload – nutze eine Bild-URL');
-  return await new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result);
-    r.onerror = () => reject(new Error('Lesefehler'));
-    r.readAsDataURL(blob);
-  });
+  return blobToDataUrl(blob);
+}
+function lookupTicket() {
+  const code = (document.getElementById('ticketLookup').value || '').trim().toUpperCase();
+  const box = document.getElementById('ticketStatusBox');
+  if (!code) { box.textContent = 'Code eingeben.'; return; }
+  const db = initFirebase();
+  if (!db) { box.textContent = 'Keine Verbindung.'; return; }
+  box.textContent = 'Lade…';
+  db.ref('tickets/' + code).once('value').then((snap) => {
+    const t = snap.val();
+    if (!t) { box.textContent = 'Kein Ticket mit diesem Code.'; return; }
+    const replies = t.replies ? Object.values(t.replies).map((r) => '<div style="margin-top:8px"><strong>' + escText(r.by || 'Team') + ':</strong> ' + escText(r.text || '') + '</div>').join('') : '<div style="margin-top:8px">Noch keine Antwort – Team schaut drüber.</div>';
+    box.innerHTML = '<strong>' + escText(t.status || 'offen') + '</strong> · ' + escText(t.topic || 'Ticket') + '<div style="margin-top:6px">' + escText(t.msg || '') + '</div>' + replies;
+  }).catch(() => { box.textContent = 'Lesen fehlgeschlagen.'; });
 }
 async function submitTicket(ev) {
   ev.preventDefault();
@@ -1947,12 +2006,18 @@ async function submitTicket(ev) {
   if (!db) { hint.textContent = 'Keine Verbindung.'; return false; }
   btn.disabled = true;
   try {
-    await db.ref('helpRequests').push({ by: name, msg: (topic ? '[' + topic + '] ' : '') + msg, ts: Date.now(), source: 'website', replies: {} });
+    const code = 'ALP-' + Math.random().toString(36).slice(2, 6).toUpperCase();
+    const payload = { by: name, msg: (topic ? '[' + topic + '] ' : '') + msg, ts: Date.now(), source: 'website', replies: {}, ticketCode: code };
+    const ref = await db.ref('helpRequests').push(payload);
+    await db.ref('tickets/' + code).set({ name, topic, msg, ts: Date.now(), replies: {}, status: 'offen', helpKey: ref.key });
     document.getElementById('ticketForm').reset();
-    hint.textContent = 'Ticket ist raus – das Team sieht es unter Hilfe.';
+    hint.textContent = 'Ticket-Code: ' + code + ' — merken, damit du die Antwort lesen kannst.';
+    const look = document.getElementById('ticketLookup');
+    if (look) look.value = code;
+    lsSet('alpensmp_last_ticket', code);
     const tm = document.getElementById('thanksModal');
     const tb = document.getElementById('thanksBody');
-    if (tb) tb.textContent = 'Ticket angekommen. Wir melden uns über Discord oder hier im Staff.';
+    if (tb) tb.textContent = 'Ticket-Code: ' + code + '. Unten unter „Antwort prüfen“ siehst du, wenn das Team schreibt.';
     if (tm) tm.classList.add('show');
   } catch (e) {
     hint.textContent = 'Senden fehlgeschlagen. Nutze Discord.';
@@ -1988,20 +2053,15 @@ async function submitCommunity(ev) {
     const base = { name, text, rating, kind, imageUrl: imageUrl || '', status: 'pending', ts: Date.now(), source: 'website' };
     let reviewRef = null;
     if (kind === 'review' || kind === 'both') reviewRef = await db.ref('community_reviews').push(base);
-    if (file) {
-      hint.textContent = 'Bild wird hochgeladen…';
-      try {
-        imageUrl = await uploadCommunityImage(await compressImageFile(file));
-        if (reviewRef) reviewRef.update({ imageUrl });
-      } catch (upErr) {
-        hint.textContent = 'Text ist raus, Bild nicht. Bitte Bild-URL nutzen oder kleineres Bild.';
-        imageUrl = imageUrl || '';
-      }
+    if (file && !imageUrl) {
+      hint.textContent = 'Bild wird vorbereitet…';
+      imageUrl = await uploadCommunityImage(await compressImageFile(file));
+      if (reviewRef) await reviewRef.update({ imageUrl });
     }
     if ((kind === 'image' || kind === 'both') && imageUrl) {
       await db.ref('community_images').push({ name, caption: text.slice(0, 120), imageUrl, status: 'pending', ts: Date.now() });
     } else if (kind === 'image' && !imageUrl) {
-      hint.textContent = 'Rezension/Name gespeichert, aber kein Bild angekommen – URL versuchen.';
+      hint.textContent = 'Kein Bild erkannt. Datei nochmal auswählen (Vorschau muss erscheinen).';
       btn.disabled = false;
       return false;
     }
