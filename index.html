@@ -288,18 +288,34 @@ transition:opacity .4s;
 .gallery-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:40px}
 @media(max-width:900px){.gallery-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:480px){.gallery-grid{grid-template-columns:1fr}}
+.gallery-grid.has-shots{grid-template-columns:2fr 1fr 1fr;grid-auto-rows:160px}
+@media(max-width:900px){.gallery-grid.has-shots{grid-template-columns:1fr 1fr;grid-auto-rows:140px}}
 .gallery-item{
 aspect-ratio:16/10;border-radius:var(--r);overflow:hidden;border:1px solid var(--border);
 background:linear-gradient(135deg,rgba(199,62,62,.06),var(--bg2));position:relative;
 transition:border-color .35s,box-shadow .35s,transform .5s cubic-bezier(.16,1,.3,1);
 transform-style:preserve-3d;cursor:pointer;
 }
+.gallery-grid.has-shots .gallery-item{aspect-ratio:auto;height:100%}
+.gallery-grid.has-shots .gallery-item:first-child{grid-row:span 2;grid-column:1}
 .gallery-item:hover{border-color:rgba(199,62,62,.5);box-shadow:0 16px 40px rgba(199,62,62,.2);transform:translateY(-6px) scale(1.01)}
-.gallery-item img{width:100%;height:100%;object-fit:cover;transition:transform .55s cubic-bezier(.16,1,.3,1);background:rgba(255,255,255,.03)}
-.gallery-item:hover img{transform:scale(1.08)}
+.gallery-item img{width:100%;height:100%;object-fit:cover;transition:transform 4s ease;background:rgba(255,255,255,.03);animation:ken 18s ease-in-out infinite alternate}
+@keyframes ken{from{transform:scale(1) translate(0)}to{transform:scale(1.12) translate(-2%,-1%)}}
+.gallery-item:hover img{animation-play-state:paused;transform:scale(1.08)}
+.gallery-cap{position:absolute;left:0;right:0;bottom:0;padding:28px 14px 12px;background:linear-gradient(transparent,rgba(0,0,0,.72));color:#fff;font-size:.82rem;font-weight:600}
+.gallery-new{position:absolute;top:10px;left:10px;background:var(--red);color:#fff;font-size:.68rem;font-weight:800;letter-spacing:.08em;padding:4px 8px;border-radius:999px}
 #gallery{content-visibility:auto;contain-intrinsic-size:800px}
 .gallery-ph{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;height:100%;color:var(--muted);font-size:.88rem;text-align:center;padding:20px}
 .gallery-ph .gicon{font-size:1.8rem;opacity:.6}
+.gallery-empty{
+grid-column:1/-1;min-height:280px;border:1px dashed rgba(199,62,62,.35);
+border-radius:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+text-align:center;padding:40px 24px;background:
+radial-gradient(ellipse at 50% 0%,rgba(199,62,62,.16),transparent 60%),rgba(255,255,255,.02);
+}
+.gallery-empty h3{font-family:var(--font);font-size:clamp(1.6rem,4vw,2.4rem);margin:8px 0 10px}
+.gallery-empty p{color:var(--text2);max-width:460px;margin-bottom:18px}
+@media(prefers-reduced-motion:reduce){.gallery-item img{animation:none}}
 
 /* Join */
 .join-section{background:var(--bg2)}
@@ -347,9 +363,14 @@ footer{padding-bottom:48px}
 .footer-col a:hover{color:var(--red2);transform:translateX(3px)}
 .footer-team-link{opacity:.45;font-size:.82rem!important;letter-spacing:.04em}
 .footer-team-link:hover{opacity:1}
-.reviews-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:40px}
-@media(max-width:768px){.reviews-grid{grid-template-columns:1fr}}
-.review-card{background:var(--glass);border:1px solid var(--border);border-radius:var(--r);padding:22px;text-align:left}
+.reviews-marquee{margin-top:40px;overflow:hidden;mask-image:linear-gradient(90deg,transparent,black 8%,black 92%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,black 8%,black 92%,transparent)}
+.reviews-track{display:flex;gap:16px;width:max-content;animation:reviewDrift 42s linear infinite}
+.reviews-track:hover{animation-play-state:paused}
+@keyframes reviewDrift{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.reviews-grid{display:none}
+.review-card{background:var(--glass);border:1px solid var(--border);border-radius:18px;padding:22px;text-align:left;width:min(340px,80vw);flex:0 0 auto;transition:transform .35s,border-color .35s}
+.review-card:hover{transform:translateY(-8px) rotate(-.4deg);border-color:rgba(199,62,62,.4)}
+@media(prefers-reduced-motion:reduce){.reviews-track{animation:none;flex-wrap:wrap;width:auto;justify-content:center}}
 .review-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:8px}
 .review-name{font-family:var(--font);font-weight:700}
 .review-stars{color:#fbbf24;letter-spacing:1px;font-size:.95rem}
@@ -711,27 +732,25 @@ Discord
 
 <section id="gallery" aria-labelledby="gallery-title">
 <div class="container">
-<div class="reveal" style="text-align:center"><span class="slabel">Galerie</span><h2 class="stitle" id="gallery-title">Einblicke in die Welt</h2>
-<p class="sdesc" style="margin:0 auto">Klicke auf ein Bild, um es groß anzusehen. Eigene Screenshots kannst du unten unter „Stimmen“ einreichen – nach Freigabe erscheinen sie hier.</p></div>
-<div class="gallery-grid" id="galleryGrid">
-<!-- Images 1–6 loaded via JS from images/gallery/1.jpg … 6.jpg -->
-</div>
+<div class="reveal" style="text-align:center"><span class="slabel">Community-Galerie</span><h2 class="stitle" id="gallery-title">Eure Welt. Eure Shots.</h2>
+<p class="sdesc" style="margin:0 auto">Keine Stock-Bilder – nur Builds von Spielern, sobald das Team sie freigibt.</p></div>
+<div class="gallery-grid" id="galleryGrid"></div>
 </div>
 </section>
 
 <section id="reviews" aria-labelledby="reviews-title">
 <div class="container">
 <div class="reveal" style="text-align:center">
-<span class="slabel">Community</span>
-<h2 class="stitle" id="reviews-title">Stimmen aus den Alpen</h2>
-<p class="sdesc" style="margin:0 auto">Rezensionen und Screenshots von Spielern. Beiträge erscheinen erst nach Freigabe durchs Team.</p>
+<span class="slabel">Stimmen</span>
+<h2 class="stitle" id="reviews-title">Was die Community sagt</h2>
+<p class="sdesc" style="margin:0 auto" id="reviewsLead">Rezensionen gleiten hier durch. Dein Text ist nach der Freigabe mit dabei.</p>
 </div>
-<div class="reviews-grid" id="reviewsGrid">
-<div class="review-card" id="reviewsEmpty"><p class="review-text">Noch keine freigegebenen Stimmen – sei der oder die Erste.</p></div>
+<div class="reviews-marquee" id="reviewsMarquee">
+<div class="reviews-track" id="reviewsGrid"></div>
 </div>
 <form class="review-form reveal" id="communityForm" onsubmit="return submitCommunity(event)">
-<h3>Rezension oder Screenshot senden</h3>
-<p>Name, kurzer Text und optional ein Bild. Kein Spam, keine Beleidigungen – das Team schaut kurz drüber.</p>
+<h3>Reicht jetzt deines ein</h3>
+<p>Shot, Rezension oder beides. Das Team checkt kurz – danach bewegt sich dein Beitrag oben in Galerie und Stimmen.</p>
 <label class="sr-only" for="revName">Name</label>
 <input id="revName" name="name" maxlength="32" required placeholder="Dein Name / Ingame-Name" autocomplete="nickname">
 <div class="star-pick" role="group" aria-label="Bewertung">
@@ -743,9 +762,9 @@ Discord
 </div>
 <input type="hidden" id="revStars" value="5">
 <select id="revKind" aria-label="Art des Beitrags">
-<option value="review">Rezension (Text)</option>
-<option value="image">Screenshot für die Galerie</option>
-<option value="both">Beides</option>
+<option value="both" selected>Beides – Shot + Rezension</option>
+<option value="image">Nur Screenshot</option>
+<option value="review">Nur Rezension</option>
 </select>
 <textarea id="revText" maxlength="600" placeholder="Was gefällt dir am Server? (max. 600 Zeichen)"></textarea>
 <input id="revImageUrl" type="url" placeholder="Bild-URL (optional, z. B. Discord/Imgur)">
@@ -1708,9 +1727,16 @@ function setStars(n) {
     b.classList.toggle('on', Number(b.dataset.stars) === n);
   });
 }
+function reviewCardHtml(r) {
+  const stars = '★'.repeat(Math.min(5, Math.max(1, Number(r.rating) || 5)));
+  const img = r.imageUrl ? `<img class="review-img" src="${escText(r.imageUrl)}" alt="">` : '';
+  const text = r.text ? `<p class="review-text">${escText(r.text)}</p>` : '';
+  return `<article class="review-card"><div class="review-top"><div class="review-name">${escText(r.name || 'Spieler')}</div><div class="review-stars">${stars}</div></div>${text}${img}</article>`;
+}
 function loadApprovedReviews() {
   const db = initFirebase();
   const grid = document.getElementById('reviewsGrid');
+  const lead = document.getElementById('reviewsLead');
   if (!db || !grid) return;
   db.ref('community_reviews').limitToLast(40).on('value', (snap) => {
     const data = snap.val() || {};
@@ -1719,47 +1745,70 @@ function loadApprovedReviews() {
       .filter((r) => r.status === 'approved')
       .sort((a, b) => (b.ts || 0) - (a.ts || 0));
     if (!items.length) {
-      grid.innerHTML = '<div class="review-card" id="reviewsEmpty"><p class="review-text">Noch keine freigegebenen Stimmen – sei der oder die Erste.</p></div>';
+      grid.style.animation = 'none';
+      grid.innerHTML = '<article class="review-card"><p class="review-text">Noch still hier oben. Schreib die erste Rezension – nach der Freigabe gleitet sie hier durch.</p></article>';
+      if (lead) lead.textContent = 'Noch keine Stimmen. Deine kann die erste sein.';
       return;
     }
-    grid.innerHTML = items.map((r) => {
-      const stars = '★'.repeat(Math.min(5, Math.max(1, Number(r.rating) || 5))) + '☆'.repeat(5 - Math.min(5, Math.max(1, Number(r.rating) || 5)));
-      const img = r.imageUrl ? `<img class="review-img" src="${escText(r.imageUrl)}" alt="Bild von ${escText(r.name)}" onclick="window.open(this.src,'_blank')">` : '';
-      const text = r.text ? `<p class="review-text">${escText(r.text)}</p>` : '';
-      return `<article class="review-card reveal visible"><div class="review-top"><div class="review-name">${escText(r.name || 'Spieler')}</div><div class="review-stars" aria-label="${Number(r.rating)||5} von 5">${stars}</div></div>${text}${img}</article>`;
-    }).join('');
+    const avg = (items.reduce((s, r) => s + (Number(r.rating) || 5), 0) / items.length).toFixed(1);
+    if (lead) lead.textContent = items.length + ' Stimmen · Schnitt ' + avg + '★ · nach Freigabe sind sie live unterwegs.';
+    const html = items.map(reviewCardHtml).join('');
+    grid.style.animation = '';
+    grid.innerHTML = items.length > 2 ? html + html : html;
   }, () => {});
 }
-function loadCommunityGallery(grid, images, lazyImgs) {
+function renderGalleryEmpty(grid) {
+  grid.classList.remove('has-shots');
+  grid.innerHTML = `<a class="gallery-empty" href="#communityForm">
+    <span style="font-size:2.2rem">📸</span>
+    <h3>Reicht jetzt deines ein.</h3>
+    <p>Die alten Platzhalter sind weg. Sobald das Team deinen Shot akzeptiert, steht er hier groß – mit Name und Motion.</p>
+    <span class="btn btn-primary">Screenshot senden</span>
+  </a>`;
+}
+function loadCommunityGallery(grid) {
   const db = initFirebase();
-  if (!db || !grid) return;
-  db.ref('community_images').limitToLast(24).on('value', (snap) => {
+  if (!db || !grid) { renderGalleryEmpty(grid); return; }
+  db.ref('community_images').limitToLast(30).on('value', (snap) => {
     const data = snap.val() || {};
-    const approved = Object.values(data).filter((x) => x && x.status === 'approved' && x.imageUrl);
+    const approved = Object.values(data).filter((x) => x && x.status === 'approved' && x.imageUrl)
+      .sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    const images = [];
+    grid.innerHTML = '';
+    if (!approved.length) { window._galleryImages = []; renderGalleryEmpty(grid); return; }
+    grid.classList.add('has-shots');
     approved.forEach((item, idx) => {
-      if (images.indexOf(item.imageUrl) !== -1) return;
-      const i = images.length + 1;
       images.push(item.imageUrl);
       const el = document.createElement('div');
-      el.className = 'gallery-item reveal visible';
+      el.className = 'gallery-item tilt-card';
       el.setAttribute('role', 'button');
       el.setAttribute('tabindex', '0');
       const img = document.createElement('img');
-      img.alt = item.caption || ('Community-Bild ' + i);
+      img.alt = item.caption || item.name || 'Community-Shot';
       img.decoding = 'async';
       img.loading = 'lazy';
       img.src = item.imageUrl;
       el.appendChild(img);
-      const glow = document.createElement('div');
-      glow.className = 'card-glow';
-      glow.setAttribute('aria-hidden', 'true');
-      el.appendChild(glow);
-      const openIdx = images.length - 1;
-      el.addEventListener('click', () => openLightbox(openIdx));
+      if (Date.now() - (item.moderatedAt || item.ts || 0) < 7 * 864e5) {
+        const badge = document.createElement('span');
+        badge.className = 'gallery-new';
+        badge.textContent = 'NEU';
+        el.appendChild(badge);
+      }
+      const cap = document.createElement('div');
+      cap.className = 'gallery-cap';
+      cap.textContent = (item.name ? item.name + ' · ' : '') + (item.caption || 'Community');
+      el.appendChild(cap);
+      el.addEventListener('click', () => openLightbox(idx));
       grid.appendChild(el);
     });
+    const cta = document.createElement('a');
+    cta.className = 'gallery-item';
+    cta.href = '#communityForm';
+    cta.innerHTML = '<div class="gallery-ph"><span class="gicon">+</span>Dein Shot als Nächstes</div>';
+    grid.appendChild(cta);
     window._galleryImages = images;
-  }, () => {});
+  }, () => { renderGalleryEmpty(grid); });
 }
 function compressImageFile(file) {
   return new Promise((resolve, reject) => {
@@ -1853,69 +1902,9 @@ async function submitCommunity(ev) {
 function initGallery() {
 const grid = document.getElementById('galleryGrid');
 if (!grid) return;
-grid.innerHTML = '';
-const images = [];
-const custom = Array.isArray(CONFIG._galleryUrls) ? CONFIG._galleryUrls.filter(Boolean) : [];
-const count = custom.length > 0 ? custom.length : CONFIG.galleryCount;
-const lazyImgs = [];
-
-for (let i = 1; i <= count; i++) {
-const src = custom.length > 0 ? custom[i - 1] : (CONFIG.galleryPath + i + CONFIG.galleryExt);
-images.push(src);
-const item = document.createElement('div');
-item.className = 'gallery-item reveal' + (i > 1 ? ' rd' + ((i - 1) % 3 || 3) : '');
-item.setAttribute('role', 'button');
-item.setAttribute('tabindex', '0');
-item.setAttribute('aria-label', 'Galerie-Bild ' + i + ' vergrößern');
-const img = document.createElement('img');
-img.alt = 'AlpenSMP Bauwerk ' + i;
-img.decoding = 'async';
-img.loading = 'lazy';
-// src erst setzen wenn nah am Viewport → Seite öffnet sofort
-img.dataset.src = src;
-img.onerror = function () {
-this.remove();
-item.innerHTML = '<div class="gallery-ph"><span class="gicon">🏔️</span>Bild ' + i + ' folgt</div>';
-item.style.cursor = 'default';
-};
-item.appendChild(img);
-lazyImgs.push(img);
-const glow = document.createElement('div');
-glow.className = 'card-glow';
-glow.setAttribute('aria-hidden', 'true');
-item.appendChild(glow);
-item.addEventListener('click', () => {
-if (item.querySelector('img[src]')) openLightbox(i - 1);
-});
-item.addEventListener('keydown', e => {
-if ((e.key === 'Enter' || e.key === ' ') && item.querySelector('img[src]')) {
-e.preventDefault();
-openLightbox(i - 1);
-}
-});
-grid.appendChild(item);
-if (typeof revealObserver !== 'undefined') revealObserver.observe(item);
-}
-window._galleryImages = images;
-try { loadCommunityGallery(grid, images, lazyImgs); } catch (e) {}
-
-// IntersectionObserver: Bild erst laden wenn ~200px vor dem Viewport
-if ('IntersectionObserver' in window) {
-const io = new IntersectionObserver((entries) => {
-entries.forEach(entry => {
-if (!entry.isIntersecting) return;
-const img = entry.target;
-if (img.dataset.src) {
-img.src = img.dataset.src;
-delete img.dataset.src;
-}
-io.unobserve(img);
-});
-}, { rootMargin: '200px 0px', threshold: 0.01 });
-lazyImgs.forEach(img => io.observe(img));
-} else {
-lazyImgs.forEach(img => { if (img.dataset.src) { img.src = img.dataset.src; delete img.dataset.src; } });
-}
+window._galleryImages = [];
+renderGalleryEmpty(grid);
+try { loadCommunityGallery(grid); } catch (e) {}
 }
 let lbIndex = 0;
 function openLightbox(idx) {
