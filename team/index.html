@@ -56,6 +56,16 @@ textarea{min-height:90px;resize:vertical}
 .online-dot{color:var(--ok);font-size:.88rem}
 .player-hint{font-size:.85rem;color:var(--warn);margin:-4px 0 12px;min-height:1.2em}
 .search{margin-bottom:12px}
+.tabs{overflow-x:auto;-webkit-overflow-scrolling:touch}
+@media(max-width:700px){
+  .navbar{padding:12px 14px}
+  .container{padding:20px 14px 80px}
+  .btn,.btn-sm{min-height:44px}
+  .tabs{gap:8px}
+  .tab{flex:0 0 auto;padding:12px 14px}
+}
+.comm-thumb{max-width:100%;max-height:220px;border-radius:12px;display:block;margin:8px 0}
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
 .preset-row{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 18px}
 .preset-chip{border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);padding:8px 14px;border-radius:999px;cursor:pointer;font-size:.88rem;font-weight:600;transition:.2s}
 .preset-chip:hover{border-color:var(--red);color:#fff}
@@ -159,14 +169,22 @@ textarea{min-height:90px;resize:vertical}
           <input type="text" id="banDuration" placeholder="Dauer (z.B. 30 Tage, Permanent...)">
           <div style="margin-bottom:10px">
             <button class="btn-quick" onclick="setDur('ban','5 Minuten')">5min</button>
-            <button class="btn-quick" onclick="setDur('ban','10 Minuten')">10min</button>
-            <button class="btn-quick" onclick="setDur('ban','15 Minuten')">15min</button>
             <button class="btn-quick" onclick="setDur('ban','1 Stunde')">1h</button>
-            <button class="btn-quick" onclick="setDur('ban','2 Stunden')">2h</button>
-            <button class="btn-quick" onclick="setDur('ban','5 Stunden')">5h</button>
             <button class="btn-quick" onclick="setDur('ban','1 Tag')">1d</button>
             <button class="btn-quick" onclick="setDur('ban','7 Tage')">7d</button>
             <button class="btn-quick" onclick="setDur('ban','Permanent')">Permanent</button>
+          </div>
+          <div style="margin-bottom:10px">
+            <button class="btn-quick" onclick="banPreset('Griefing','1 Tag')">Griefing 1d</button>
+            <button class="btn-quick" onclick="banPreset('Beleidigung','7 Tage')">Beleidigung 7d</button>
+            <button class="btn-quick" onclick="banPreset('Cheating','30 Tage')">Cheating 30d</button>
+            <button class="btn-quick" onclick="banPreset('Schwerer Verstoß','Permanent')">Permanent</button>
+          </div>
+          <div class="filter-row">
+            <button class="btn-quick" onclick="modFilter.ban='active';filterLists()">Aktiv</button>
+            <button class="btn-quick" onclick="modFilter.ban='expired';filterLists()">Abgelaufen</button>
+            <button class="btn-quick" onclick="modFilter.ban='archived';filterLists()">Archiv</button>
+            <button class="btn-quick" onclick="modFilter.ban='all';filterLists()">Alle</button>
           </div>
           <button class="btn" style="width:100%" onclick="addBan()">+ Ban eintragen</button>
           <div class="list" id="banList"></div>
@@ -191,6 +209,12 @@ textarea{min-height:90px;resize:vertical}
             <button class="btn-quick" onclick="setDur('kick','5 Stunden')">5h</button>
           </div>
           <button class="btn" style="width:100%" onclick="addKick()">+ Kick eintragen</button>
+          <div class="filter-row">
+            <button class="btn-quick" onclick="modFilter.kick='active';filterLists()">Aktiv</button>
+            <button class="btn-quick" onclick="modFilter.kick='expired';filterLists()">Abgelaufen</button>
+            <button class="btn-quick" onclick="modFilter.kick='archived';filterLists()">Archiv</button>
+            <button class="btn-quick" onclick="modFilter.kick='all';filterLists()">Alle</button>
+          </div>
           <div class="list" id="kickList"></div>
         </div>
 
@@ -335,15 +359,24 @@ textarea{min-height:90px;resize:vertical}
           <input type="text" id="settingPort" placeholder="Bedrock-Port">
           <input type="text" id="settingVersion" placeholder="Empfohlene Version">
         </div>
+        <div class="form-row">
+          <input type="number" id="settingCooldown" placeholder="Rate-Limit Sekunden (60)">
+          <input type="text" id="settingCta" placeholder="Galerie-CTA Text">
+          <select id="settingCommunityOn">
+            <option value="1">Community-Formular an</option>
+            <option value="0">Community-Formular aus</option>
+          </select>
+        </div>
         <button class="btn" onclick="saveSiteSettings()">Einstellungen speichern</button>
+        <button class="btn btn-ghost" style="margin-top:10px" onclick="pushHistoryNow()">Jetzt Graph-Punkt schreiben</button>
       </div>
     </div>
 
     <!-- ARCHIVE (Owner) -->
     <div id="tab-archive" class="hidden">
       <div class="card">
-        <h2>📦 Archiv (abgelaufen)</h2>
-        <p class="desc">Nur für Owner sichtbar. Abgelaufene Einträge nach 2 Tagen landen hier.</p>
+        <h2>📦 Archiv</h2>
+        <p class="desc">Manuell archivierte Bans/Kicks. Endgültig löschen nur Owner.</p>
         <div class="list" id="archiveList" style="max-height:500px"></div>
       </div>
     </div>
@@ -370,6 +403,18 @@ textarea{min-height:90px;resize:vertical}
   </div>
 </div>
 
+<div class="modal-bg" id="archiveModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:2000;align-items:center;justify-content:center;padding:20px">
+  <div class="card" style="max-width:460px;width:100%">
+    <h2>Ins Archiv?</h2>
+    <p class="desc" id="archiveModalInfo">Eintrag wird nicht gelöscht.</p>
+    <div id="archiveModalHist" class="player-hint"></div>
+    <textarea id="archiveReason" placeholder="Begründung (Pflicht für Helper/Admin)"></textarea>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+      <button class="btn" onclick="confirmArchive()">Archivieren</button>
+      <button class="btn btn-ghost" onclick="closeArchiveModal()">Abbrechen</button>
+    </div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -381,6 +426,8 @@ firebase.initializeApp(firebaseConfig);
 const db=firebase.database();
 let currentUser=null, allBans={}, allKicks={}, allWarns={}, countdownTimer=null;
 let allReviews={}, allImages={}, communityFilter="pending";
+let modFilter={ban:"active",kick:"active"};
+let pendingArchive=null;
 
 function parseDuration(str){
   if(!str||/permanent|perm|∞/i.test(str)) return null;
@@ -444,9 +491,9 @@ function doLogout(){ if(currentUser) db.ref("presence/"+currentUser.username).re
 function showApp(){
   document.getElementById("app").style.display="block";
   document.getElementById("currentUserName").textContent=currentUser.username+" ("+currentUser.role+")";
+  document.getElementById("archiveTabBtn").style.display="inline-block";
   if(currentUser.role==="owner"){
     document.getElementById("usersTabBtn").style.display="inline-block";
-    document.getElementById("archiveTabBtn").style.display="inline-block";
     document.getElementById("websiteTabBtn").style.display="inline-block";
     document.getElementById("commandsOwnerBox").style.display="block";
   }
@@ -494,13 +541,18 @@ function startListeners(){
   });
 }
 
-function cleanupExpired(path,data){
-  const now=Date.now(), twoDays=2*864e5;
-  Object.entries(data).forEach(([key,item])=>{
-    if(item.endsAt&&item.endsAt<now-twoDays&&!item.archived){
-      db.ref(path+"/"+key).update({archived:true});
-    }
-  });
+function cleanupExpired(path,data){ /* kein Auto-Archiv mehr */ }
+function banPreset(reason,dur){
+  document.getElementById("banReason").value=reason;
+  document.getElementById("banDuration").value=dur;
+}
+function playerHistText(name){
+  const n=(name||"").toLowerCase();
+  let bans=0,kicks=0,warns=0;
+  Object.values(allBans).forEach(i=>{ if((i.name||"").toLowerCase()===n) bans++; });
+  Object.values(allKicks).forEach(i=>{ if((i.name||"").toLowerCase()===n) kicks++; });
+  Object.values(allWarns).forEach(i=>{ if((i.name||"").toLowerCase()===n) warns++; });
+  return `${bans}× Ban · ${kicks}× Kick · ${warns}× Warnung`;
 }
 
 function updateHelpBadge(data){
@@ -513,25 +565,41 @@ function filterLists(){ renderList("banList",Object.entries(allBans).reverse(),"
 function renderList(id,entries,type){
   const el=document.getElementById(id); if(!el) return;
   const search=(document.getElementById(type==="ban"?"banSearch":type==="kick"?"kickSearch":null)?.value||"").toLowerCase();
-  let filtered=entries.filter(([k,item])=>!item.archived);
-  if(search) filtered=filtered.filter(([k,item])=>(item.name||"").toLowerCase().includes(search));
+  const f=modFilter[type]||"active";
+  let filtered=entries.filter(([k,item])=>{
+    const expired=item.endsAt&&item.endsAt<=Date.now();
+    if(f==="archived") return !!item.archived;
+    if(f==="expired") return !item.archived && expired;
+    if(f==="active") return !item.archived && !expired;
+    return true;
+  });
+  if(search) filtered=filtered.filter(([k,item])=>{
+    const blob=((item.name||"")+" "+(item.reason||"")+" "+(item.by||"")+" "+(item.duration||"")+" "+(item.archiveReason||"")).toLowerCase();
+    return blob.includes(search);
+  });
   if(!filtered.length){ el.innerHTML='<div class="empty">Keine Einträge</div>'; return; }
   el.innerHTML=filtered.map(([key,item])=>{
     const expired=item.endsAt&&item.endsAt<=Date.now();
-    const rem=item.endsAt?formatRemaining(item.endsAt):(item.duration||"");
+    const rem=item.endsAt?formatRemaining(item.endsAt):(item.duration||"Permanent");
+    const orig=item.duration|| (item.endsAt?"befristet":"Permanent");
     const by=item.by?" · von "+esc(item.by):"";
     const path=type==="kick"?"kicks":type==="ban"?"bans":type==="warn"?"warns":"notes";
     const copyTxt=type==="note"?(item.text||""):`${item.name||""} | ${item.reason||""} | ${item.duration||""}`;
-    return `<div class="item ${expired?"expired":""}">
+    const timeLine=type==="note"?"":`<div class="countdown">${esc(orig)} · noch ${esc(rem)}</div>`;
+    const arch=item.archived?` <span style="color:var(--muted)">(Archiv${item.archiveReason?": "+esc(item.archiveReason):""})</span>`:"";
+    const delBtn=item.archived
+      ? (currentUser&&currentUser.role==="owner"?`<button class="btn-icon" title="Endgültig löschen" onclick="hardDelete('${path}','${key}')">🗑</button>`:"")
+      : `<button class="btn-icon" title="Archivieren" onclick="askArchive('${path}','${key}','${type}')">✕</button>`;
+    return `<div class="item ${expired||item.archived?"expired":""}">
       <div>
-        <div class="name">${esc(item.name||"")}${expired?' <span style="color:var(--muted)">(abgelaufen)</span>':""}</div>
+        <div class="name">${esc(item.name||"")}${expired?' <span style="color:var(--muted)">(abgelaufen)</span>':""}${arch}</div>
         <div>${esc(item.reason||item.text||"")}</div>
-        <div class="countdown">${esc(rem)}</div>
-        <div class="meta">${formatDate(item.ts)}${by}</div>
+        ${timeLine}
+        <div class="meta">${formatDate(item.ts)}${by}${item.archivedBy?" · archiviert von "+esc(item.archivedBy):""}</div>
       </div>
       <div style="display:flex;gap:6px">
         <button class="btn-icon" onclick="copyText(\`${esc(copyTxt)}\`)">📋</button>
-        <button class="btn-icon" onclick="removeItem('${path}','${key}')">✕</button>
+        ${delBtn}
       </div>
     </div>`;
   }).join("");
@@ -581,7 +649,42 @@ function addNote(){
   const text=document.getElementById("noteText").value.trim(); if(!text) return toast("Leer");
   db.ref("notes").push({text,by:currentUser.username,ts:Date.now()}); document.getElementById("noteText").value=""; toast("Notiz ✓");
 }
-function removeItem(path,key){ if(!confirm("Löschen?")) return; db.ref(path+"/"+key).remove(); toast("Gelöscht"); }
+function askArchive(path,key,type){
+  pendingArchive={path,key,type};
+  const map=path==="kicks"?allKicks:path==="bans"?allBans:path==="warns"?allWarns:{};
+  const item=(map||{})[key]||{};
+  document.getElementById("archiveModalInfo").textContent=`${item.name||"Eintrag"} · ${item.reason||""} · ${item.duration||""}`;
+  document.getElementById("archiveModalHist").textContent=playerHistText(item.name||"");
+  document.getElementById("archiveReason").value="";
+  const m=document.getElementById("archiveModal");
+  m.style.display="flex";
+}
+function closeArchiveModal(){ document.getElementById("archiveModal").style.display="none"; pendingArchive=null; }
+function confirmArchive(){
+  if(!pendingArchive||!currentUser) return;
+  const reason=(document.getElementById("archiveReason").value||"").trim();
+  if(currentUser.role!=="owner" && reason.length<3) return toast("Begründung Pflicht");
+  const {path,key}=pendingArchive;
+  db.ref(path+"/"+key).update({
+    archived:true,
+    archivedBy:currentUser.username,
+    archivedAt:Date.now(),
+    archiveReason:reason||"Owner"
+  }).then(()=>{ toast("Im Archiv ✓"); closeArchiveModal(); filterLists(); loadArchive(); });
+}
+function hardDelete(path,key){
+  if(!currentUser||currentUser.role!=="owner") return toast("Nur Owner");
+  if(!confirm("Endgültig löschen? Nur im Archiv, nicht rückgängig.")) return;
+  db.ref(path+"/"+key).remove().then(()=>toast("Endgültig weg"));
+}
+function removeItem(path,key){
+  if(path==="helpRequests"||path==="commands"||path==="notes"||path==="community_reviews"||path==="community_images"){
+    if(!confirm("Wirklich entfernen?")) return;
+    db.ref(path+"/"+key).remove(); toast("Entfernt");
+    return;
+  }
+  askArchive(path,key,path==="kicks"?"kick":"ban");
+}
 
 function sendPanic(){
   const msg=prompt("Was brauchst du?")||"Brauche Hilfe";
@@ -686,12 +789,13 @@ function kickUser(username){ if(!confirm(`"${username}" löschen?`)) return; db.
 function loadArchive(){
   const el=document.getElementById("archiveList");
   const archived=[];
-  Object.entries(allBans).forEach(([k,v])=>{ if(v.archived||(v.endsAt&&v.endsAt<Date.now()-2*864e5)) archived.push({...v,type:"Ban",key:k,path:"bans"}); });
-  Object.entries(allKicks).forEach(([k,v])=>{ if(v.archived||(v.endsAt&&v.endsAt<Date.now()-2*864e5)) archived.push({...v,type:"Kick",key:k,path:"kicks"}); });
-  archived.sort((a,b)=>(b.ts||0)-(a.ts||0));
+  Object.entries(allBans).forEach(([k,v])=>{ if(v.archived) archived.push({...v,type:"Ban",key:k,path:"bans"}); });
+  Object.entries(allKicks).forEach(([k,v])=>{ if(v.archived) archived.push({...v,type:"Kick",key:k,path:"kicks"}); });
+  archived.sort((a,b)=>(b.archivedAt||b.ts||0)-(a.archivedAt||a.ts||0));
   if(!archived.length){ el.innerHTML='<div class="empty">Archiv leer</div>'; return; }
-  el.innerHTML=archived.map(item=>`<div class="item expired"><div><div class="name">[${item.type}] ${esc(item.name||"")}</div><div>${esc(item.reason||"")}</div><div class="meta">${formatDate(item.ts)} · ${esc(item.by||"")} · ${esc(item.duration||"")}</div></div>
-    <button class="btn-icon" onclick="removeItem('${item.path}','${item.key}')">✕</button></div>`).join("");
+  const canHard=currentUser&&currentUser.role==="owner";
+  el.innerHTML=archived.map(item=>`<div class="item expired"><div><div class="name">[${item.type}] ${esc(item.name||"")}</div><div>${esc(item.reason||"")}</div><div class="meta">${formatDate(item.ts)} · von ${esc(item.by||"")} · ${esc(item.duration||"")} · archiv ${esc(item.archivedBy||"")} · ${esc(item.archiveReason||"")}</div></div>
+    ${canHard?`<button class="btn-icon" onclick="hardDelete('${item.path}','${item.key}')">🗑</button>`:""}</div>`).join("");
 }
 
 function updateCommunityBadge(){
@@ -710,7 +814,7 @@ function renderCommunity(){
   const imgs=Object.entries(allImages||{}).reverse().filter(([k,r])=>filt==="all"||r.status===filt);
   revEl.innerHTML=revs.length?revs.map(([key,r])=>{
     const stars="★".repeat(Math.min(5,Number(r.rating)||5));
-    const pic=r.imageUrl?`<div style="margin:8px 0"><img src="${esc(r.imageUrl)}" alt="" style="max-width:220px;border-radius:10px"></div>`:"";
+    const pic=r.imageUrl?`<div style="margin:8px 0"><img class="comm-thumb" src="${esc(r.imageUrl)}" alt=""></div>`:`<div class="meta">kein Bild angekommen</div>`;
     return `<div class="item"><div><div class="name">${esc(r.name||"–")} · ${stars} · <span style="color:var(--muted)">${esc(r.status||"")}</span></div>
       <div>${esc(r.text||"")}</div>${pic}<div class="meta">${formatDate(r.ts)}</div>
       <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
@@ -720,7 +824,7 @@ function renderCommunity(){
       </div></div></div>`;
   }).join(""):'<div class="empty">Keine Rezensionen in diesem Filter</div>';
   imgEl.innerHTML=imgs.length?imgs.map(([key,r])=>{
-    const pic=r.imageUrl?`<div style="margin:8px 0"><img src="${esc(r.imageUrl)}" alt="" style="max-width:260px;border-radius:10px"></div>`:"";
+    const pic=r.imageUrl?`<div style="margin:8px 0"><img class="comm-thumb" src="${esc(r.imageUrl)}" alt=""></div>`:`<div class="meta">kein Bild angekommen</div>`;
     return `<div class="item"><div><div class="name">${esc(r.name||"–")} · <span style="color:var(--muted)">${esc(r.status||"")}</span></div>
       <div>${esc(r.caption||"")}</div>${pic}<div class="meta">${formatDate(r.ts)}</div>
       <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
@@ -911,12 +1015,27 @@ function saveSiteSettings(){
   const ip=(document.getElementById("settingIp").value||"").trim();
   const port=(document.getElementById("settingPort").value||"").trim();
   const version=(document.getElementById("settingVersion").value||"").trim();
+  const cd=(document.getElementById("settingCooldown").value||"").trim();
+  const cta=(document.getElementById("settingCta").value||"").trim();
+  const on=document.getElementById("settingCommunityOn").value;
   const stamp={updated_by:currentUser.username,updated_at:Date.now()};
   const payload={};
   if(ip) payload.server_ip={value:ip,...stamp};
   if(port) payload.bedrock_port={value:port,...stamp};
   if(version) payload.recommended_version={value:version,...stamp};
+  if(cd) payload.review_cooldown_sec={value:cd,...stamp};
+  if(cta) payload.gallery_cta={value:cta,...stamp};
+  payload.community_enabled={value:on,...stamp};
   db.ref("site_settings").update(payload).then(()=>toast("Website-Einstellungen gespeichert ✓")).catch(()=>toast("Fehler"));
+}
+function pushHistoryNow(){
+  if(!requireOwner()) return;
+  const n=parseInt(document.getElementById("ownerCurrentInput").value,10);
+  const online=isNaN(n)?0:n;
+  db.ref("site_stats/total_players_ever").once("value").then(snap=>{
+    const total=Number(snap.val()||0);
+    return db.ref("site_stats_history").push({t:Date.now(),n:online,online_count:online,total_players_ever:total,by:currentUser.username});
+  }).then(()=>toast("Graph-Punkt geschrieben ✓"));
 }
 
 function esc(s){ const d=document.createElement("div"); d.textContent=s||""; return d.innerHTML; }
