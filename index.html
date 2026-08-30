@@ -25,6 +25,7 @@
 <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet"></noscript>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
 <script type="application/ld+json">
 {
 "@context": "https://schema.org",
@@ -346,6 +347,24 @@ footer{padding-bottom:48px}
 .footer-col a:hover{color:var(--red2);transform:translateX(3px)}
 .footer-team-link{opacity:.45;font-size:.82rem!important;letter-spacing:.04em}
 .footer-team-link:hover{opacity:1}
+.reviews-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:40px}
+@media(max-width:768px){.reviews-grid{grid-template-columns:1fr}}
+.review-card{background:var(--glass);border:1px solid var(--border);border-radius:var(--r);padding:22px;text-align:left}
+.review-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:8px}
+.review-name{font-family:var(--font);font-weight:700}
+.review-stars{color:#fbbf24;letter-spacing:1px;font-size:.95rem}
+.review-text{color:var(--text2);font-size:.94rem;line-height:1.65}
+.review-img{margin-top:14px;border-radius:12px;max-height:220px;width:100%;object-fit:cover;border:1px solid var(--border);cursor:pointer}
+.review-form{max-width:640px;margin:36px auto 0;background:var(--glass);border:1px solid var(--border);border-radius:20px;padding:28px 24px}
+.review-form h3{font-family:var(--font);margin-bottom:8px}
+.review-form p{color:var(--text2);font-size:.9rem;margin-bottom:16px}
+.review-form input,.review-form textarea,.review-form select{width:100%;margin-bottom:12px;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:rgba(0,0,0,.28);color:var(--text);font-family:var(--body);font-size:.95rem}
+.review-form textarea{min-height:110px;resize:vertical}
+.star-pick{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.star-pick button{background:rgba(255,255,255,.04);border:1px solid var(--border);color:#fbbf24;border-radius:10px;padding:8px 12px;cursor:pointer;font-size:1rem}
+.star-pick button.on{background:rgba(251,191,36,.16);border-color:rgba(251,191,36,.45)}
+.hp-field{position:absolute;left:-9999px;opacity:0;height:0;width:0}
+.form-note{font-size:.8rem;color:var(--muted);margin-top:10px}
 .footer-bottom{max-width:1160px;margin:0 auto;padding-top:24px;border-top:1px solid var(--border);display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:.85rem;color:var(--muted)}
 
 /* Toast / Modals / FAB */
@@ -474,6 +493,7 @@ ALPEN<span>SMP</span>
 <li><a href="#about" data-sec="about">Über uns</a></li>
 <li><a href="#features" data-sec="features">Features</a></li>
 <li><a href="#join" data-sec="join">Beitreten</a></li>
+<li><a href="#reviews" data-sec="reviews">Stimmen</a></li>
 <li><a href="#faq" data-sec="faq">FAQ</a></li>
 <li><a href="#join" class="nav-cta btn btn-primary">SPIELEN</a></li>
 </ul>
@@ -484,7 +504,7 @@ ALPEN<span>SMP</span>
 </nav>
 <div class="mobile-menu" id="mobileMenu">
 <a href="#home">Home</a><a href="#live">Live</a><a href="#about">Über uns</a>
-<a href="#features">Features</a><a href="#join">Beitreten</a><a href="#faq">FAQ</a>
+<a href="#features">Features</a><a href="#reviews">Stimmen</a><a href="#join">Beitreten</a><a href="#faq">FAQ</a>
 <a href="https://discord.gg/FfR56Ddtj8" target="_blank" rel="noopener noreferrer">Discord</a>
 <a href="https://www.tiktok.com/@alpensmp" target="_blank" rel="noopener noreferrer">TikTok</a>
 </div>
@@ -692,10 +712,48 @@ Discord
 <section id="gallery" aria-labelledby="gallery-title">
 <div class="container">
 <div class="reveal" style="text-align:center"><span class="slabel">Galerie</span><h2 class="stitle" id="gallery-title">Einblicke in die Welt</h2>
-<p class="sdesc" style="margin:0 auto">Klicke auf ein Bild, um es groß anzusehen. Eigene Screenshots? Schick sie uns im Discord – wir nehmen die besten in die Galerie auf.</p></div>
+<p class="sdesc" style="margin:0 auto">Klicke auf ein Bild, um es groß anzusehen. Eigene Screenshots kannst du unten unter „Stimmen“ einreichen – nach Freigabe erscheinen sie hier.</p></div>
 <div class="gallery-grid" id="galleryGrid">
 <!-- Images 1–6 loaded via JS from images/gallery/1.jpg … 6.jpg -->
 </div>
+</div>
+</section>
+
+<section id="reviews" aria-labelledby="reviews-title">
+<div class="container">
+<div class="reveal" style="text-align:center">
+<span class="slabel">Community</span>
+<h2 class="stitle" id="reviews-title">Stimmen aus den Alpen</h2>
+<p class="sdesc" style="margin:0 auto">Rezensionen und Screenshots von Spielern. Beiträge erscheinen erst nach Freigabe durchs Team.</p>
+</div>
+<div class="reviews-grid" id="reviewsGrid">
+<div class="review-card" id="reviewsEmpty"><p class="review-text">Noch keine freigegebenen Stimmen – sei der oder die Erste.</p></div>
+</div>
+<form class="review-form reveal" id="communityForm" onsubmit="return submitCommunity(event)">
+<h3>Rezension oder Screenshot senden</h3>
+<p>Name, kurzer Text und optional ein Bild. Kein Spam, keine Beleidigungen – das Team schaut kurz drüber.</p>
+<label class="sr-only" for="revName">Name</label>
+<input id="revName" name="name" maxlength="32" required placeholder="Dein Name / Ingame-Name" autocomplete="nickname">
+<div class="star-pick" role="group" aria-label="Bewertung">
+<button type="button" data-stars="5" class="on" onclick="setStars(5)">★★★★★</button>
+<button type="button" data-stars="4" onclick="setStars(4)">★★★★</button>
+<button type="button" data-stars="3" onclick="setStars(3)">★★★</button>
+<button type="button" data-stars="2" onclick="setStars(2)">★★</button>
+<button type="button" data-stars="1" onclick="setStars(1)">★</button>
+</div>
+<input type="hidden" id="revStars" value="5">
+<select id="revKind" aria-label="Art des Beitrags">
+<option value="review">Rezension (Text)</option>
+<option value="image">Screenshot für die Galerie</option>
+<option value="both">Beides</option>
+</select>
+<textarea id="revText" maxlength="600" placeholder="Was gefällt dir am Server? (max. 600 Zeichen)"></textarea>
+<input id="revImageUrl" type="url" placeholder="Bild-URL (optional, z. B. Discord/Imgur)">
+<input id="revFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
+<input class="hp-field" id="revCompany" tabindex="-1" autocomplete="off" aria-hidden="true">
+<button class="btn btn-primary" type="submit" id="revSubmit" style="width:100%">Absenden zur Freigabe</button>
+<p class="form-note" id="revHint">Wird nicht sofort öffentlich. Maximal 1 Beitrag alle 10 Minuten.</p>
+</form>
 </div>
 </section>
 
@@ -1007,9 +1065,14 @@ function initFirebase() {
   if (window._fbApp) return window._fbDb || null;
   try {
     window._fbApp = firebase.initializeApp({
-      databaseURL: 'https://alpensmp-ad844-default-rtdb.europe-west1.firebasedatabase.app/'
+      apiKey: 'AIzaSyBugFF4T6y_XEhCYde99bwpSyYZOuKbJHc',
+      authDomain: 'alpensmp-ad844.firebaseapp.com',
+      databaseURL: 'https://alpensmp-ad844-default-rtdb.europe-west1.firebasedatabase.app/',
+      projectId: 'alpensmp-ad844',
+      storageBucket: 'alpensmp-ad844.firebasestorage.app'
     });
     window._fbDb = firebase.database();
+    try { window._fbStorage = firebase.storage(); } catch (sErr) { window._fbStorage = null; }
     return window._fbDb;
   } catch (e) {
     try {
@@ -1262,7 +1325,7 @@ initPremiumHover();
 /* ---------- Nav / Scroll ---------- */
 const nav = document.getElementById('nav');
 const scrollTopBtn = document.getElementById('scrollTop');
-const sections = ['home', 'live', 'about', 'features', 'join', 'faq'];
+const sections = ['home', 'live', 'about', 'features', 'reviews', 'join', 'faq'];
 const navLinks = document.querySelectorAll('.nav-links a[data-sec]');
 
 function onScroll() {
@@ -1634,6 +1697,159 @@ if (card) card.textContent = '—';
 }
 
 /* ---------- Gallery: lädt Bilder erst wenn sichtbar (schnellerer Erstbesuch) ---------- */
+function escText(s) {
+  const d = document.createElement('div');
+  d.textContent = s == null ? '' : String(s);
+  return d.innerHTML;
+}
+function setStars(n) {
+  document.getElementById('revStars').value = String(n);
+  document.querySelectorAll('.star-pick button').forEach((b) => {
+    b.classList.toggle('on', Number(b.dataset.stars) === n);
+  });
+}
+function loadApprovedReviews() {
+  const db = initFirebase();
+  const grid = document.getElementById('reviewsGrid');
+  if (!db || !grid) return;
+  db.ref('community_reviews').limitToLast(40).on('value', (snap) => {
+    const data = snap.val() || {};
+    const items = Object.entries(data)
+      .map(([id, r]) => Object.assign({ id }, r))
+      .filter((r) => r.status === 'approved')
+      .sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    if (!items.length) {
+      grid.innerHTML = '<div class="review-card" id="reviewsEmpty"><p class="review-text">Noch keine freigegebenen Stimmen – sei der oder die Erste.</p></div>';
+      return;
+    }
+    grid.innerHTML = items.map((r) => {
+      const stars = '★'.repeat(Math.min(5, Math.max(1, Number(r.rating) || 5))) + '☆'.repeat(5 - Math.min(5, Math.max(1, Number(r.rating) || 5)));
+      const img = r.imageUrl ? `<img class="review-img" src="${escText(r.imageUrl)}" alt="Bild von ${escText(r.name)}" onclick="window.open(this.src,'_blank')">` : '';
+      const text = r.text ? `<p class="review-text">${escText(r.text)}</p>` : '';
+      return `<article class="review-card reveal visible"><div class="review-top"><div class="review-name">${escText(r.name || 'Spieler')}</div><div class="review-stars" aria-label="${Number(r.rating)||5} von 5">${stars}</div></div>${text}${img}</article>`;
+    }).join('');
+  }, () => {});
+}
+function loadCommunityGallery(grid, images, lazyImgs) {
+  const db = initFirebase();
+  if (!db || !grid) return;
+  db.ref('community_images').limitToLast(24).on('value', (snap) => {
+    const data = snap.val() || {};
+    const approved = Object.values(data).filter((x) => x && x.status === 'approved' && x.imageUrl);
+    approved.forEach((item, idx) => {
+      if (images.indexOf(item.imageUrl) !== -1) return;
+      const i = images.length + 1;
+      images.push(item.imageUrl);
+      const el = document.createElement('div');
+      el.className = 'gallery-item reveal visible';
+      el.setAttribute('role', 'button');
+      el.setAttribute('tabindex', '0');
+      const img = document.createElement('img');
+      img.alt = item.caption || ('Community-Bild ' + i);
+      img.decoding = 'async';
+      img.loading = 'lazy';
+      img.src = item.imageUrl;
+      el.appendChild(img);
+      const glow = document.createElement('div');
+      glow.className = 'card-glow';
+      glow.setAttribute('aria-hidden', 'true');
+      el.appendChild(glow);
+      const openIdx = images.length - 1;
+      el.addEventListener('click', () => openLightbox(openIdx));
+      grid.appendChild(el);
+    });
+    window._galleryImages = images;
+  }, () => {});
+}
+function compressImageFile(file) {
+  return new Promise((resolve, reject) => {
+    if (!file || !file.type || file.type.indexOf('image/') !== 0) return reject(new Error('Keine Bilddatei'));
+    if (file.size > 6 * 1024 * 1024) return reject(new Error('Max. 6 MB'));
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const max = 1280;
+      let w = img.width, h = img.height;
+      if (w > max) { h = Math.round(h * max / w); w = max; }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      canvas.toBlob((blob) => {
+        if (!blob) return reject(new Error('Komprimieren fehlgeschlagen'));
+        resolve(blob);
+      }, 'image/jpeg', 0.72);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Bild unlesbar')); };
+    img.src = url;
+  });
+}
+async function uploadCommunityImage(blob) {
+  if (window._fbStorage) {
+    try {
+      const name = 'community/' + Date.now() + '_' + Math.random().toString(36).slice(2, 8) + '.jpg';
+      const ref = window._fbStorage.ref().child(name);
+      await ref.put(blob);
+      return await ref.getDownloadURL();
+    } catch (e) { /* Storage oft ohne Rules → Fallback */ }
+  }
+  if (blob.size > 220 * 1024) throw new Error('Bild zu groß für direkten Upload – nutze eine Bild-URL');
+  return await new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = () => reject(new Error('Lesefehler'));
+    r.readAsDataURL(blob);
+  });
+}
+async function submitCommunity(ev) {
+  ev.preventDefault();
+  const btn = document.getElementById('revSubmit');
+  const hint = document.getElementById('revHint');
+  if (document.getElementById('revCompany').value) return false;
+  const last = Number(lsGet('alpensmp_rev_ts') || 0);
+  if (Date.now() - last < 10 * 60 * 1000) {
+    hint.textContent = 'Bitte warte noch etwas, bevor du erneut sendest.';
+    return false;
+  }
+  const name = (document.getElementById('revName').value || '').trim().slice(0, 32);
+  const text = (document.getElementById('revText').value || '').trim().slice(0, 600);
+  const kind = document.getElementById('revKind').value;
+  const rating = Number(document.getElementById('revStars').value || 5);
+  let imageUrl = (document.getElementById('revImageUrl').value || '').trim();
+  const file = document.getElementById('revFile').files[0];
+  if (!name) { hint.textContent = 'Name fehlt.'; return false; }
+  if (kind !== 'image' && text.length < 8) { hint.textContent = 'Schreib bitte etwas mehr Text.'; return false; }
+  if ((kind === 'image' || kind === 'both') && !file && !imageUrl) { hint.textContent = 'Für ein Bild: Datei oder URL angeben.'; return false; }
+  const db = initFirebase();
+  if (!db) { hint.textContent = 'Keine Verbindung. Versuch es später.'; return false; }
+  btn.disabled = true;
+  hint.textContent = 'Wird gesendet…';
+  try {
+    if (file) imageUrl = await uploadCommunityImage(await compressImageFile(file));
+    const payload = {
+      name, text, rating, kind, imageUrl: imageUrl || '',
+      status: 'pending', ts: Date.now(), source: 'website'
+    };
+    const tasks = [];
+    if (kind === 'review' || kind === 'both') tasks.push(db.ref('community_reviews').push(payload));
+    if ((kind === 'image' || kind === 'both') && imageUrl) {
+      tasks.push(db.ref('community_images').push({
+        name, caption: text.slice(0, 120), imageUrl, status: 'pending', ts: Date.now()
+      }));
+    }
+    await Promise.all(tasks);
+    lsSet('alpensmp_rev_ts', String(Date.now()));
+    document.getElementById('communityForm').reset();
+    setStars(5);
+    hint.textContent = 'Danke! Das Team prüft deinen Beitrag und schaltet ihn frei.';
+    if (typeof showToast === 'function') showToast('✓ Gesendet – wartet auf Freigabe');
+  } catch (err) {
+    hint.textContent = 'Klappt gerade nicht. Du kannst Bild auch als URL schicken oder uns auf Discord schreiben.';
+  }
+  btn.disabled = false;
+  return false;
+}
+
 function initGallery() {
 const grid = document.getElementById('galleryGrid');
 if (!grid) return;
@@ -1681,6 +1897,7 @@ grid.appendChild(item);
 if (typeof revealObserver !== 'undefined') revealObserver.observe(item);
 }
 window._galleryImages = images;
+try { loadCommunityGallery(grid, images, lazyImgs); } catch (e) {}
 
 // IntersectionObserver: Bild erst laden wenn ~200px vor dem Viewport
 if ('IntersectionObserver' in window) {
@@ -2057,6 +2274,7 @@ const joined = document.getElementById('statJoined');
 if (joined) joined.dataset.target = String(CONFIG.totalJoined);
 } catch (e) {}
 try { initGallery(); } catch (e) {}
+try { loadApprovedReviews(); } catch (e) {}
 try {
 fetchStatus();
 // Erste Minuten öfter pollen, damit das Diagramm schneller Daten hat
