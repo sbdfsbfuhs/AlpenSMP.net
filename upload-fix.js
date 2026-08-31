@@ -1,4 +1,4 @@
-/* Live-Fix: Upload darf nicht auf „Bild wird vorbereitet…“ stehen bleiben. */
+/* Live-Fix: schärfere Uploads, trotzdem schnell */
 (function () {
   function styleInputs() {
     const css = document.createElement('style');
@@ -10,7 +10,7 @@
     ].join('');
     document.head.appendChild(css);
     const lab = document.getElementById('revFileLabel');
-    if (lab) lab.textContent = 'Auch große Screenshots – werden automatisch klein gerechnet (max. ~15 Sek.)';
+    if (lab) lab.textContent = 'Große Screenshots gehen – werden schnell auf scharfe Web-Qualität gebracht';
   }
 
   function withTimeout(promise, ms, msg) {
@@ -22,38 +22,58 @@
 
   function loadImage(file) {
     return new Promise(function (resolve, reject) {
-      const url = URL.createObjectURL(file);
-      const img = new Image();
-      img.onload = function () { resolve({ img: img, url: url }); };
-      img.onerror = function () {
-        URL.revokeObjectURL(url);
-        const reader = new FileReader();
-        reader.onload = function () {
-          const img2 = new Image();
-          img2.onload = function () { resolve({ img: img2, url: null }); };
-          img2.onerror = function () { reject(new Error('Bild unlesbar – JPG statt PNG versuchen')); };
-          img2.src = reader.result;
-        };
-        reader.onerror = function () { reject(new Error('Datei unlesbar')); };
-        reader.readAsDataURL(file);
-      };
-      img.src = url;
+      if (typeof createImageBitmap === 'function') {
+        createImageBitmap(file).then(function (bmp) {
+          resolve({ img: bmp, url: null, close: function () { try { bmp.close(); } catch (e) {} } });
+        }).catch(function () { loadViaUrl(file, resolve, reject); });
+        return;
+      }
+      loadViaUrl(file, resolve, reject);
     });
   }
 
-  function canvasToJpegUrl(img, max, q) {
-    let w = img.width || img.naturalWidth || 1;
-    let h = img.height || img.naturalHeight || 1;
-    if (w > max) { h = Math.round(h * max / w); w = max; }
-    if (h > max) { w = Math.round(w * max / h); h = max; }
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.max(1, w);
-    canvas.height = Math.max(1, h);
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#0b0f19';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL('image/jpeg', q);
+  function loadViaUrl(file, resolve, reject) {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = function () { resolve({ img: img, url: url, close: function () { URL.revokeObjectURL(url); } }); };
+    img.onerror = function () {
+      URL.revokeObjectURL(url);
+      const reader = new FileReader();
+      reader.onload = function () {
+        const img2 = new Image();
+        img2.onload = function () { resolve({ img: img2, url: null, close: function () {} }); };
+        img2.onerror = function () { reject(new Error('Bild unlesbar – JPG statt PNG versuchen')); };
+        img2.src = reader.result;
+      };
+      reader.onerror = function () { reject(new Error('Datei unlesbar')); };
+      reader.readAsDataURL(file);
+    };
+    img.src = url;
+  }
+
+  function canvasToJpegBlob(img, max, q) {
+    return new Promise(function (resolve, reject) {
+      let w = img.width || img.naturalWidth || 1;
+      let h = img.height || img.naturalHeight || 1;
+      if (w > max) { h = Math.round(h * max / w); w = max; }
+      if (h > max) { w = Math.round(w * max / h); h = max; }
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, w);
+      canvas.height = Math.max(1, h);
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#0b0f19';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      if (canvas.toBlob) {
+        canvas.toBlob(function (blob) {
+          if (!blob) reject(new Error('Komprimieren fehlgeschlagen'));
+          else resolve(blob);
+        }, 'image/jpeg', q);
+      } else {
+        const url = canvas.toDataURL('image/jpeg', q);
+        fetch(url).then(function (r) { return r.blob(); }).then(resolve).catch(reject);
+      }
+    });
   }
 
   window.compressImageFile = function (file) {
@@ -61,32 +81,52 @@
       if (!file) throw new Error('Keine Datei gewählt');
       const loaded = await loadImage(file);
       try {
-        let max = 800, q = 0.55, url = '';
-        for (let i = 0; i < 6; i++) {
-          url = canvasToJpegUrl(loaded.img, max, q);
-          const bytes = Math.ceil((url.length - 22) * 0.75);
-          if (bytes <= 110 * 1024) break;
-          max = Math.max(360, Math.round(max * 0.72));
-          q = Math.max(0.32, q - 0.08);
+        let max = 1600, q = 0.84, blob = null;
+        for (let i = 0; i < 5; i++) {
+          blob = await canvasToJpegBlob(loaded.img, max, q);
+          if (blob.size <= 420 * 1024) break;
+          if (max <= 1100 && q <= 0.74) break;
+          max = Math.max(1100, Math.round(max * 0.88));
+          q = Math.max(0.74, q - 0.04);
         }
-        return url;
+        return blob;
       } finally {
-        if (loaded.url) URL.revokeObjectURL(loaded.url);
+        if (loaded.close) loaded.close();
       }
-    })(), 15000, 'Komprimieren dauert zu lange – kleineres JPG nehmen oder Bild-URL nutzen');
+    })(), 18000, 'Komprimieren dauert zu lange – kleineres JPG nehmen oder Bild-URL nutzen');
   };
 
-  /* Kein Firebase-Storage mehr – put() hängt oft endlos. compress liefert schon Data-URL. */
   window.uploadCommunityImage = function (data) {
     if (typeof data === 'string' && data.indexOf('data:') === 0) return Promise.resolve(data);
     if (!data) return Promise.reject(new Error('Kein Bild'));
-    return new Promise(function (resolve, reject) {
-      const t = setTimeout(function () { reject(new Error('Lesen-Timeout')); }, 8000);
-      const r = new FileReader();
-      r.onload = function () { clearTimeout(t); resolve(r.result); };
-      r.onerror = function () { clearTimeout(t); reject(new Error('Lesefehler')); };
-      if (data instanceof Blob) r.readAsDataURL(data);
-      else { clearTimeout(t); reject(new Error('Ungültiges Bild')); }
+    const blob = (data instanceof Blob) ? data : null;
+
+    const viaStorage = (async function () {
+      if (!blob || !window._fbStorage) return null;
+      const name = 'community/' + Date.now() + '_' + Math.random().toString(36).slice(2, 8) + '.jpg';
+      const ref = window._fbStorage.ref().child(name);
+      await ref.put(blob);
+      return await ref.getDownloadURL();
+    })();
+
+    return withTimeout(viaStorage, 9000, 'storage-timeout').catch(function () {
+      return new Promise(function (resolve, reject) {
+        if (!blob) return reject(new Error('Ungültiges Bild'));
+        const t = setTimeout(function () { reject(new Error('Lesen-Timeout')); }, 8000);
+        const r = new FileReader();
+        r.onload = function () { clearTimeout(t); resolve(r.result); };
+        r.onerror = function () { clearTimeout(t); reject(new Error('Lesefehler')); };
+        r.readAsDataURL(blob);
+      });
+    }).then(function (url) {
+      if (url) return url;
+      return new Promise(function (resolve, reject) {
+        if (!blob) return reject(new Error('Ungültiges Bild'));
+        const r = new FileReader();
+        r.onload = function () { resolve(r.result); };
+        r.onerror = function () { reject(new Error('Lesefehler')); };
+        r.readAsDataURL(blob);
+      });
     });
   };
 
@@ -116,8 +156,10 @@
     hint.textContent = 'Wird gesendet…';
     try {
       if (file && !imageUrl) {
-        hint.textContent = 'Bild wird verkleinert… das kann bei großen PNGs ein paar Sekunden dauern.';
-        imageUrl = await window.compressImageFile(file);
+        hint.textContent = 'Bild wird scharf verkleinert… dauert nur ein paar Sekunden.';
+        const packed = await window.compressImageFile(file);
+        hint.textContent = 'Lade Bild hoch…';
+        imageUrl = await window.uploadCommunityImage(packed);
         hint.textContent = 'Bild fertig, speichere Beitrag…';
       }
       const base = { name: name, text: text, rating: rating, kind: kind, imageUrl: imageUrl || '', status: 'pending', ts: Date.now(), source: 'website' };
