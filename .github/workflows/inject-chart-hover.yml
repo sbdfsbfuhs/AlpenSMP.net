@@ -1,0 +1,38 @@
+name: inject-chart-hover
+on:
+  push:
+    paths:
+      - chart-hover.js
+      - .github/workflows/inject-chart-hover.yml
+  workflow_dispatch:
+jobs:
+  inject:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Hook chart-hover.js in index.html
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          t = p.read_text(encoding='utf-8')
+          if 'chart-hover.js' not in t:
+              t = t.replace('</body>', '<script src="chart-hover.js"></script>\n</body>', 1)
+              p.write_text(t, encoding='utf-8')
+              print('hooked')
+          else:
+              print('already hooked')
+          PY
+      - name: Commit if needed
+        run: |
+          git config user.name "alpensmp-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "no changes"
+          else
+            git commit -m "Chart: Hover-Tooltip f\u00fcr Spielerzahl einbinden"
+            git push
+          fi
