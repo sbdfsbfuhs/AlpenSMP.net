@@ -667,6 +667,7 @@ Discord
 <div class="card reveal" style="margin-top:32px;text-align:center;padding:28px 20px">
 <h3 style="font-family:var(--font);margin-bottom:8px">Spieler online – Verlauf</h3>
 <div class="chart-ranges" id="chartRanges">
+<button type="button" data-range="1h" onclick="setChartRange('1h')">1 Std</button>
 <button type="button" data-range="24h" class="on" onclick="setChartRange('24h')">24h</button>
 <button type="button" data-range="7d" onclick="setChartRange('7d')">7 Tage</button>
 <button type="button" data-range="30d" onclick="setChartRange('30d')">30 Tage</button>
@@ -1620,7 +1621,7 @@ setTimeout(() => t.classList.remove('show'), 3200);
 
 /* ---------- Server history for chart (from real API polls) ---------- */
 let chartRange = '24h';
-const CHART_MS = { '24h': 24 * 3600 * 1000, '7d': 7 * 864e5, '30d': 30 * 864e5 };
+const CHART_MS = { '1h': 3600 * 1000, '24h': 24 * 3600 * 1000, '7d': 7 * 864e5, '30d': 30 * 864e5 };
 function setChartRange(r) {
   chartRange = r;
   document.querySelectorAll('#chartRanges button').forEach((b) => b.classList.toggle('on', b.dataset.range === r));
@@ -1727,7 +1728,7 @@ for (let i = 0; i <= parts; i++) {
   const frac = i / parts;
   const x = padL + frac * plotW;
   const t = tStart + frac * win;
-  const lab = chartRange === '24h'
+  const lab = (chartRange === '24h' || chartRange === '1h')
     ? new Date(t).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
     : new Date(t).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
   ctx.fillText(lab, x, h - 12);
