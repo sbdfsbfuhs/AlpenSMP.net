@@ -1,0 +1,42 @@
+name: patch-chart-1h
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/patch-chart-1h.yml
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add 1h range
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          t = p.read_text()
+          if 'data-range="1h"' not in t:
+              t = t.replace(
+                  '<button type="button" data-range="24h" class="on" onclick="setChartRange(\'24h\')">24h</button>',
+                  '<button type="button" data-range="1h" onclick="setChartRange(\'1h\')">1 Std</button>\n<button type="button" data-range="24h" class="on" onclick="setChartRange(\'24h\')">24h</button>'
+              )
+          t = t.replace(
+              "const CHART_MS = { '24h': 24 * 3600 * 1000, '7d': 7 * 864e5, '30d': 30 * 864e5 };",
+              "const CHART_MS = { '1h': 3600 * 1000, '24h': 24 * 3600 * 1000, '7d': 7 * 864e5, '30d': 30 * 864e5 };"
+          )
+          t = t.replace(
+              "const lab = chartRange === '24h'",
+              "const lab = (chartRange === '24h' || chartRange === '1h')"
+          )
+          p.write_text(t)
+          print('ok' if 'data-range="1h"' in t else 'BUTTON_MISSING')
+          PY
+      - name: Commit
+        run: |
+          git config user.name "alpensmp-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet || git commit -m "Chart: Zeitraum 1 Stunde"
+          git push
