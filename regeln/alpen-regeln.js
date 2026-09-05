@@ -166,14 +166,22 @@
           id: Number(r.id) || (i + 1),
           title: String(r.title || "Regel"),
           highlight: !!r.highlight,
+          active: r.active !== false,
+          order: Number(r.order != null ? r.order : (Number(r.id) || (i + 1))),
           paragraphs: Array.isArray(r.paragraphs) ? r.paragraphs.filter(Boolean) : (r.text ? [String(r.text)] : []),
           forbidden: Array.isArray(r.forbidden) ? r.forbidden.filter(Boolean) : [],
           allowed: Array.isArray(r.allowed) ? r.allowed.filter(Boolean) : [],
           bullets: Array.isArray(r.bullets) ? r.bullets.filter(Boolean) : [],
           note: r.note ? String(r.note) : ""
         };
-      }).sort(function (a, b) { return a.id - b.id; })
+      }).sort(function (a, b) { return (a.order - b.order) || (a.id - b.id); })
     };
+    return pack;
+  }
+
+  function publicPack(raw) {
+    var pack = normalizePack(raw);
+    pack.rules = (pack.rules || []).filter(function (r) { return r.active !== false; });
     return pack;
   }
 
@@ -274,7 +282,7 @@
   }
 
   function answer(q, pack) {
-    pack = normalizePack(pack || root.ALPEN_RULES_LIVE || DEFAULT_PACK);
+    pack = publicPack(pack || root.ALPEN_RULES_LIVE || DEFAULT_PACK);
     var query = String(q || "").toLowerCase().trim();
     if (!query) return null;
 
@@ -328,15 +336,18 @@
     var database = getDb();
     if (!database) {
       root.ALPEN_RULES_LIVE = clonePack(DEFAULT_PACK);
+      root.ALPEN_RULES_PUBLIC = publicPack(root.ALPEN_RULES_LIVE);
       done(root.ALPEN_RULES_LIVE, false);
       return;
     }
     database.ref("site_rules").on("value", function (snap) {
       var val = snap.val();
       root.ALPEN_RULES_LIVE = normalizePack(val || DEFAULT_PACK);
+      root.ALPEN_RULES_PUBLIC = publicPack(root.ALPEN_RULES_LIVE);
       done(root.ALPEN_RULES_LIVE, !!val);
     }, function () {
       root.ALPEN_RULES_LIVE = clonePack(DEFAULT_PACK);
+      root.ALPEN_RULES_PUBLIC = publicPack(root.ALPEN_RULES_LIVE);
       done(root.ALPEN_RULES_LIVE, false);
     });
   }
@@ -347,13 +358,27 @@
     var body = normalizePack(pack);
     body.updatedAt = Date.now();
     body.updatedBy = (meta && meta.by) || "owner";
-    return database.ref("site_rules").set(body).then(function () { return body; });
+    return database.ref("site_rules").set(body).then(function () {
+      try {
+        database.ref("staffRuleHistory").push({
+          ts: body.updatedAt,
+          by: body.updatedBy,
+          summary: (meta && meta.summary) || (body.rules.length + " Regeln gespeichert"),
+          pack: body
+        });
+      } catch (err) {}
+      root.ALPEN_RULES_LIVE = body;
+      root.ALPEN_RULES_PUBLIC = publicPack(body);
+      return body;
+    });
   }
 
   root.ALPEN_DEFAULT_RULES = clonePack(DEFAULT_PACK);
   root.ALPEN_RULES_LIVE = clonePack(DEFAULT_PACK);
+  root.ALPEN_RULES_PUBLIC = publicPack(DEFAULT_PACK);
   root.ALPEN_RULES_PAGE = PAGE;
   root.alpenNormalizeRules = normalizePack;
+  root.alpenPublicRules = publicPack;
   root.alpenLoadRules = load;
   root.alpenSaveRules = save;
   root.alpenRulesAnswer = answer;

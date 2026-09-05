@@ -54,7 +54,7 @@
     var orig = window.aiReply;
     window.aiReply = function (q) {
       if (typeof window.alpenRulesAnswer === "function") {
-        var hit = window.alpenRulesAnswer(q, window.ALPEN_RULES_LIVE);
+        var hit = window.alpenRulesAnswer(q, window.ALPEN_RULES_PUBLIC || window.ALPEN_RULES_LIVE);
         if (hit) return hit;
       }
       return orig(q);
