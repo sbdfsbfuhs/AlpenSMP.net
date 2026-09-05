@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AlpenSMP – Spieler-Guide</title>
+<link rel="canonical" href="https://alpensmp.net/guide/">
+<link rel="icon" type="image/png" href="../logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#080a0e;--card:rgba(18,22,30,.78);--glass:rgba(255,255,255,.035);--border:rgba(255,255,255,.08);--text:#f2f4f7;--text2:#9aa3b2;--muted:#6b7280;--red:#c73e3e;--glow:rgba(199,62,62,.38);--font:'Outfit',system-ui,sans-serif;--body:'Inter',system-ui,sans-serif;--nav-h:72px}
+*{box-sizing:border-box;margin:0;padding:0}html{overflow-x:hidden}body{font-family:var(--body);background:var(--bg);color:var(--text);line-height:1.7;min-height:100vh;overflow-x:hidden;overflow-wrap:anywhere}a{color:inherit;text-decoration:none}
+.nav{position:sticky;top:0;z-index:40;height:var(--nav-h);background:rgba(8,10,14,.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.nav-inner{max-width:1100px;margin:0 auto;padding:0 16px;height:100%;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.logo{display:flex;align-items:center;gap:10px;font-family:var(--font);font-weight:800;font-size:1.2rem}
+.logo img{width:36px;height:36px;border-radius:9px;object-fit:contain}
+.logo span{background:linear-gradient(135deg,#fff,#e05c5c);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.nav-links{display:flex;gap:6px;overflow:auto}
+.nav-links a{color:var(--text2);font-weight:600;font-size:.88rem;padding:10px 12px;border-radius:10px;min-height:44px;display:inline-flex;align-items:center;white-space:nowrap}
+.nav-links a:hover{color:#fff;background:rgba(199,62,62,.12)}
+.nav-links a.on{color:#fff;background:rgba(199,62,62,.2);border:1px solid rgba(229,57,53,.45)}
+.hero{position:relative;padding:52px 20px 36px;border-bottom:1px solid var(--border);text-align:center;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,10,14,.45),rgba(8,10,14,.92)),url("https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=60&w=1400&auto=format&fit=crop") center/cover;pointer-events:none}
+.hero-inner{position:relative;max-width:1100px;margin:0 auto}
+.hero img.mark{width:84px;height:84px;margin:0 auto 14px;object-fit:contain}
+.kicker{display:inline-flex;border:1px solid var(--border);background:var(--glass);padding:7px 14px;border-radius:999px;color:var(--text2);font-size:.8rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px}
+h1{font-family:var(--font);font-size:clamp(2rem,6vw,3.1rem);letter-spacing:-.03em;line-height:1.1;margin-bottom:12px}
+.lead{color:var(--text2);font-size:1.06rem;max-width:680px;margin:0 auto 18px}
+.wrap{max-width:1100px;margin:0 auto;padding:28px 20px 80px}
+.pick{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.pick-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:26px 20px;text-align:left;cursor:pointer;min-height:150px}
+.pick-card:hover{border-color:rgba(229,57,53,.45);box-shadow:0 12px 40px rgba(199,62,62,.18)}
+.pick-card h2{font-family:var(--font);font-size:1.3rem;margin:8px 0}
+.pick-card p{color:var(--text2)}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+.search{flex:1;min-width:200px;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:rgba(0,0,0,.28);color:var(--text);font:inherit}
+.progress-box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:16px}
+.bar{height:10px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden}.bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#b91c1c,#e05c5c)}
+.chapter{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:22px;margin-bottom:14px}
+.chapter h2{font-family:var(--font);font-size:1.22rem;margin-bottom:8px}
+.badge{display:inline-flex;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;font-weight:800;padding:4px 8px;border-radius:999px;margin-bottom:8px}
+.badge.mc{background:rgba(245,158,11,.12);color:#fbbf24;border:1px solid rgba(245,158,11,.3)}
+.badge.alpen{background:rgba(199,62,62,.12);color:#fca5a5;border:1px solid rgba(199,62,62,.35)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:12px 0}
+.box{border:1px solid var(--border);border-radius:14px;padding:14px}.box.good{background:rgba(52,211,153,.08);border-color:rgba(52,211,153,.28)}
+.box h3{font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;color:var(--muted)}
+.chapter p,.chapter li,.box p{color:var(--text2)}.chapter ul,.chapter ol{margin:8px 0 8px 20px}
+.steps{list-style:none;margin-left:0;display:grid;gap:8px}.steps li{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.cmd-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:12px 0}
+.cmd{border:1px solid var(--border);border-radius:12px;padding:12px;background:rgba(0,0,0,.2)}.cmd code{display:block;color:#fecaca;font-weight:700}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 18px;border-radius:12px;font-weight:700;min-height:44px;border:1px solid transparent;cursor:pointer;background:none;color:inherit;font:inherit}
+.btn-p{background:linear-gradient(135deg,#b91c1c,#c73e3e);color:#fff}.btn-s{background:var(--glass);border-color:var(--border)}.btn-ok{background:rgba(52,211,153,.16);border:1px solid rgba(52,211,153,.35);color:#6ee7b7}
+.row-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.hint,.placeholder{margin-top:12px;font-size:.9rem;color:var(--muted)}
+.placeholder{border:1px dashed rgba(245,158,11,.4);border-radius:12px;padding:10px 12px;color:#fde68a}
+details.more{margin-top:12px;border:1px solid var(--border);border-radius:12px;padding:10px 14px}details.more summary{cursor:pointer;font-weight:700}
+.hidden{display:none!important}footer{border-top:1px solid var(--border);padding:28px 20px;text-align:center;color:var(--muted)}footer a{color:var(--text2);margin:0 8px}
+@media(max-width:860px){.pick{grid-template-columns:1fr}.nav-links a{font-size:.8rem;padding:8px 10px}}
+</style></head>
+<body>
+<nav class="nav"><div class="nav-inner">
+<a class="logo" href="https://alpensmp.net"><img src="../logo.png" alt="">ALPEN<span>SMP</span></a>
+<div class="nav-links">
+<a href="https://alpensmp.net">AlpenSMP</a>
+<a href="https://alpensmp.net/regeln/">Regeln</a>
+<a class="on" href="https://alpensmp.net/guide/">Guide</a>
+<a href="https://alpensmp.net/team">Team</a>
+<a href="https://discord.gg/FfR56Ddtj8" target="_blank" rel="noopener">Discord</a>
+</div></div></nav>
+<header class="hero"><div class="hero-inner">
+<img class="mark" src="../logo.png" alt="AlpenSMP Logo">
+<p class="kicker">Spieler-Guide</p>
+<h1>AlpenSMP Spieler-Guide</h1>
+<p class="lead">Neu auf AlpenSMP? Kein Problem! Hier findest du alles, was du fuer deinen Start wissen musst.</p>
+</div></header>
+<main class="wrap">
+<section id="chooser">
+<p class="lead">Kennst du Minecraft bereits?</p>
+<div class="pick">
+<button type="button" class="pick-card" id="pickYes"><h2>Ja, ich kenne Minecraft</h2><p>Direkt zu AlpenSMP: Join, Regeln, Voice, Commands, Systeme.</p></button>
+<button type="button" class="pick-card" id="pickNo"><h2>Nein, ich bin neu bei Minecraft</h2><p>Zuerst Grundlagen, danach der AlpenSMP-Teil.</p></button>
+</div></section>
+<section id="guideApp" class="hidden">
+<div class="toolbar">
+<input class="search" id="guideSearch" type="search" placeholder="Suchen: Spitzhacke, Voice Chat, Claims, Join">
+<button type="button" class="btn btn-s" id="changePath">Auswahl aendern</button>
+</div>
+<div class="progress-box"><h2 style="font-family:var(--font);font-size:1rem;margin-bottom:8px">Dein Fortschritt</h2>
+<div class="bar"><i id="barFill"></i></div>
+<p id="barLabel" class="hint">0 von 0 Themen abgeschlossen</p></div>
+<div id="chapterRoot"></div>
+</section>
+</main>
+<footer>2026 AlpenSMP · <a href="https://alpensmp.net">Start</a> <a href="https://alpensmp.net/guide/">Guide</a> <a href="https://alpensmp.net/regeln/">Regeln</a> <a href="https://discord.gg/FfR56Ddtj8" target="_blank" rel="noopener">Discord</a></footer>
+<script src="guide-data.js"></script>
+<script>
+(function(){
+var DONE_KEY='alpensmp-guide-done-v1';
+var data=window.ALPEN_GUIDE||{chapters:[]}; var path=null;
+function loadDone(){try{return JSON.parse(localStorage.getItem(DONE_KEY)||'{}')}catch(e){return{}}}
+function saveDone(m){try{localStorage.setItem(DONE_KEY,JSON.stringify(m))}catch(e){}}
+function vis(){return (data.chapters||[]).filter(function(c){if(!c.active)return false;if(path==='alpen')return c.track==='alpen'||c.track==='both';if(path==='mc')return true;return false}).sort(function(a,b){return a.order-b.order})}
+function render(){
+var root=document.getElementById('chapterRoot'); var done=loadDone(); var list=vis();
+var q=(document.getElementById('guideSearch').value||'').toLowerCase().trim();
+root.innerHTML=list.map(function(c){
+var hay=(c.title+' '+c.description+' '+(c.keywords||'')+' '+c.html).toLowerCase();
+if(q && hay.indexOf(q)===-1)return '';
+var isDone=!!done[c.id];
+var badge=c.kind==='minecraft'?'<div class="badge mc">Minecraft Grundlagen</div>':'<div class="badge alpen">AlpenSMP</div>';
+var btn=isDone?'<button type="button" class="btn btn-ok" data-toggle="'+c.id+'">Abgeschlossen</button>':'<button type="button" class="btn btn-p" data-toggle="'+c.id+'">Starten / als gelesen</button>';
+return '<article class="chapter" id="ch-'+c.id+'">'+badge+'<h2>'+c.icon+' '+c.title+'</h2><p>'+c.description+'</p>'+c.html+'<div class="row-actions">'+btn+'</div></article>';
+}).join('');
+var total=list.length; var doneCount=list.filter(function(c){return done[c.id]}).length;
+var pct=total?Math.round(doneCount/total*100):0;
+document.getElementById('barFill').style.width=pct+'%';
+document.getElementById('barLabel').textContent=pct+' % · '+doneCount+' von '+total+' Themen abgeschlossen';
+root.querySelectorAll('[data-toggle]').forEach(function(btn){btn.onclick=function(){var m=loadDone(); var id=btn.getAttribute('data-toggle'); if(m[id])delete m[id]; else m[id]=Date.now(); saveDone(m); render();};});
+}
+function openPath(p){path=p;document.getElementById('chooser').classList.add('hidden');document.getElementById('guideApp').classList.remove('hidden');render();}
+document.getElementById('pickYes').onclick=function(){openPath('alpen')};
+document.getElementById('pickNo').onclick=function(){openPath('mc')};
+document.getElementById('changePath').onclick=function(){path=null;document.getElementById('guideApp').classList.add('hidden');document.getElementById('chooser').classList.remove('hidden');};
+document.getElementById('guideSearch').addEventListener('input',render);
+})();
+</script>
+</body></html>
