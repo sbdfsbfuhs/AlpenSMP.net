@@ -127,7 +127,10 @@
   function isHardOwner() { return !!(currentUser && currentUser.username === ownerName()); }
   function isOwnerRole() { return isHardOwner() || !!(currentUser && currentUser.role === "owner"); }
   function roleObj(id) {
-    return (rolesCache && rolesCache[id]) || DEFAULT_ROLES[id] || { name: id || "–", color: "#94a3b8", priority: 0, perms: {} };
+    var def = DEFAULT_ROLES[id] || { name: id || "–", color: "#94a3b8", priority: 0, perms: {} };
+    var cached = (rolesCache && rolesCache[id]) || {};
+    var perms = Object.assign({}, def.perms || {}, cached.perms || {});
+    return Object.assign({}, def, cached, { perms: perms });
   }
   function uiRole() {
     if (previewRole && isHardOwner()) return previewRole;
@@ -915,7 +918,7 @@
     var cards = Object.keys(merged).sort(function (a, b) {
       return (roleObj(b).priority || 0) - (roleObj(a).priority || 0);
     }).map(function (id) {
-      var r = merged[id];
+      var r = roleObj(id);
       var perms = r.perms || {};
       var open = openRoleId === id;
       var simple = SIMPLE.map(function (it) {
