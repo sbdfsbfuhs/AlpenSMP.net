@@ -1028,7 +1028,7 @@
 
   window.showTab = function (name) {
     if (name === "team" && !isOwnerRole()) { toast("Nur Owner"); name = "moderation"; }
-    var names = ["moderation", "help", "commands", "settings", "community", "website", "archive", "users", "team", "mytasks"];
+    var names = ["moderation", "help", "commands", "settings", "community", "website", "archive", "users", "team", "mytasks", "rulesedit"];
     names.forEach(function (t) {
       var el = document.getElementById("tab-" + t);
       if (el) el.classList.toggle("hidden", t !== name);

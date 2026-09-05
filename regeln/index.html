@@ -3,85 +3,257 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Regeln – AlpenSMP</title>
-<meta name="description" content="Serverregeln von AlpenSMP: fair spielen, Builds schützen, respektvoll bleiben. Java und Bedrock auf einer Welt.">
+<title>AlpenSMP – Server-Regeln</title>
+<meta name="description" content="Offizielles Regelwerk des AlpenSMP Minecraft-Servers. Lies hier alle Regeln zu Verhalten, Chat, Mods, Fair Play, Bauen, Voice Chat und mehr.">
+<meta name="robots" content="index, follow">
 <meta name="theme-color" content="#080a0e">
 <link rel="canonical" href="https://alpensmp.net/regeln/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://alpensmp.net/regeln/">
+<meta property="og:title" content="AlpenSMP – Server-Regeln">
+<meta property="og:description" content="Offizielles Regelwerk des AlpenSMP Minecraft-Servers. 14 verbindliche Regeln zu Respekt, Mods, Fair Play, Bauen und Strafen.">
+<meta property="og:locale" content="de_DE">
+<meta property="og:site_name" content="AlpenSMP">
 <link rel="icon" type="image/png" href="../logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","name":"AlpenSMP – Server-Regeln","url":"https://alpensmp.net/regeln/","inLanguage":"de","isPartOf":{"@type":"WebSite","name":"AlpenSMP","url":"https://alpensmp.net/"},"description":"Offizielles Regelwerk des AlpenSMP Minecraft-Servers."}
+</script>
 <style>
 :root{
---bg:#080a0e;--card:rgba(18,22,30,.72);--glass:rgba(255,255,255,.035);
---border:rgba(255,255,255,.08);--text:#f2f4f7;--text2:#9aa3b2;--muted:#6b7280;
---red:#c73e3e;--red2:#e05c5c;--font:'Outfit',system-ui,sans-serif;--body:'Inter',system-ui,sans-serif;
+  --bg:#080a0e;--bg2:#0e1218;--card:rgba(18,22,30,.78);--glass:rgba(255,255,255,.035);
+  --border:rgba(255,255,255,.08);--text:#f2f4f7;--text2:#9aa3b2;--muted:#6b7280;
+  --red:#c73e3e;--red2:#e05c5c;--ok:#34d399;--warn:#f59e0b;--glow:rgba(199,62,62,.38);
+  --font:'Outfit',system-ui,sans-serif;--body:'Inter',system-ui,sans-serif;--nav-h:72px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
-body{font-family:var(--body);background:var(--bg);color:var(--text);line-height:1.65;min-height:100vh}
+body{font-family:var(--body);background:var(--bg);color:var(--text);line-height:1.65;min-height:100vh;-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}
-.nav{position:sticky;top:0;z-index:20;height:72px;background:rgba(8,10,14,.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
-.nav-inner{max-width:900px;margin:0 auto;padding:0 20px;height:100%;display:flex;align-items:center;justify-content:space-between;gap:16px}
-.logo{display:flex;align-items:center;gap:10px;font-family:var(--font);font-weight:800;font-size:1.25rem}
-.logo img{width:34px;height:34px;border-radius:8px;object-fit:contain}
+img{max-width:100%;display:block}
+:focus-visible{outline:2px solid #f2b8b8;outline-offset:3px}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+.nav{position:sticky;top:0;z-index:40;height:var(--nav-h);background:rgba(8,10,14,.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.nav-inner{max-width:1100px;margin:0 auto;padding:0 20px;height:100%;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.logo{display:flex;align-items:center;gap:10px;font-family:var(--font);font-weight:800;font-size:1.28rem;letter-spacing:-.02em}
+.logo img{width:36px;height:36px;border-radius:9px;object-fit:contain}
 .logo span{background:linear-gradient(135deg,#fff,#e05c5c);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.nav-links{display:flex;gap:8px;flex-wrap:wrap}
-.nav-links a{color:var(--text2);font-weight:600;font-size:.9rem;padding:8px 12px;border-radius:10px}
-.nav-links a:hover,.nav-links a.on{color:#fff;background:rgba(199,62,62,.16)}
-.wrap{max-width:900px;margin:0 auto;padding:36px 20px 80px}
-.slabel{display:inline-block;font-size:.78rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--red2);margin-bottom:10px}
-h1{font-family:var(--font);font-size:clamp(2rem,6vw,3rem);letter-spacing:-.03em;line-height:1.1;margin-bottom:12px}
-.lead{color:var(--text2);font-size:1.05rem;max-width:640px;margin-bottom:28px}
-.grid{display:grid;gap:14px}
-.rule{background:var(--glass);border:1px solid var(--border);border-radius:16px;padding:20px 20px 18px}
-.rule h2{font-family:var(--font);font-size:1.12rem;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start}
-.n{flex-shrink:0;width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#b91c1c,#c73e3e);display:inline-flex;align-items:center;justify-content:center;font-family:var(--font);font-size:.8rem;font-weight:800}
-.rule p{color:var(--text2);font-size:.95rem}
-.note{margin-top:28px;background:rgba(199,62,62,.08);border:1px solid rgba(199,62,62,.28);border-radius:16px;padding:20px}
-.note strong{font-family:var(--font)}
-.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
-.btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 18px;border-radius:12px;font-weight:700;font-size:.92rem}
-.btn-p{background:linear-gradient(135deg,#b91c1c,#c73e3e);color:#fff}
-.btn-s{background:var(--glass);border:1px solid var(--border);color:var(--text)}
-footer{border-top:1px solid var(--border);padding:22px 20px;text-align:center;color:var(--muted);font-size:.85rem}
+.nav-links{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.nav-links a{color:var(--text2);font-weight:600;font-size:.9rem;padding:10px 14px;border-radius:10px;min-height:44px;display:inline-flex;align-items:center}
+.nav-links a:hover{color:#fff;background:rgba(199,62,62,.12)}
+.nav-links a.on{color:#fff;background:rgba(199,62,62,.2);border:1px solid rgba(229,57,53,.45);box-shadow:0 0 0 1px rgba(199,62,62,.15)}
+.hero{position:relative;padding:64px 20px 48px;overflow:hidden;border-bottom:1px solid var(--border)}
+.hero::before{content:"";position:absolute;inset:0;background:
+  linear-gradient(180deg,rgba(8,10,14,.45),rgba(8,10,14,.92)),
+  url("https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=60&w=1400&auto=format&fit=crop") center/cover;
+  pointer-events:none}
+.hero-inner{position:relative;max-width:1100px;margin:0 auto;text-align:center}
+.hero img.mark{width:88px;height:88px;margin:0 auto 16px;object-fit:contain}
+.kicker{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);background:var(--glass);padding:7px 14px;border-radius:999px;color:var(--text2);font-size:.82rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px}
+h1{font-family:var(--font);font-size:clamp(2rem,6vw,3.4rem);letter-spacing:-.03em;line-height:1.1;margin-bottom:12px}
+.lead{color:var(--text2);font-size:1.08rem;max-width:680px;margin:0 auto 22px}
+.meta-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;color:var(--muted);font-size:.88rem}
+.chip{background:rgba(255,255,255,.04);border:1px solid var(--border);padding:6px 12px;border-radius:999px}
+.wrap{max-width:1100px;margin:0 auto;padding:36px 20px 90px;display:grid;grid-template-columns:210px 1fr;gap:28px}
+.toc{position:sticky;top:92px;align-self:start;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px}
+.toc h2{font-family:var(--font);font-size:.82rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.toc a{display:flex;gap:8px;align-items:center;padding:8px 8px;border-radius:10px;color:var(--text2);font-size:.88rem;font-weight:600}
+.toc a:hover,.toc a.active{background:rgba(199,62,62,.14);color:#fff}
+.toc .n{width:22px;height:22px;border-radius:7px;background:linear-gradient(135deg,#b91c1c,#c73e3e);display:inline-flex;align-items:center;justify-content:center;font-size:.7rem;font-family:var(--font);font-weight:800;color:#fff;flex-shrink:0}
+.rules{display:grid;gap:16px}
+.rule{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:22px 22px 20px;backdrop-filter:blur(12px);animation:fadeUp .45s ease both;scroll-margin-top:92px}
+.rule.hot{border-color:rgba(229,57,53,.4);box-shadow:0 0 0 1px rgba(199,62,62,.12),0 12px 40px rgba(0,0,0,.25)}
+.rule h2{font-family:var(--font);font-size:1.22rem;display:flex;gap:12px;align-items:center;margin-bottom:10px}
+.num{flex-shrink:0;width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,#b91c1c,#c73e3e);display:inline-flex;align-items:center;justify-content:center;font-family:var(--font);font-weight:800}
+.rule p{color:var(--text2);margin-bottom:8px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}
+.box{border:1px solid var(--border);border-radius:14px;padding:14px}
+.box h3{font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;color:var(--muted)}
+.box.bad{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.28)}
+.box.good{background:rgba(52,211,153,.08);border-color:rgba(52,211,153,.28)}
+.box li{margin-left:18px;color:var(--text2);font-size:.94rem}
+.note{margin-top:12px;background:rgba(199,62,62,.1);border:1px solid rgba(199,62,62,.32);border-radius:14px;padding:14px 16px;color:#fecaca;font-weight:600}
+.note.warn{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.35);color:#fde68a}
+.search{width:100%;margin-bottom:14px;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:rgba(0,0,0,.28);color:var(--text);font:inherit}
+.updated{color:var(--muted);font-size:.82rem;margin:8px 0 0}
+.cta{margin-top:22px;display:flex;gap:10px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 18px;border-radius:12px;font-weight:700;font-size:.92rem;min-height:44px;border:1px solid transparent}
+.btn-p{background:linear-gradient(135deg,#b91c1c,#c73e3e);color:#fff;box-shadow:0 8px 24px var(--glow)}
+.btn-s{background:var(--glass);border-color:var(--border);color:var(--text)}
+footer{border-top:1px solid var(--border);padding:28px 20px;text-align:center;color:var(--muted);font-size:.88rem}
+footer a{color:var(--text2);margin:0 8px}
+.ai-toggle{position:fixed;right:20px;bottom:20px;z-index:60;width:56px;height:56px;border-radius:16px;border:1px solid rgba(199,62,62,.45);background:linear-gradient(135deg,#b91c1c,#c73e3e);color:#fff;font-size:1.3rem;cursor:pointer;box-shadow:0 10px 30px var(--glow)}
+.ai-panel{position:fixed;right:20px;bottom:88px;z-index:60;width:min(380px,calc(100vw - 24px));max-height:min(520px,70vh);background:rgba(12,16,24,.97);border:1px solid var(--border);border-radius:18px;display:none;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.ai-panel.open{display:flex}
+.ai-h{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border);font-family:var(--font)}
+.ai-msgs{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.ai-m{max-width:92%;padding:10px 14px;border-radius:12px;font-size:.9rem}
+.ai-m.bot{background:rgba(255,255,255,.05);color:var(--text2);align-self:flex-start}
+.ai-m.user{background:rgba(199,62,62,.2);align-self:flex-end}
+.ai-row{display:flex;gap:8px;padding:12px;border-top:1px solid var(--border)}
+.ai-row input{flex:1;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text)}
+.ai-row button{background:linear-gradient(135deg,#b91c1c,#c73e3e);border:none;color:#fff;border-radius:10px;padding:0 14px;font-weight:700;cursor:pointer}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@media(max-width:860px){
+  .wrap{grid-template-columns:1fr;padding-top:24px}
+  .toc{position:relative;top:auto;display:flex;flex-direction:column}
+  .toc .toc-links{display:flex;gap:6px;overflow:auto;padding-bottom:4px}
+  .toc a{flex:0 0 auto;white-space:nowrap}
+  .cols{grid-template-columns:1fr}
+  .nav-links a{padding:10px 10px;font-size:.82rem}
+}
 </style>
 </head>
 <body>
-<nav class="nav">
+<nav class="nav" aria-label="Hauptnavigation">
   <div class="nav-inner">
-    <a class="logo" href="/"><img src="../logo.png" alt="">ALPEN<span>SMP</span></a>
+    <a class="logo" href="https://alpensmp.net"><img src="../logo.png" alt="">ALPEN<span>SMP</span></a>
     <div class="nav-links">
-      <a href="/">Home</a>
-      <a class="on" href="/regeln/">Regeln</a>
-      <a href="/#join">Spielen</a>
-      <a href="https://discord.gg/FfR56Ddtj8" target="_blank" rel="noopener">Discord</a>
+      <a href="https://alpensmp.net">🏠 AlpenSMP</a>
+      <a class="on" href="https://alpensmp.net/regeln/" aria-current="page">📜 Regeln</a>
+      <a href="https://alpensmp.net/team">👥 Team</a>
+      <a href="https://discord.gg/FfR56Ddtj8" target="_blank" rel="noopener">💬 Discord</a>
     </div>
   </div>
 </nav>
-<main class="wrap">
-  <span class="slabel">Community</span>
-  <h1>Serverregeln</h1>
-  <p class="lead">Kurz und klar. Wer fair spielt, hat hier Ruhe – für Builds, Chat und Voice. Verstöße entscheidet das Team. Fragen? Discord-Ticket.</p>
-  <div class="grid">
-    <article class="rule"><h2><span class="n">1</span> Respekt</h2><p>Kein Mobbing, keine Beleidigungen, kein rassistischer oder diskriminierender Content. Im Chat, Voice Chat und Discord gilt dasselbe.</p></article>
-    <article class="rule"><h2><span class="n">2</span> Kein Griefing</h2><p>Fremde Builds stehen lassen. Claims (GriefPrevention) schützen dein Gebiet – nutze sie. Stehlen, Abbauen oder Zerstören auf fremdem Claim ist verboten.</p></article>
-    <article class="rule"><h2><span class="n">3</span> Fair play</h2><p>Keine Hacks, Radar, Dupes, X-Ray oder Clients, die einen Vorteil geben. Wer schummelt, fliegt. Mods wie Simple Voice Chat sind erlaubt.</p></article>
-    <article class="rule"><h2><span class="n">4</span> PvP &amp; Raids</h2><p>Kein zufälliges Umbringen oder Ausrauben. Kämpfe nur, wenn beide Seiten einverstanden sind. Bases anderer sind tabu.</p></article>
-    <article class="rule"><h2><span class="n">5</span> Chat &amp; Werbung</h2><p>Kein Spam, keine Caps-Flut, keine Werbung für andere Server. Links nur, wenn sie zur Community gehören oder das Team okay damit ist.</p></article>
-    <article class="rule"><h2><span class="n">6</span> Bauten &amp; Farmen</h2><p>Lag-Maschinen und riesige Farmen, die den Server in die Knie zwingen, müssen angepasst oder abgebaut werden. Im Zweifel Team fragen.</p></article>
-    <article class="rule"><h2><span class="n">7</span> Accounts</h2><p>Dein Account, deine Verantwortung. Account-Sharing bei Bann schützt nicht. Alt-Accounts zum Umgehen von Strafen sind verboten.</p></article>
-    <article class="rule"><h2><span class="n">8</span> Team</h2><p>Anweisungen vom Team gelten. Diskussion geht sachlich im Ticket, nicht mit Drama im Chat. Das Team hat das letzte Wort.</p></article>
-  </div>
-  <div class="note">
-    <p><strong>Strafen:</strong> Verwarnung, Kick, temporärer Bann oder permanent – je nach Schwere. Wiederholung zählt stärker.</p>
-    <p style="color:var(--text2);margin-top:8px">AlpenSMP ist privat und nicht-kommerziell. Mit dem Join akzeptierst du diese Regeln.</p>
-    <div class="btns">
-      <a class="btn btn-p" href="/#join">Jetzt spielen</a>
+
+<header class="hero">
+  <div class="hero-inner">
+    <img class="mark" src="../logo.png" alt="AlpenSMP Logo">
+    <p class="kicker">Offizielles Regelwerk</p>
+    <h1>🏔️ AlpenSMP – Server-Regeln</h1>
+    <p class="lead" id="rulesIntro">Verbindlich beim Join. 14 klare Regeln für Survival, Chat, Mods und Fairplay – ohne Kleinprint-Dschungel.</p>
+    <div class="meta-row">
+      <span class="chip">14 Regeln</span>
+      <span class="chip">Java & Bedrock</span>
+      <span class="chip">Kein Pay-to-Win</span>
+    </div>
+    <p class="updated" id="rulesUpdated"></p>
+    <div class="cta" style="justify-content:center">
+      <a class="btn btn-p" href="https://alpensmp.net/#join">Jetzt spielen</a>
       <a class="btn btn-s" href="https://discord.gg/FfR56Ddtj8" target="_blank" rel="noopener">Discord / Ticket</a>
     </div>
   </div>
+</header>
+
+<main class="wrap">
+  <aside class="toc" aria-label="Inhalt">
+    <h2>Inhalt</h2>
+    <input class="search" id="ruleSearch" type="search" placeholder="Regel suchen…">
+    <div class="toc-links" id="tocLinks"></div>
+  </aside>
+  <section class="rules" id="rulesRoot" aria-label="Server-Regeln"></section>
 </main>
-<footer>© 2026 AlpenSMP · <a href="/">zur Startseite</a></footer>
+
+<footer>
+  © 2026 AlpenSMP ·
+  <a href="https://alpensmp.net">Startseite</a>
+  <a href="https://alpensmp.net/regeln/">Regeln</a>
+  <a href="https://alpensmp.net/team">Team</a>
+  <a href="https://discord.gg/FfR56Ddtj8" target="_blank" rel="noopener">Discord</a>
+</footer>
+
+<button class="ai-toggle" id="aiToggle" type="button" aria-label="AlpenKI öffnen" title="AlpenKI">🤖</button>
+<div class="ai-panel" id="aiPanel" role="dialog" aria-label="AlpenKI">
+  <div class="ai-h"><strong>🤖 AlpenKI</strong><button type="button" id="aiClose" aria-label="Schließen" style="background:none;border:none;color:#94a3b8;font-size:1.2rem;cursor:pointer">×</button></div>
+  <div class="ai-msgs" id="aiMessages">
+    <div class="ai-m bot">Frag mich zum offiziellen Regelwerk – z. B. „Darf ich X-Ray?“, „Sind Sodium und Freecam erlaubt?“ oder „Was steht in Regel 5?“</div>
+  </div>
+  <div class="ai-row">
+    <input id="aiInput" maxlength="240" placeholder="Frage zum Regelwerk…" aria-label="Frage">
+    <button type="button" id="aiSend">→</button>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<script>
+try {
+  firebase.initializeApp({
+    apiKey: "AIzaSyBugFF4T6y_XEhCYde99bwpSyYZOuKbJHc",
+    authDomain: "alpensmp-ad844.firebaseapp.com",
+    databaseURL: "https://alpensmp-ad844-default-rtdb.europe-west1.firebasedatabase.app/",
+    projectId: "alpensmp-ad844"
+  });
+} catch (e) {}
+var db = firebase.database();
+</script>
+<script src="alpen-regeln.js"></script>
+<script>
+(function () {
+  function esc(s) {
+    var d = document.createElement("div");
+    d.textContent = s == null ? "" : String(s);
+    return d.innerHTML;
+  }
+  function render(pack) {
+    pack = window.alpenNormalizeRules(pack);
+    var intro = document.getElementById("rulesIntro");
+    if (intro && pack.intro) intro.textContent = pack.intro;
+    var upd = document.getElementById("rulesUpdated");
+    if (upd) {
+      upd.textContent = pack.updatedAt
+        ? ("Zuletzt vom Team aktualisiert: " + new Date(pack.updatedAt).toLocaleString("de-DE") + (pack.updatedBy ? " · " + pack.updatedBy : ""))
+        : "Offizielles Stand-Regelwerk";
+    }
+    var toc = document.getElementById("tocLinks");
+    var root = document.getElementById("rulesRoot");
+    toc.innerHTML = pack.rules.map(function (r) {
+      return '<a href="#regel-' + r.id + '" data-id="' + r.id + '"><span class="n">' + r.id + "</span>" + esc(r.title) + "</a>";
+    }).join("");
+    root.innerHTML = pack.rules.map(function (r) {
+      var lists = "";
+      if ((r.forbidden && r.forbidden.length) || (r.allowed && r.allowed.length)) {
+        lists = '<div class="cols">' +
+          (r.forbidden && r.forbidden.length ? '<div class="box bad"><h3>Verboten</h3><ul>' + r.forbidden.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul></div>" : "") +
+          (r.allowed && r.allowed.length ? '<div class="box good"><h3>Erlaubt</h3><ul>' + r.allowed.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul></div>" : "") +
+          "</div>";
+      }
+      var bullets = r.bullets && r.bullets.length ? "<ul>" + r.bullets.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul>" : "";
+      var note = r.note ? '<div class="note">' + esc(r.note) + "</div>" : "";
+      var paras = (r.paragraphs || []).map(function (p) { return "<p>" + esc(p) + "</p>"; }).join("");
+      return '<article class="rule' + (r.highlight ? " hot" : "") + '" id="regel-' + r.id + '">' +
+        "<h2><span class=\"num\">" + r.id + "</span> " + esc(r.title) + "</h2>" +
+        paras + lists + bullets + note + "</article>";
+    }).join("");
+  }
+
+  render(window.ALPEN_DEFAULT_RULES);
+  window.alpenLoadRules(function (pack) { render(pack); });
+
+  var search = document.getElementById("ruleSearch");
+  search.addEventListener("input", function () {
+    var q = search.value.toLowerCase();
+    document.querySelectorAll(".rule").forEach(function (el) {
+      el.style.display = !q || el.textContent.toLowerCase().indexOf(q) !== -1 ? "" : "none";
+    });
+  });
+
+  var panel = document.getElementById("aiPanel");
+  var tog = document.getElementById("aiToggle");
+  var msgs = document.getElementById("aiMessages");
+  var inp = document.getElementById("aiInput");
+  tog.onclick = function () { panel.classList.toggle("open"); if (panel.classList.contains("open")) inp.focus(); };
+  document.getElementById("aiClose").onclick = function () { panel.classList.remove("open"); };
+  function send() {
+    var q = inp.value.trim();
+    if (!q) return;
+    var u = document.createElement("div"); u.className = "ai-m user"; u.textContent = q; msgs.appendChild(u);
+    inp.value = "";
+    var b = document.createElement("div"); b.className = "ai-m bot";
+    b.textContent = window.alpenRulesAnswer(q, window.ALPEN_RULES_LIVE) ||
+      ("Dazu steht nichts Eindeutiges im offiziellen Regelwerk. Ich erfinde keine Regeln. Schau auf https://alpensmp.net/regeln/ oder frag im Discord.");
+    msgs.appendChild(b);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+  document.getElementById("aiSend").onclick = send;
+  inp.addEventListener("keydown", function (e) { if (e.key === "Enter") send(); });
+})();
+</script>
 </body>
 </html>
