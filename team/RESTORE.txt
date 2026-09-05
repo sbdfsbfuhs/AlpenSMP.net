@@ -1,0 +1,13 @@
+Backup des Staff Centers VOR Team-Management.
+
+Branch: backup-staff-before-team-mgmt
+Commit: a2234259f4549de83a31736b5f28fce24cfcc81d
+
+Zurücksetzen (GitHub):
+1. Branch backup-staff-before-team-mgmt öffnen
+2. team/index.html nach main kopieren
+3. team/team-management.js löschen (optional)
+
+Oder in team/index.html die Zeile
+  <script src="team-management.js"></script>
+entfernen – dann ist das Panel wieder wie vorher.
