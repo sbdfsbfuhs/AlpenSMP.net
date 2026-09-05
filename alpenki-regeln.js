@@ -20,6 +20,52 @@
     document.head.appendChild(s);
   }
 
+  function addGuideLink() {
+    if (document.getElementById("navGuideLinkHtml")) return;
+    function addAfter(sel, make) {
+      var a = document.querySelector(sel);
+      if (!a) return;
+      var host = a.closest("li") || a;
+      if (!host.parentNode) return;
+      var node = make();
+      if (host.parentNode.querySelector("[href*='/guide']")) return;
+      if (host.nextSibling) host.parentNode.insertBefore(node, host.nextSibling);
+      else host.parentNode.appendChild(node);
+    }
+    addAfter("#navRulesLinkHtml, a.nav-regeln", function () {
+      var li = document.createElement("li");
+      var a = document.createElement("a");
+      a.href = "https://alpensmp.net/guide/";
+      a.className = "nav-regeln";
+      a.id = "navGuideLinkHtml";
+      a.textContent = "\ud83c\udf93 Spieler-Guide";
+      li.appendChild(a);
+      return li;
+    });
+    addAfter("#mobileRulesLinkHtml", function () {
+      var a = document.createElement("a");
+      a.href = "https://alpensmp.net/guide/";
+      a.id = "mobileGuideLinkHtml";
+      a.textContent = "\ud83c\udf93 Spieler-Guide";
+      return a;
+    });
+    addAfter("#heroRulesBtnHtml", function () {
+      var a = document.createElement("a");
+      a.href = "https://alpensmp.net/guide/";
+      a.className = "btn btn-secondary btn-regeln";
+      a.id = "heroGuideBtnHtml";
+      a.textContent = "\ud83c\udf93 Spieler-Guide";
+      return a;
+    });
+    addAfter("#footerRulesLinkHtml", function () {
+      var a = document.createElement("a");
+      a.href = "https://alpensmp.net/guide/";
+      a.id = "footerGuideLinkHtml";
+      a.textContent = "\ud83c\udf93 Spieler-Guide";
+      return a;
+    });
+  }
+
   function removeDuplicates() {
     ["navRulesLink", "heroRulesBtn", "mobileRulesLink"].forEach(function (id) {
       var el = document.getElementById(id);
@@ -65,6 +111,7 @@
   function boot() {
     injectCss();
     removeDuplicates();
+    addGuideLink();
     wrapAI();
     if (typeof window.alpenLoadRules === "function") window.alpenLoadRules(function () { wrapAI(); });
   }
