@@ -38,7 +38,7 @@
       a.href = "https://alpensmp.net/guide/";
       a.className = "nav-regeln";
       a.id = "navGuideLinkHtml";
-      a.textContent = "\ud83c\udf93 Spieler-Guide";
+      a.textContent = "Spieler-Guide";
       li.appendChild(a);
       return li;
     });
@@ -46,7 +46,7 @@
       var a = document.createElement("a");
       a.href = "https://alpensmp.net/guide/";
       a.id = "mobileGuideLinkHtml";
-      a.textContent = "\ud83c\udf93 Spieler-Guide";
+      a.textContent = "Spieler-Guide";
       return a;
     });
     addAfter("#heroRulesBtnHtml", function () {
@@ -54,16 +54,24 @@
       a.href = "https://alpensmp.net/guide/";
       a.className = "btn btn-secondary btn-regeln";
       a.id = "heroGuideBtnHtml";
-      a.textContent = "\ud83c\udf93 Spieler-Guide";
+      a.textContent = "Spieler-Guide";
       return a;
     });
     addAfter("#footerRulesLinkHtml", function () {
       var a = document.createElement("a");
       a.href = "https://alpensmp.net/guide/";
       a.id = "footerGuideLinkHtml";
-      a.textContent = "\ud83c\udf93 Spieler-Guide";
+      a.textContent = "Spieler-Guide";
       return a;
     });
+  }
+
+  function loadAdminCall() {
+    if (document.querySelector("script[data-alpen-admin-call]")) return;
+    var s = document.createElement("script");
+    s.src = "admin-call.js?v=20260907a";
+    s.dataset.alpenAdminCall = "1";
+    document.body.appendChild(s);
   }
 
   function removeDuplicates() {
@@ -73,25 +81,6 @@
       var node = el.closest("li") || el;
       if (node.parentNode) node.parentNode.removeChild(node);
     });
-    function dedupe(rootSel) {
-      var root = document.querySelector(rootSel);
-      if (!root) return;
-      var seen = false;
-      Array.prototype.slice.call(root.querySelectorAll("a")).forEach(function (a) {
-        var href = a.getAttribute("href") || "";
-        if (href.indexOf("/regeln") === -1 && href.indexOf("regeln/") === -1) return;
-        if (seen) {
-          var n = a.closest("li") || a;
-          if (n.parentNode) n.parentNode.removeChild(n);
-        } else {
-          seen = true;
-          a.style.whiteSpace = "nowrap";
-        }
-      });
-    }
-    dedupe(".nav-links");
-    dedupe(".hero-btns");
-    dedupe("#mobileMenu");
   }
 
   function wrapAI() {
@@ -113,6 +102,7 @@
     removeDuplicates();
     addGuideLink();
     wrapAI();
+    loadAdminCall();
     if (typeof window.alpenLoadRules === "function") window.alpenLoadRules(function () { wrapAI(); });
   }
 
