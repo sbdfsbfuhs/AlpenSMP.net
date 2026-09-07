@@ -41,7 +41,7 @@
     };
     return db.ref("site_status/active").set(body).then(function () {
       return db.ref("site_status/log").push(body);
-    }).then(function () { toast("Status gesetzt ✓"); });
+    }).then(function () { toast("Status gesetzt"); });
   };
 
   window.loadWebsitePanel = function () {
@@ -74,6 +74,13 @@
       }
     }
   };
+
+  if (!document.querySelector("script[data-alpen-admin-calls]")) {
+    var s = document.createElement("script");
+    s.src = "admin-calls.js?v=20260907a";
+    s.dataset.alpenAdminCalls = "1";
+    document.body.appendChild(s);
+  }
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", applyAccess);
