@@ -1,15 +1,15 @@
-/* Staff polish v20260910f */
+/* Staff polish v20260910g */
 (function () {
   if (window.__alpenStaffPolish) return;
   window.__alpenStaffPolish = true;
-  var VER = "Staff v20260910f";
+  var VER = "Staff v20260910g";
   var ALLOWED = { owner: 1, admin: 1, helper: 1 };
   var DEFAULT_GUIDE = {
     insult: { title: "Beleidigung", duration: 1, unit: "hours", stack: true, note: "1 Stunde pro Beleidigung, stapelbar.", active: true },
-    spam: { title: "Spam", duration: 30, unit: "minutes", stack: false, note: "Wiederholung erhoehen.", active: true },
-    grief: { title: "Griefing", duration: 1, unit: "days", stack: false, note: "Je nach Schaden erhoehen.", active: true },
-    cheat: { title: "Cheating / Hacks", duration: 7, unit: "days", stack: false, note: "Bei hartnaeckigem Cheat pruefen.", active: true },
-    ban_evade: { title: "Ban-Umgehung", duration: 7, unit: "days", stack: false, note: "Auf den urspruenglichen Ban aufschlagen.", active: true }
+    spam: { title: "Spam", duration: 30, unit: "minutes", stack: false, note: "Bei Wiederholung erhöhen.", active: true },
+    grief: { title: "Griefing", duration: 1, unit: "days", stack: false, note: "Je nach Schaden erhöhen.", active: true },
+    cheat: { title: "Cheating / Hacks", duration: 7, unit: "days", stack: false, note: "Bei hartnäckigem Cheat prüfen.", active: true },
+    ban_evade: { title: "Ban-Umgehung", duration: 7, unit: "days", stack: false, note: "Auf den ursprünglichen Ban aufschlagen.", active: true }
   };
   function isOwner() { return !!(currentUser && currentUser.role === "owner"); }
   function unitLabel(u) { return u === "minutes" ? "Minuten" : u === "days" ? "Tage" : "Stunden"; }
@@ -20,7 +20,7 @@
     if (!d) {
       d = document.createElement("div");
       d.id = "alpenVer";
-      d.style.cssText = "position:fixed;left:12px;bottom:12px;z-index:99999;background:#0c1018;border:1px solid rgba(199,62,62,.5);color:#fda4af;padding:6px 10px;border-radius:10px;font-size:12px;pointer-events:none";
+      d.style.cssText = "position:fixed;left:12px;bottom:12px;z-index:99999;background:#0c1018;border:1px solid rgba(199,62,62,.5);color:#fda4af;padding:6px 10px;border-radius:10px;font-size:12px";
       document.body.appendChild(d);
     }
     d.textContent = VER;
@@ -29,7 +29,25 @@
     if (document.getElementById("alpenPolishCss")) return;
     var s = document.createElement("style");
     s.id = "alpenPolishCss";
-    s.textContent = ".tabs,.tab-row,.tm-sub{overflow:visible!important}.tab,button.tab{overflow:visible!important;position:relative}.tab .badge,.tabs .badge,.badge{position:absolute;top:-8px;right:-8px;min-width:18px;height:18px;padding:0 5px;line-height:18px;font-size:11px;border-radius:999px;z-index:8}.btn,button{overflow:visible;white-space:nowrap}.alpen-extra{margin-top:18px}.alpen-guide-item{background:rgba(0,0,0,.28);border:1px solid var(--border);border-radius:12px;padding:12px;margin:8px 0}.alpen-ai{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.alpen-ai input{flex:1;min-width:160px;margin:0}.alpen-ai-out{background:rgba(0,0,0,.28);border-radius:12px;padding:12px}option[value=moderator],option[value=builder],option[value=developer]{display:none!important}";
+    s.textContent = [
+      "html,body,#app{overflow-x:hidden}",
+      ".card{padding:18px 18px 16px;margin-bottom:14px}",
+      ".card h2{margin:0 0 6px;font-size:1.15rem}",
+      ".card .desc,.meta{line-height:1.35}",
+      ".tabs,.tab-row,.tm-sub{display:flex;flex-wrap:wrap;gap:8px;overflow:visible!important;margin-bottom:14px}",
+      ".tab,button.tab{overflow:visible!important;position:relative;margin:0}",
+      ".tab .badge,.tabs .badge,.badge{position:absolute;top:-8px;right:-8px;min-width:18px;height:18px;padding:0 5px;line-height:18px;font-size:11px;border-radius:999px;z-index:8}",
+      ".btn,button{overflow:visible;white-space:nowrap}",
+      ".item,.panic-item,.help-card{overflow-wrap:anywhere;word-break:break-word}",
+      ".help-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}",
+      "#tab-help .list,#helpList{max-height:none}",
+      ".alpen-extra{margin-top:18px}",
+      ".alpen-guide-item{background:rgba(0,0,0,.28);border:1px solid var(--border);border-radius:12px;padding:12px;margin:8px 0}",
+      ".alpen-ai{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}",
+      ".alpen-ai input{flex:1;min-width:160px;margin:0}",
+      ".alpen-ai-out{background:rgba(0,0,0,.28);border-radius:12px;padding:12px}",
+      "option[value=moderator],option[value=builder],option[value=developer]{display:none!important}"
+    ].join("");
     document.head.appendChild(s);
   }
   function pruneRoleUi() {
@@ -46,11 +64,11 @@
     var box = document.createElement("div");
     box.id = "alpenHelpExtras";
     box.className = "card alpen-extra";
-    var html = "<h2>Team-Hilfe</h2><p class='desc'>Kurz nachschlagen.</p>";
+    var html = "<h2>Team-Hilfe</h2><p class='desc'>Kurz nachschlagen. Keine erfundenen Strafen.</p>";
     html += "<label style='display:flex;gap:8px;align-items:center;margin:10px 0'><input id='alpenSoundToggle' type='checkbox'" + (on ? " checked" : "") + "><span>Ton bei neuer Hilfe-Anfrage</span></label>";
     html += "<div class='alpen-ai'><input id='alpenAiQ' placeholder='Wie lange bannen bei Beleidigung?'><button class='btn' type='button' id='alpenAiGo'>Fragen</button></div>";
     html += "<div class='alpen-ai-out' id='alpenAiOut'>Frage nach Beleidigung, Spam oder Griefing.</div>";
-    html += "<h2 style='margin-top:22px'>Straf-Leitfaden</h2><p class='desc'>Nur Nachschlagen. Owner kann Eintraege aendern.</p><div id='alpenGuideList'></div>";
+    html += "<h2 style='margin-top:22px'>Straf-Leitfaden</h2><p class='desc'>Nur nachschlagen. Owner kann Einträge ändern.</p><div id='alpenGuideList'></div>";
     if (isOwner()) {
       html += "<div class='alpen-ai'><input id='gTitle' placeholder='Grund'><input id='gDur' placeholder='Dauer' style='max-width:90px'><select id='gUnit'><option value='minutes'>Minuten</option><option value='hours' selected>Stunden</option><option value='days'>Tage</option></select><input id='gNote' placeholder='Hinweis'><button class='btn' type='button' id='gAdd'>Eintrag</button></div>";
     }
@@ -76,7 +94,7 @@
     if (!el) return;
     var items = Object.entries(data || {}).map(function (p) { return Object.assign({ id: p[0] }, p[1] || {}); }).filter(function (it) { return it.active !== false; });
     el.innerHTML = items.map(function (it) {
-      var del = isOwner() ? " <button class='btn btn-ghost btn-sm' type='button' onclick=\"alpenDelGuide('" + it.id + "')\">Loeschen</button>" : "";
+      var del = isOwner() ? " <button class='btn btn-ghost btn-sm' type='button' onclick=\"alpenDelGuide('" + it.id + "')\">Löschen</button>" : "";
       return "<div class='alpen-guide-item'><b>" + escText(it.title) + "</b><div>" + escText(durText(it)) + "</div><div class='meta'>" + escText(it.note || "") + "</div>" + del + "</div>";
     }).join("");
   }
@@ -119,6 +137,5 @@
   }
   setTimeout(boot, 400);
   setTimeout(boot, 1200);
-  setTimeout(boot, 2500);
   setInterval(pruneRoleUi, 3000);
 })();
