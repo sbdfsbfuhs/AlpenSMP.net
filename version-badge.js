@@ -3,10 +3,9 @@
   if (window.__alpenVersionBadge) return;
   window.__alpenVersionBadge = true;
   var p = (location.pathname || "/").toLowerCase();
-  var label = "Website 1.0";
-  if (p.indexOf("/team") === 0 || p.indexOf("/team/") !== -1) label = "Team 1.2";
-  else if (p.indexOf("/guide") === 0) label = "Guide 0.5";
-  else if (p.indexOf("/regeln") === 0) label = "Website 1.0";
+  var label = "Website 1.1";
+  if (p.indexOf("/team") !== -1) label = "Team 1.3";
+  else if (p.indexOf("/guide") !== -1) label = "Guide 0.6";
   function paint() {
     var d = document.getElementById("alpenVer");
     if (!d) {
