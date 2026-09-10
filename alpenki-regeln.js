@@ -66,11 +66,11 @@
     });
   }
 
-  function loadAdminCall() {
-    if (document.querySelector("script[data-alpen-admin-call]")) return;
+  function loadScript(src, key) {
+    if (document.querySelector("script[data-" + key + "]")) return;
     var s = document.createElement("script");
-    s.src = "admin-call.js?v=20260907a";
-    s.dataset.alpenAdminCall = "1";
+    s.src = src;
+    s.setAttribute("data-" + key, "1");
     document.body.appendChild(s);
   }
 
@@ -102,7 +102,8 @@
     removeDuplicates();
     addGuideLink();
     wrapAI();
-    loadAdminCall();
+    loadScript("admin-call.js?v=20260907a", "alpen-admin-call");
+    loadScript("https://alpensmp.net/version-badge.js?v=1", "alpen-version");
     if (typeof window.alpenLoadRules === "function") window.alpenLoadRules(function () { wrapAI(); });
   }
 
