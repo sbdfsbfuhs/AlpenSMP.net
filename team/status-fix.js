@@ -4,7 +4,6 @@
     if (!currentUser) { toast("Nicht angemeldet"); return false; }
     return true;
   }
-
   function applyAccess() {
     const btn = document.getElementById("websiteTabBtn");
     if (btn) btn.style.display = "inline-block";
@@ -20,30 +19,21 @@
       if (cards.length > 1) cards[cards.length - 1].style.display = "none";
     }
   }
-
   window.writeActiveStatus = function (payload) {
     if (!requireStaff()) return Promise.reject();
     const expires = typeof statusExpiresAt === "function" ? statusExpiresAt() : null;
     const body = {
-      id: "active",
-      status_type: payload.type,
-      type: payload.type,
-      title: payload.title || "",
-      message: payload.message || "",
-      is_active: payload.type !== "online",
-      color: payload.color || "",
-      created_by: currentUser.username,
-      updated_by: currentUser.username,
-      created_role: currentUser.role || "",
-      created_at: Date.now(),
-      updated_at: Date.now(),
+      id: "active", status_type: payload.type, type: payload.type,
+      title: payload.title || "", message: payload.message || "",
+      is_active: payload.type !== "online", color: payload.color || "",
+      created_by: currentUser.username, updated_by: currentUser.username,
+      created_role: currentUser.role || "", created_at: Date.now(), updated_at: Date.now(),
       expires_at: expires
     };
     return db.ref("site_status/active").set(body).then(function () {
       return db.ref("site_status/log").push(body);
     }).then(function () { toast("Status gesetzt"); });
   };
-
   window.loadWebsitePanel = function () {
     if (!requireStaff()) return;
     applyAccess();
@@ -67,29 +57,23 @@
           const nowEl = document.getElementById("ownerTotalNow");
           const inEl = document.getElementById("ownerTotalInput");
           const curEl = document.getElementById("ownerCurrentInput");
-          if (nowEl) nowEl.textContent = isNaN(total) ? "–" : total.toLocaleString("de-DE");
+          if (nowEl) nowEl.textContent = isNaN(total) ? "-" : total.toLocaleString("de-DE");
           if (inEl && document.activeElement !== inEl) inEl.value = isNaN(total) ? "" : String(total);
           if (curEl && document.activeElement !== curEl && cur != null) curEl.value = String(cur);
         });
       }
     }
   };
-
   function loadExtra(src, key) {
     if (document.querySelector("script[data-" + key + "]")) return;
     var s = document.createElement("script");
     s.src = src;
-    s.dataset[key.replace(/-([a-z])/g, function (_, c) { return c.toUpperCase(); })] = "1";
     s.setAttribute("data-" + key, "1");
     document.body.appendChild(s);
   }
-  loadExtra("admin-calls.js?v=20260910c", "alpen-admin-calls");
-  loadExtra("staff-polish.js?v=20260910c", "alpen-staff-polish");
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", applyAccess);
-  } else {
-    applyAccess();
-  }
+  loadExtra("admin-calls.js?v=20260910e", "alpen-admin-calls");
+  loadExtra("staff-polish.js?v=20260910e", "alpen-staff-polish");
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", applyAccess);
+  else applyAccess();
   setTimeout(applyAccess, 400);
 })();
