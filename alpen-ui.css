@@ -1,0 +1,19 @@
+/* AlpenSMP Design-System v1.1 */
+:root{--alpen-bg:#080a0e;--alpen-card:rgba(18,22,30,.78);--alpen-border:rgba(255,255,255,.08);--alpen-text:#f2f4f7;--alpen-muted:#9aa3b2;--alpen-red:#c73e3e;--alpen-red2:#b91c1c;--alpen-radius:16px;--alpen-font:'Outfit',system-ui,sans-serif;--alpen-body:'Inter',system-ui,sans-serif}
+.alpen-btn,.btn-p,.btn-s,.btn-ghost,.btn-danger{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:12px 18px;border-radius:12px;font-weight:700;border:1px solid transparent;cursor:pointer;transition:transform .15s ease,filter .15s ease}
+.alpen-btn:hover,.btn-p:hover,.btn-s:hover{transform:translateY(-1px);filter:brightness(1.06)}
+.btn-p,.alpen-btn-primary{background:linear-gradient(135deg,var(--alpen-red2),var(--alpen-red));color:#fff}
+.btn-s,.alpen-btn-secondary{background:rgba(255,255,255,.04);border-color:var(--alpen-border);color:#fff}
+.btn-ghost{background:transparent;border-color:var(--alpen-border);color:var(--alpen-muted)}
+.alpen-card,.pick-card,.chapter{background:var(--alpen-card);border:1px solid var(--alpen-border);border-radius:var(--alpen-radius)}
+.alpen-card:hover,.pick-card:hover{border-color:rgba(229,57,53,.4);box-shadow:0 12px 36px rgba(199,62,62,.14)}
+.alpen-tip{background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.28);border-radius:12px;padding:12px 14px;margin:10px 0}
+.alpen-warn{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.32);border-radius:12px;padding:12px 14px;margin:10px 0;color:#fde68a}
+.alpen-step-img{max-width:100%;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.35);margin:12px 0;cursor:zoom-in}
+.alpen-lightbox{position:fixed;inset:0;background:rgba(0,0,0,.84);display:none;align-items:center;justify-content:center;z-index:100000;padding:20px}
+.alpen-lightbox.show{display:flex}
+.alpen-lightbox img{max-width:100%;max-height:90vh;border-radius:14px}
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:16px 0}
+.dash-cat{padding:16px}
+.topic-row{display:flex;gap:12px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;padding:12px 0;border-top:1px solid var(--alpen-border)}
+@media(max-width:700px){.topic-row{flex-direction:column}}
