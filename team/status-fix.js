@@ -1,4 +1,4 @@
-/* Helper + Admin: Status-Banner auf der Website setzen */
+/* Helper + Admin: Status-Banner */
 (function () {
   function requireStaff() {
     if (!currentUser) { toast("Nicht angemeldet"); return false; }
@@ -41,8 +41,8 @@
     s.setAttribute("data-" + key, "1");
     document.body.appendChild(s);
   }
-  loadExtra("admin-calls.js?v=20260910f", "alpen-admin-calls");
-  loadExtra("staff-polish.js?v=20260910f", "alpen-staff-polish");
+  loadExtra("admin-calls.js?v=20260910g", "alpen-admin-calls");
+  loadExtra("staff-polish.js?v=20260910g", "alpen-staff-polish");
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", applyAccess);
   else applyAccess();
   setTimeout(applyAccess, 400);
