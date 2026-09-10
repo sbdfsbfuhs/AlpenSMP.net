@@ -1,7 +1,8 @@
-/* Staff polish v20260910e */
+/* Staff polish v20260910f */
 (function () {
   if (window.__alpenStaffPolish) return;
   window.__alpenStaffPolish = true;
+  var VER = "Staff v20260910f";
   var ALLOWED = { owner: 1, admin: 1, helper: 1 };
   var DEFAULT_GUIDE = {
     insult: { title: "Beleidigung", duration: 1, unit: "hours", stack: true, note: "1 Stunde pro Beleidigung, stapelbar.", active: true },
@@ -14,6 +15,16 @@
   function unitLabel(u) { return u === "minutes" ? "Minuten" : u === "days" ? "Tage" : "Stunden"; }
   function durText(it) { return it.duration + " " + unitLabel(it.unit) + (it.stack ? " (stapelbar)" : ""); }
   function escText(s) { return String(s == null ? "" : s).replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">"); }
+  function showVersion() {
+    var d = document.getElementById("alpenVer");
+    if (!d) {
+      d = document.createElement("div");
+      d.id = "alpenVer";
+      d.style.cssText = "position:fixed;left:12px;bottom:12px;z-index:99999;background:#0c1018;border:1px solid rgba(199,62,62,.5);color:#fda4af;padding:6px 10px;border-radius:10px;font-size:12px;pointer-events:none";
+      document.body.appendChild(d);
+    }
+    d.textContent = VER;
+  }
   function injectCss() {
     if (document.getElementById("alpenPolishCss")) return;
     var s = document.createElement("style");
@@ -24,7 +35,7 @@
   function pruneRoleUi() {
     document.querySelectorAll("option").forEach(function (o) {
       var v = (o.value || "").toLowerCase();
-      if ((v === "moderator" || v === "builder" || v === "developer") && !ALLOWED[v]) o.remove();
+      if (v === "moderator" || v === "builder" || v === "developer") o.remove();
     });
   }
   function ensureHelpExtras() {
@@ -99,7 +110,15 @@
       else out.textContent = "Steht nicht im Leitfaden, Owner fragen.";
     });
   }
-  function boot() { injectCss(); pruneRoleUi(); ensureHelpExtras(); refreshGuide(); }
-  setTimeout(boot, 600);
+  function boot() {
+    showVersion();
+    injectCss();
+    pruneRoleUi();
+    ensureHelpExtras();
+    refreshGuide();
+  }
+  setTimeout(boot, 400);
+  setTimeout(boot, 1200);
+  setTimeout(boot, 2500);
   setInterval(pruneRoleUi, 3000);
 })();
