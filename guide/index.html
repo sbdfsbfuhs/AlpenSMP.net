@@ -5,47 +5,30 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AlpenSMP – Spieler-Guide</title>
 <link rel="canonical" href="https://alpensmp.net/guide/">
-<link rel="icon" type="image/png" href="../logo.png">
+<link rel="icon" type="image/png" href="https://alpensmp.net/logo.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../alpen-ui.css?v=11">
+<link rel="stylesheet" href="../alpen-ui.css?v=14">
 <style>
-:root{--bg:#080a0e;--card:rgba(18,22,30,.78);--border:rgba(255,255,255,.08);--text:#f2f4f7;--text2:#9aa3b2;--muted:#6b7280;--font:'Outfit',system-ui,sans-serif;--body:'Inter',system-ui,sans-serif}
+:root{--bg:#080a0e;--card:rgba(18,22,30,.78);--border:rgba(255,255,255,.08);--text:#f2f4f7;--text2:#c5cbd6;--font:'Outfit',system-ui,sans-serif;--body:'Inter',system-ui,sans-serif}
 *{box-sizing:border-box;margin:0;padding:0}body{font-family:var(--body);background:var(--bg);color:var(--text);line-height:1.7}
 a{color:inherit;text-decoration:none}
-.nav{position:sticky;top:0;z-index:40;height:72px;background:rgba(8,10,14,.92);border-bottom:1px solid var(--border)}
-.nav-inner{max-width:1100px;margin:0 auto;padding:0 16px;height:100%;display:flex;align-items:center;justify-content:space-between;gap:10px}
-.logo{display:flex;align-items:center;gap:10px;font-family:var(--font);font-weight:800}
-.logo img{width:36px;height:36px;border-radius:9px}
-.nav-links{display:flex;gap:6px;overflow:auto}
-.nav-links a{color:var(--text2);font-weight:600;padding:10px 12px;border-radius:10px;white-space:nowrap}
-.nav-links a.on{color:#fff;background:rgba(199,62,62,.2)}
-.hero{padding:48px 20px 32px;text-align:center;border-bottom:1px solid var(--border)}
+.hero{padding:48px 20px 32px;text-align:center}
 h1{font-family:var(--font);font-size:clamp(2rem,6vw,3rem);margin-bottom:10px}
 .lead{color:var(--text2);max-width:680px;margin:0 auto 16px}
 .wrap{max-width:1100px;margin:0 auto;padding:28px 20px 80px}
 .pick{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.pick-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:24px;text-align:left;cursor:pointer;min-height:140px}
+.pick-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:24px;text-align:left;cursor:pointer;min-height:140px}
 .toolbar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
 .search{flex:1;min-width:180px;padding:12px;border-radius:12px;border:1px solid var(--border);background:rgba(0,0,0,.28);color:#fff}
-.progress-box,.chapter{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:14px}
+.progress-box,.chapter{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:18px;margin-bottom:14px}
 .bar{height:10px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden}.bar>i{display:block;height:100%;background:linear-gradient(90deg,#b91c1c,#c73e3e)}
 .badge{display:inline-flex;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;font-weight:800;padding:4px 8px;border-radius:999px}
 .badge.mc{background:rgba(245,158,11,.12);color:#fbbf24}.badge.alpen{background:rgba(199,62,62,.12);color:#fca5a5}
-.hidden{display:none!important}footer{border-top:1px solid var(--border);padding:24px;text-align:center;color:var(--muted)}
-@media(max-width:800px){.pick{grid-template-columns:1fr}}
-</style>
-</head>
+.hidden{display:none!important}@media(max-width:800px){.pick{grid-template-columns:1fr}}
+</style></head>
 <body>
-<nav class="nav"><div class="nav-inner">
-<a class="logo" href="https://alpensmp.net"><img src="../logo.png" alt="">ALPEN SMP</a>
-<div class="nav-links">
-<a href="https://alpensmp.net">Start</a>
-<a class="on" href="https://alpensmp.net/guide/">Spieler-Guide</a>
-<a href="https://alpensmp.net/regeln/">Regeln</a>
-<a href="https://alpensmp.net/team">Team</a>
-<a href="https://discord.gg/FfR56Ddtj8" target="_blank" rel="noopener">Discord</a>
-</div></div></nav>
 <header class="hero">
+<img src="https://alpensmp.net/logo.png" alt="AlpenSMP" width="72" height="72">
 <p class="badge alpen">Spieler-Guide</p>
 <h1>AlpenSMP Spieler-Guide</h1>
 <p class="lead">Neu bei AlpenSMP? Hier findest du alles, was du für deinen Start wissen musst.</p>
@@ -54,10 +37,9 @@ h1{font-family:var(--font);font-size:clamp(2rem,6vw,3rem);margin-bottom:10px}
 <section id="chooser">
 <p class="lead">Kennst du Minecraft bereits?</p>
 <div class="pick">
-<button type="button" class="pick-card" id="pickYes"><h2>Ja, ich kenne Minecraft</h2><p>Ich kenne die Grundlagen bereits.</p></button>
-<button type="button" class="pick-card" id="pickNo"><h2>Nein, ich bin neu bei Minecraft</h2><p>Zuerst die wichtigsten Grundlagen lernen.</p></button>
-</div>
-</section>
+<button type="button" class="pick-card" id="pickYes"><h2>Ja, ich kenne Minecraft</h2><p>Ich kenne die Grundlagen bereits.</p><span class="btn btn-p">AlpenSMP entdecken</span></button>
+<button type="button" class="pick-card" id="pickNo"><h2>Nein, ich bin neu bei Minecraft</h2><p>Zuerst die wichtigsten Grundlagen lernen.</p><span class="btn btn-s">Minecraft lernen</span></button>
+</div></section>
 <section id="guideApp" class="hidden">
 <div class="toolbar">
 <input class="search" id="guideSearch" type="search" placeholder="Was möchtest du wissen?">
@@ -67,8 +49,10 @@ h1{font-family:var(--font);font-size:clamp(2rem,6vw,3rem);margin-bottom:10px}
 <div id="chapterRoot"></div>
 </section>
 </main>
-<footer>2026 AlpenSMP · <a href="https://alpensmp.net">Start</a> · <a href="https://alpensmp.net/guide/">Guide</a> · <a href="https://alpensmp.net/regeln/">Regeln</a></footer>
-<script src="guide-data.js?v=06"></script>
-<script src="guide-app.js?v=06"></script>
-</body>
-</html>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<script src="https://alpensmp.net/version-badge.js?v=14"></script>
+<script src="guide-data.js?v=08"></script>
+<script src="guide-live.js?v=08"></script>
+<script src="guide-app.js?v=08"></script>
+</body></html>
