@@ -12,7 +12,7 @@
     if (d < 60000) return "gerade eben";
     if (d < 3600000) return "vor " + Math.floor(d / 60000) + " Min.";
     if (d < 86400000) return "vor " + Math.floor(d / 3600000) + " Std.";
-    return new Date(ts).toLocaleString("de-DE");
+    return new Date(ts).toLocaleString("de-CH");
   }
   function sourceLabel(item) {
     var s = String(item.source || item.sourceLabel || "").toLowerCase();
@@ -51,7 +51,7 @@
       el.innerHTML = entries.map(function (pair) {
         var key = pair[0], item = pair[1];
         var kind = item.type === "admin_call" ? "Admin-Anfrage" : "Hilfe";
-        var extra = item.claimedBy ? '<div class="meta">Zustaendig: ' + safe(item.claimedBy) + "</div>" : "";
+        var extra = item.claimedBy ? '<div class="meta">Zuständig: ' + safe(item.claimedBy) + "</div>" : "";
         var open = (item.status === "open" || !item.status || item.status === "offen") && !item.claimedBy;
         var notDone = item.status !== "done" && item.status !== "erledigt";
         var btns = "";
