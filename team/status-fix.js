@@ -75,12 +75,16 @@
     }
   };
 
-  if (!document.querySelector("script[data-alpen-admin-calls]")) {
+  function loadExtra(src, key) {
+    if (document.querySelector("script[data-" + key + "]")) return;
     var s = document.createElement("script");
-    s.src = "admin-calls.js?v=20260907a";
-    s.dataset.alpenAdminCalls = "1";
+    s.src = src;
+    s.dataset[key.replace(/-([a-z])/g, function (_, c) { return c.toUpperCase(); })] = "1";
+    s.setAttribute("data-" + key, "1");
     document.body.appendChild(s);
   }
+  loadExtra("admin-calls.js?v=20260910c", "alpen-admin-calls");
+  loadExtra("staff-polish.js?v=20260910c", "alpen-staff-polish");
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", applyAccess);
