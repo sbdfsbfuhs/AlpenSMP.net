@@ -14,10 +14,6 @@
     if (grid) grid.style.display = "none";
     const settings = document.getElementById("ownerSettingsCard");
     if (settings) settings.style.display = "none";
-    else {
-      const cards = tab.querySelectorAll(":scope > .card");
-      if (cards.length > 1) cards[cards.length - 1].style.display = "none";
-    }
   }
   window.writeActiveStatus = function (payload) {
     if (!requireStaff()) return Promise.reject();
@@ -37,32 +33,6 @@
   window.loadWebsitePanel = function () {
     if (!requireStaff()) return;
     applyAccess();
-    const row = document.getElementById("statusPresets");
-    if (row && !row.dataset.ready && typeof STATUS_PRESETS !== "undefined") {
-      row.innerHTML = STATUS_PRESETS.map(function (p) {
-        return '<button type="button" class="preset-chip" data-type="' + p.type + '" onclick=\'setStatusPreset(' + JSON.stringify(p) + ')\'>' + p.title + "</button>";
-      }).join("");
-      row.dataset.ready = "1";
-    }
-    if (!window._websiteListenersBound) {
-      window._websiteListenersBound = true;
-      db.ref("site_status/active").on("value", function (snap) {
-        if (typeof renderStatusPreview === "function") renderStatusPreview(snap.val());
-      });
-      if (currentUser.role === "owner") {
-        db.ref("site_stats").on("value", function (snap) {
-          const s = snap.val() || {};
-          const total = Number(s.total_players_ever || 0);
-          const cur = s.current_players;
-          const nowEl = document.getElementById("ownerTotalNow");
-          const inEl = document.getElementById("ownerTotalInput");
-          const curEl = document.getElementById("ownerCurrentInput");
-          if (nowEl) nowEl.textContent = isNaN(total) ? "-" : total.toLocaleString("de-DE");
-          if (inEl && document.activeElement !== inEl) inEl.value = isNaN(total) ? "" : String(total);
-          if (curEl && document.activeElement !== curEl && cur != null) curEl.value = String(cur);
-        });
-      }
-    }
   };
   function loadExtra(src, key) {
     if (document.querySelector("script[data-" + key + "]")) return;
@@ -71,8 +41,8 @@
     s.setAttribute("data-" + key, "1");
     document.body.appendChild(s);
   }
-  loadExtra("admin-calls.js?v=20260910e", "alpen-admin-calls");
-  loadExtra("staff-polish.js?v=20260910e", "alpen-staff-polish");
+  loadExtra("admin-calls.js?v=20260910f", "alpen-admin-calls");
+  loadExtra("staff-polish.js?v=20260910f", "alpen-staff-polish");
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", applyAccess);
   else applyAccess();
   setTimeout(applyAccess, 400);
