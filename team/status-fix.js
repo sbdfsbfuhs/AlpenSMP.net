@@ -43,7 +43,8 @@
   }
   loadExtra("admin-calls.js?v=20260910g", "alpen-admin-calls");
   loadExtra("staff-polish.js?v=20260910g", "alpen-staff-polish");
-  loadExtra("https://alpensmp.net/version-badge.js?v=1", "alpen-version");
+  loadExtra("guide-editor.js?v=06", "alpen-guide-editor");
+  loadExtra("https://alpensmp.net/version-badge.js?v=11", "alpen-version");
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", applyAccess);
   else applyAccess();
   setTimeout(applyAccess, 400);
