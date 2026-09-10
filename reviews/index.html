@@ -6,11 +6,11 @@
 <title>AlpenSMP – Spieler-Rezensionen</title>
 <link rel="icon" href="https://alpensmp.net/logo.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Outfit:wght@700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://alpensmp.net/alpen-ui.css?v=13">
-<style>body{margin:0;background:#080a0e;color:#f2f4f7;font-family:Inter,sans-serif}.wrap{max-width:1100px;margin:0 auto;padding:28px 16px 80px}.hero{text-align:center;padding:48px 16px 24px}h1{font-family:Outfit,sans-serif}.avg{font-size:2rem;color:#fbbf24}.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}.search{flex:1;min-width:180px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:#12161e;color:#fff;padding:10px 12px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}.card{background:rgba(18,22,30,.86);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px}.stars{color:#fbbf24}.meta{color:#c5cbd6}</style>
+<link rel="stylesheet" href="https://alpensmp.net/alpen-ui.css?v=14">
+<style>body{margin:0;background:#080a0e;color:#f2f4f7;font-family:Inter,sans-serif}.wrap{max-width:1100px;margin:0 auto;padding:28px 16px 80px}.hero{text-align:center;padding:48px 16px 24px}h1{font-family:Outfit,sans-serif}.avg{font-size:2rem;color:#fbbf24}.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}.search{flex:1;min-width:180px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:#12161e;color:#fff;padding:10px 12px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}.review-card{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:22px}.review-top{display:flex;align-items:center;margin-bottom:10px}.review-ava{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#b91c1c,#f87171);display:flex;align-items:center;justify-content:center;font-weight:800;margin-right:10px}.stars{color:#fbbf24}.meta{color:#c5cbd6;font-size:.9rem}</style>
 </head>
 <body>
-<header class="hero alpen-hero">
+<header class="hero">
 <img src="https://alpensmp.net/logo.png" alt="AlpenSMP" width="64" height="64">
 <h1>Spieler-Rezensionen</h1>
 <p id="avgLine" class="avg">–</p>
@@ -21,14 +21,13 @@
 <button class="btn btn-s" data-f="all" type="button">Alle</button>
 <button class="btn btn-s" data-f="5" type="button">5 Sterne</button>
 <button class="btn btn-s" data-f="4" type="button">4 Sterne</button>
-<button class="btn btn-s" data-f="new" type="button">Neueste</button>
 </div>
 <div class="grid" id="list"></div>
 <p id="moreWrap" style="text-align:center;margin-top:18px"><button class="btn btn-p" id="more" type="button">Weitere laden</button></p>
 </main>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-<script src="https://alpensmp.net/version-badge.js?v=13"></script>
+<script src="https://alpensmp.net/version-badge.js?v=14"></script>
 <script>
 firebase.initializeApp({apiKey:"AIzaSyBugFF4T6y_XEhCYde99bwpSyYZOuKbJHc",authDomain:"alpensmp-ad844.firebaseapp.com",databaseURL:"https://alpensmp-ad844-default-rtdb.europe-west1.firebasedatabase.app/",projectId:"alpensmp-ad844"});
 var all=[],shown=12,filter="all",q="";
@@ -39,7 +38,10 @@ function render(){
  if(q){var s=q.toLowerCase();items=items.filter(function(r){return ((r.name||r.by||"")+" "+(r.text||r.message||"")).toLowerCase().indexOf(s)!==-1})}
  items.sort(function(a,b){return (b.ts||0)-(a.ts||0)});
  var view=items.slice(0,shown);
- document.getElementById("list").innerHTML=view.map(function(r){return "<article class='card'><div class='stars'>"+stars(r.rating)+"</div><strong>"+(r.name||r.by||"Spieler")+"</strong><div class='meta'>"+(r.ts?new Date(r.ts).toLocaleDateString("de-CH"):"")+"</div><p>"+(r.text||r.message||"")+"</p></article>"}).join("")||"<p>Noch keine freigegebenen Rezensionen.</p>";
+ document.getElementById("list").innerHTML=view.map(function(r){
+  var name=r.name||r.by||"Spieler"; var ini=(name.charAt(0)||"A").toUpperCase();
+  return "<article class='review-card'><div class='review-top'><div class='review-ava'>"+ini+"</div><div><strong>"+name+"</strong><div class='stars'>"+stars(r.rating)+"</div><div class='meta'>"+(r.ts?new Date(r.ts).toLocaleDateString("de-CH"):"")+"</div></div></div><p>"+(r.text||r.message||"")+"</p></article>";
+ }).join("")||"<p>Noch keine freigegebenen Rezensionen.</p>";
  document.getElementById("moreWrap").style.display=shown>=items.length?"none":"block";
 }
 firebase.database().ref("community_reviews").on("value",function(snap){
@@ -52,5 +54,4 @@ firebase.database().ref("community_reviews").on("value",function(snap){
 document.getElementById("q").oninput=function(){q=this.value;render()};
 document.querySelectorAll("[data-f]").forEach(function(b){b.onclick=function(){filter=b.getAttribute("data-f");shown=12;render()}});
 document.getElementById("more").onclick=function(){shown+=12;render()};
-</script>
-</body></html>
+</script></body></html>
