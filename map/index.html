@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AlpenSMP – Live-Karte</title>
+<title>AlpenSMP – Weltkarte</title>
 <link rel="icon" href="https://alpensmp.net/logo.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Outfit:wght@700;800&display=swap" rel="stylesheet">
 
@@ -83,28 +83,12 @@ body{
   border:1px solid rgba(255,255,255,.14)
 }
 
-.frame{
+.content{
   flex:1;
-  min-height:300px;
-  position:relative;
-  overflow:hidden;
-  flex-shrink:1
-}
-
-.frame iframe{
-  display:block;
-  width:100%;
-  height:100%;
-  border:0;
-  background:#0b0f16
-}
-
-.button-container{
-  padding:18px;
   display:flex;
+  align-items:center;
   justify-content:center;
-  border-top:1px solid rgba(255,255,255,.08);
-  flex-shrink:0
+  padding:40px 18px
 }
 
 .btn-large{
@@ -122,31 +106,22 @@ body{
 
   <a class="logo" href="https://alpensmp.net/">
     <img src="https://alpensmp.net/logo.png" alt="AlpenSMP">
-    ALPEN SMP Karte
+    AlpenSMP Weltkarte
   </a>
 
 </div>
 
-<div class="frame" id="frame">
+<div class="content">
 
-  <iframe
-    title="AlpenSMP Live BlueMap"
-    src="https://alpensmp-map.falix.org/#hauptworld:-1797:123:497:59:0:0:0:0:perspective"
-    allowfullscreen
-    loading="eager">
-  </iframe>
-
-</div>
-
-<div class="button-container">
   <a
     class="btn btn-p btn-large"
-    href="https://alpensmp-map.falix.org/#hauptworld:-1797:123:497:59:0:0:0:0:perspective"
+    href="https://alpensmp-map.falix.org/#hauptworld:-1792:102:500:132:0:0:0:0:perspective"
     target="_blank"
     rel="noopener"
   >
-    🗺️ Karte öffnen
+    🗺️ AlpenSMP BlueMap öffnen
   </a>
+
 </div>
 
 </body>
