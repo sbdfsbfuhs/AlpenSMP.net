@@ -4,34 +4,21 @@
   window.__alpenShotSlider = true;
   window.__alpenBlueMap = true;
   function injectCss() {
-    if (document.getElementById("alpenMapCss")) {
-      document.getElementById("alpenMapCss").textContent = css();
-      return;
-    }
-    var s = document.createElement("style");
-    s.id = "alpenMapCss";
-    s.textContent = css();
-    document.head.appendChild(s);
-  }
-  function css() {
-    return "#map.alpen-map-sec{padding:70px 24px 80px}#map .shot-frame{position:relative;border:1px solid rgba(255,255,255,.08);border-radius:20px;overflow:hidden;background:#0b0f16;min-height:460px;height:min(70vh,740px)}#map .shot-frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .85s ease}#map .shot-frame img.on{opacity:1}#map .shot-dots{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px}#map .shot-dots button{width:9px;height:9px;border-radius:50%;border:0;background:rgba(255,255,255,.28);cursor:pointer;padding:0}#map .shot-dots button.on{background:#c73e3e}#map iframe,#map .alpen-map-frame,#map .map-setup,#map .map-button-group{display:none!important}";
+    var css = "#map.alpen-map-sec{padding:70px 24px 80px}#map .shot-frame{position:relative;border:1px solid rgba(255,255,255,.08);border-radius:20px;overflow:hidden;background:#0b0f16;min-height:460px;height:min(70vh,740px)}#map .shot-frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .85s ease}#map .shot-frame img.on{opacity:1}#map .shot-dots{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px}#map .shot-dots button{width:9px;height:9px;border-radius:50%;border:0;background:rgba(255,255,255,.28);cursor:pointer;padding:0}#map .shot-dots button.on{background:#c73e3e}#map iframe,#map .alpen-map-frame,#map .map-setup,#map .map-button-group{display:none!important}";
+    var el = document.getElementById("alpenMapCss");
+    if (!el) { el = document.createElement("style"); el.id = "alpenMapCss"; document.head.appendChild(el); }
+    el.textContent = css;
   }
   function markup() {
     return "<div class='container'><p class='slabel'>Community</p><h2 class='stitle'>Eure Shots</h2><div class='shot-frame' id='shotFrame'></div><div class='shot-dots' id='shotDots'></div></div>";
   }
   function addSection() {
     var existing = document.getElementById("map");
-    if (existing) {
-      existing.className = "alpen-map-sec";
-      existing.innerHTML = markup();
-      return;
-    }
+    if (existing) { existing.className = "alpen-map-sec"; existing.innerHTML = markup(); return; }
     var after = document.getElementById("live") || document.querySelector(".live-wrap") || document.getElementById("about");
     if (!after) return;
     var sec = document.createElement("section");
-    sec.id = "map";
-    sec.className = "alpen-map-sec";
-    sec.setAttribute("aria-label", "Community-Bilder");
+    sec.id = "map"; sec.className = "alpen-map-sec"; sec.setAttribute("aria-label", "Community-Bilder");
     sec.innerHTML = markup();
     after.insertAdjacentElement("afterend", sec);
   }
@@ -48,12 +35,12 @@
       frame.innerHTML = "<p style='padding:48px 24px;color:#c5cbd6;text-align:center'>Noch keine freigegebenen Bilder aus den Rezensionen.</p>";
       return;
     }
-    frame.innerHTML = urls.map(function (u, i) {
-      return "<img src='" + String(u).replace(/'/g, "%27") + "' alt='' class='" + (i === 0 ? "on" : "") + "'>";
+    frame.innerHTML = urls.map(function (u, idx) {
+      return "<img src='" + String(u).replace(/'/g, "%27") + "' alt='' class='" + (idx === 0 ? "on" : "") + "'>";
     }).join("");
     if (dots) {
-      dots.innerHTML = urls.map(function (_, i) {
-        return "<button type='button' class='" + (i === 0 ? "on" : "") + "' data-i='" + i + "' aria-label='Bild " + (i + 1) + "'></button>";
+      dots.innerHTML = urls.map(function (_, idx) {
+        return "<button type='button' class='" + (idx === 0 ? "on" : "") + "' data-i='" + idx + "' aria-label='Bild'></button>";
       }).join("");
     }
     var i = 0;
@@ -62,18 +49,18 @@
       frame.querySelectorAll("img").forEach(function (el, idx) { el.classList.toggle("on", idx === i); });
       if (dots) dots.querySelectorAll("button").forEach(function (el, idx) { el.classList.toggle("on", idx === i); });
     }
-    if (dots) dots.querySelectorAll("button").forEach(function (b) {
-      b.onclick = function () { show(Number(b.getAttribute("data-i")); };
-    });
+    if (dots) {
+      dots.querySelectorAll("button").forEach(function (b) {
+        b.onclick = function () { show(Number(b.getAttribute("data-i"))); };
+      });
+    }
     if (urls.length > 1 && !window.__alpenShotTimer) {
       window.__alpenShotTimer = setInterval(function () { show(i + 1); }, 4500);
     }
   }
   function load() {
     var urls = [];
-    try {
-      if (window._galleryImages && window._galleryImages.length) urls = urls.concat(window._galleryImages);
-    } catch (e) {}
+    try { if (window._galleryImages && window._galleryImages.length) urls = urls.concat(window._galleryImages); } catch (e) {}
     function take(data) {
       Object.keys(data || {}).forEach(function (k) {
         var r = data[k] || {};
@@ -85,9 +72,7 @@
     }
     try {
       if (window.firebase && firebase.database) {
-        firebase.database().ref("community_reviews").limitToLast(40).once("value", function (snap) {
-          take(snap.val() || {});
-        });
+        firebase.database().ref("community_reviews").limitToLast(40).once("value", function (snap) { take(snap.val() || {}); });
         return;
       }
     } catch (e) {}
