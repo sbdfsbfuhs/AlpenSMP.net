@@ -7,32 +7,54 @@
 <link rel="icon" href="https://alpensmp.net/logo.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Outfit:wght@700;800&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#080a0e;--text:#f2f4f7;--text2:#c5cbd6;--red:#c73e3e}
+:root{--bg:#080a0e;--text:#f2f4f7;--text2:#c5cbd6}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
-.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.08);background:rgba(8,10,14,.94)}
-.logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:#fff;font-family:Outfit,sans-serif;font-weight:800}
+html,body{height:100%}
+body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.08)}
+.logo{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none;font-family:Outfit,sans-serif;font-weight:800}
 .logo img{width:36px;height:36px;border-radius:9px}
-.actions{display:flex;gap:8px;flex-wrap:wrap}
-.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border-radius:12px;text-decoration:none;font-weight:700;color:#fff}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border-radius:12px;text-decoration:none;font-weight:700;color:#fff;border:0;cursor:pointer}
 .btn-p{background:linear-gradient(135deg,#b91c1c,#c73e3e)}
 .btn-s{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14)}
 .frame{flex:1;min-height:0;position:relative}
-iframe{width:100%;height:100%;min-height:70vh;border:0;background:#0b0f16}
-.note{padding:10px 18px;color:var(--text2);font-size:.9rem;border-top:1px solid rgba(255,255,255,.08)}
-</style>
-</head>
+iframe{width:100%;height:100%;border:0;background:#0b0f16}
+.setup{padding:28px 20px;max-width:760px;margin:0 auto;color:var(--text2);line-height:1.7}
+.setup input{width:min(100%,520px);min-height:44px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:#12161e;color:#fff;padding:0 12px;margin:10px 8px 10px 0}
+</style></head>
 <body>
 <div class="bar">
 <a class="logo" href="https://alpensmp.net/"><img src="https://alpensmp.net/logo.png" alt="">ALPEN SMP Karte</a>
-<div class="actions">
-<a class="btn btn-s" href="https://alpensmp.net/">Zur Website</a>
-<a class="btn btn-p" href="http://eu9-o.falixserver.net:26040/#hauptworld:-1792:102:500:132:0:0:0:0:perspective" target="_blank" rel="noopener">Karte in neuem Tab</a>
+<div><a class="btn btn-s" href="https://alpensmp.net/">Website</a>
+<a class="btn btn-p" href="http://eu9-o.falixserver.net:26040/#hauptworld:-1792:102:500:132:0:0:0:0:perspective" target="_blank" rel="noopener">HTTP-Karte</a></div>
 </div>
-</div>
-<div class="frame">
-<iframe title="AlpenSMP BlueMap" src="http://eu9-o.falixserver.net:26040/#hauptworld:-1792:102:500:132:0:0:0:0:perspective" allowfullscreen></iframe>
-</div>
-<p class="note">BlueMap Hauptwelt. Zoomen und verschieben im Fenster. Manche Browser blockieren HTTP-Karten auf HTTPS-Seiten – dann den roten Button nutzen.</p>
-</body>
-</html>
+<div class="frame" id="frame"></div>
+<script>
+(function(){
+  var HASH="#hauptworld:-1792:102:500:132:0:0:0:0:perspective";
+  var HTTP="http://eu9-o.falixserver.net:26040/"+HASH;
+  function saved(){ try{return (localStorage.getItem("alpensmp_bluemap_https")||"").trim()}catch(e){return ""} }
+  function src(){
+    var u=saved();
+    if(u&&u.indexOf("https://")===0){ return u.indexOf("#")<0?u+HASH:u; }
+    return "";
+  }
+  function paint(){
+    var box=document.getElementById("frame");
+    var https=src();
+    if(https){
+      box.innerHTML="<iframe title='AlpenSMP BlueMap' src='"+https+"' allowfullscreen></iframe>";
+      return;
+    }
+    box.innerHTML="<div class='setup'><h1>Live-Karte einbetten</h1><p>Die Website ist HTTPS. BlueMap ist nur HTTP (<code>eu9-o.falixserver.net:26040</code>). Der Browser blockiert das iframe – deshalb war der Bereich schwarz.</p><p><strong>Lösung:</strong> Falix Reverse Proxy mit SSL, dann die https-URL hier speichern.</p><ol><li>Falix → Network → Reverse Proxy → Create Proxy</li><li>Subdomain z. B. alpensmp-map → <code>https://alpensmp-map.falix.org</code></li><li>Backend-Port <strong>26040</strong></li><li>Warten bis SSL aktiv</li></ol><input id='u' placeholder='https://alpensmp-map.falix.org'><button class='btn btn-p' type='button' id='s'>Karte laden</button></div>";
+    document.getElementById("s").onclick=function(){
+      var v=(document.getElementById("u").value||"").trim();
+      if(v.indexOf("https://")!==0){alert("https:// URL nötig");return;}
+      localStorage.setItem("alpensmp_bluemap_https",v);
+      paint();
+    };
+  }
+  paint();
+})();
+</script>
+</body></html>
