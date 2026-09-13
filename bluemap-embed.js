@@ -3,11 +3,12 @@
   if (window.__alpenBlueMap) return;
   window.__alpenBlueMap = true;
   var HTTP_MAP = "http://eu9-o.falixserver.net:26040/#hauptworld:-1792:102:500:132:0:0:0:0:perspective";
+  var HTTPS_MAP = "https://alpensmp-map.falix.org/#hauptworld:-1792:102:500:132:0:0:0:0:perspective";
   function savedHttps() {
     try { return (localStorage.getItem("alpensmp_bluemap_https") || "").trim(); } catch (e) { return ""; }
   }
   function mapSrc() {
-    var u = (window.ALPENSMP_BLUEMAP_HTTPS || savedHttps() || "").trim();
+    var u = (window.ALPENSMP_BLUEMAP_HTTPS || savedHttps() || HTTPS_MAP || "").trim();
     if (u && /^https:\/\//i.test(u)) {
       if (u.indexOf("#") < 0) u += "#hauptworld:-1792:102:500:132:0:0:0:0:perspective";
       return u;
@@ -24,7 +25,7 @@
     if (document.getElementById("alpenMapCss")) return;
     var s = document.createElement("style");
     s.id = "alpenMapCss";
-    s.textContent = "#map.alpen-map-sec{padding:70px 24px 90px}#map .alpen-map-frame{position:relative;border:1px solid rgba(255,255,255,.08);border-radius:20px;overflow:hidden;background:#0b0f16;min-height:min(78vh,820px)}#map .alpen-map-frame iframe{width:100%;height:min(78vh,820px);min-height:420px;border:0;display:block}#map .alpen-map-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start;justify-content:space-between;margin:0 0 16px}#map .alpen-map-note{color:#c5cbd6;max-width:740px}#map .map-setup{padding:28px;color:#c5cbd6}#map .map-setup ol{margin:12px 0 16px 20px}#map .map-setup input{width:min(100%,520px);min-height:44px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:#12161e;color:#fff;padding:0 12px;margin:8px 8px 8px 0}";
+    s.textContent = "#map.alpen-map-sec{padding:70px 24px 90px}#map .alpen-map-frame{position:relative;border:1px solid rgba(255,255,255,.08);border-radius:20px;overflow:hidden;background:#0b0f16;height:600px;margin:24px 0}#map .alpen-map-frame iframe{width:100%;height:100%;border:0;border-radius:20px}#map .map-setup{padding:60px 40px;text-align:center}#map .map-setup p{margin-bottom:14px;color:#9aa3b2}#map .map-setup ol{text-align:left;display:inline-block;margin:20px 0}#map .map-setup li{margin:8px 0}#map .map-setup input{padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.4);color:#fff;margin:14px 0;min-width:300px}#map .map-setup code{background:rgba(0,0,0,.6);padding:2px 6px;border-radius:4px;font-family:monospace}#map .alpen-map-note{font-size:.85rem;color:#6b7280;margin-bottom:8px}#map .alpen-map-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}#map .alpen-map-bar .btn{display:inline-flex;padding:10px 18px;border-radius:10px;font-weight:600;text-decoration:none;cursor:pointer;border:0;font-size:.9rem}#map .alpen-map-bar .btn-p{background:linear-gradient(135deg,#b91c1c,#c73e3e);color:#fff}#map .alpen-map-bar .btn-p:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(199,62,62,.4)}#map .alpen-map-bar .btn-s{background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.14)}#map .alpen-map-bar .btn-s:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2)}#map .map-button-group{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}";
     document.head.appendChild(s);
   }
   function addNav() {
@@ -78,7 +79,7 @@
     if (!after) return;
     var sec = document.createElement("section");
     sec.id = "map"; sec.className = "alpen-map-sec"; sec.setAttribute("aria-labelledby", "map-title");
-    sec.innerHTML = "<div class='container'><p class='slabel'>Live-Karte</p><h2 class='stitle' id='map-title'>AlpenSMP Weltkarte</h2><div class='alpen-map-bar'><p class='alpen-map-note'>BlueMap der Hauptwelt. Zoom, Verschieben und Weltenwechsel funktionieren in der eingebetteten Karte, sobald sie über HTTPS läuft.</p></div><div class='alpen-map-frame'>" + frameHtml() + "</div></div>";
+    sec.innerHTML = "<div class='container'><p class='slabel'>Live-Karte</p><h2 class='stitle' id='map-title'>AlpenSMP Weltkarte</h2><div class='alpen-map-bar'><p class='alpen-map-note'>BlueMap der AlpenSMP – Mit diesem Werkzeug kannst du die Welt von AlpenSMP live erkunden.</p></div><div class='alpen-map-frame'></div><div class='map-button-group'><a href='https://alpensmp-map.falix.org/#hauptworld:-1792:102:500:132:0:0:0:0:perspective' class='btn btn-p' target='_blank' rel='noopener'>🗺️ BlueMap öffnen</a></div></div>";
     after.insertAdjacentElement("afterend", sec);
     bindSave();
   }
