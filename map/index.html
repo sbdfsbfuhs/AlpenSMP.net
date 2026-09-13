@@ -97,6 +97,20 @@ body{
   border:0;
   background:#0b0f16
 }
+
+.button-container{
+  padding:18px;
+  display:flex;
+  justify-content:center;
+  border-top:1px solid rgba(255,255,255,.08)
+}
+
+.btn-large{
+  min-height:48px;
+  padding:14px 32px;
+  font-size:16px;
+  font-weight:700
+}
 </style>
 </head>
 
@@ -113,15 +127,6 @@ body{
     <a class="btn btn-s" href="https://alpensmp.net/">
       Website
     </a>
-
-    <a
-      class="btn btn-p"
-      href="https://alpensmp-map.falix.org/#hauptworld:-1797:123:497:59:0:0:0:0:perspective"
-      target="_blank"
-      rel="noopener"
-    >
-      Karte öffnen
-    </a>
   </div>
 
 </div>
@@ -135,6 +140,17 @@ body{
     loading="eager">
   </iframe>
 
+</div>
+
+<div class="button-container">
+  <a
+    class="btn btn-p btn-large"
+    href="https://alpensmp-map.falix.org/#hauptworld:-1797:123:497:59:0:0:0:0:perspective"
+    target="_blank"
+    rel="noopener"
+  >
+    Karte öffnen
+  </a>
 </div>
 
 </body>
