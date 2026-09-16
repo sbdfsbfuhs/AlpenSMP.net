@@ -1,4 +1,4 @@
-/* Version nur im Footer, keine fixed Badges */
+/* Version nur im Footer, kein zweites Copyright */
 (function () {
   if (window.__alpenVersionBadge) return;
   window.__alpenVersionBadge = true;
@@ -11,15 +11,25 @@
   window.__alpenVersionLabel = label;
   var old = document.getElementById("alpenVer");
   if (old && old.parentNode) old.parentNode.removeChild(old);
+  if (!document.getElementById("alpenFootFixCss")) {
+    var st = document.createElement("style");
+    st.id = "alpenFootFixCss";
+    st.textContent = ".footer-bottom{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;padding-bottom:18px}.footer-team-link{opacity:1!important;font-size:.94rem!important;color:inherit}.footer-team-link::before{content:'\uD83D\uDEE1\uFE0F ';font-size:1.05em}.alpen-ver-foot{width:100%;margin-top:4px;font-size:12px;color:#9aa3b2;text-align:right}footer{padding-bottom:72px}@media(max-width:700px){.footer-bottom{flex-direction:column;align-items:flex-start}#toTop,.to-top,[class*='totop'],[class*='to-top']{bottom:88px!important}#alpenKiFab,.alpen-ki-fab,[id*='alpenKi']{bottom:22px!important}}";
+    document.head.appendChild(st);
+  }
   function intoFooter() {
-    var f = document.querySelector("footer, .alpen-foot, .footer-bottom");
+    var bottom = document.querySelector(".footer-bottom");
+    var f = bottom || document.querySelector("footer, .alpen-foot");
     if (!f) return;
     if (f.querySelector(".alpen-ver-foot")) return;
     var row = document.createElement("div");
     row.className = "alpen-ver-foot";
-    row.style.cssText = "display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-top:10px;font-size:12px;color:#9aa3b2";
-    row.innerHTML = "<span>© " + new Date().getFullYear() + " AlpenSMP</span><span>" + label + "</span>";
+    row.textContent = label;
     f.appendChild(row);
+    var team = document.querySelector(".footer-team-link");
+    if (team && team.textContent.indexOf("Staff") !== -1 && team.textContent.indexOf("\uD83D\uDEE1") === -1) {
+      team.textContent = "Staff";
+    }
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", intoFooter);
   else intoFooter();
