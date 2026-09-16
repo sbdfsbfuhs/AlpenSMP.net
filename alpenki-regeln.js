@@ -45,7 +45,7 @@
     loadScript("admin-call.js?v=20260907a", "alpen-admin-call");
     loadScript("https://alpensmp.net/version-badge.js?v=13", "alpen-version");
     loadScript("https://alpensmp.net/site-quality.js?v=13", "alpen-quality");
-    loadScript("https://alpensmp.net/bluemap-embed.js?v=18", "alpen-bluemap");
+    loadScript("https://alpensmp.net/bluemap-embed.js?v=19", "alpen-bluemap");
     loadScript("https://alpensmp.net/alpen-song.js?v=17", "alpen-song");
     if (typeof window.alpenLoadRules === "function") window.alpenLoadRules(function () { wrapAI(); });
   }
