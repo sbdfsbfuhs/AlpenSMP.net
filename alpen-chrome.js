@@ -1,4 +1,4 @@
-/* AlpenSMP – zentrale globale Hauptnavigation für alle normalen Hauptseiten. */
+/* AlpenSMP – gemeinsame globale Hauptnavigation für alle öffentlichen Hauptseiten. */
 (function () {
   if (window.__alpenChrome) return;
   window.__alpenChrome = true;
@@ -11,7 +11,7 @@
   if (!supported.some(function (page) { return p.indexOf(page) === 0; })) return;
 
   var CSS = [
-    ".alpen-global-nav{position:sticky;top:0;z-index:1000;height:72px;background:rgba(8,10,14,.92);backdrop-filter:blur(18px);border-bottom:1px solid rgba(255,255,255,.08)}",
+    ".alpen-global-nav{position:fixed;inset:0 0 auto;height:72px;z-index:1000;background:rgba(8,10,14,.92);backdrop-filter:blur(18px);border-bottom:1px solid rgba(255,255,255,.08)}",
     ".alpen-global-nav,.alpen-global-nav *{box-sizing:border-box}",
     ".alpen-global-nav-inner{max-width:1200px;margin:0 auto;padding:0 24px;height:100%;display:flex;align-items:center;justify-content:space-between;gap:12px}",
     ".alpen-global-logo{display:flex;align-items:center;gap:10px;color:#f2f4f7;text-decoration:none;font-family:'Outfit',system-ui,sans-serif;font-weight:800;font-size:1.4rem;letter-spacing:-.02em;flex-shrink:0}",
@@ -30,49 +30,64 @@
     ".alpen-global-hamburger{display:none;flex-direction:column;gap:5px;background:none;border:0;cursor:pointer;padding:8px}",
     ".alpen-global-hamburger span{width:22px;height:2px;background:#f2f4f7;border-radius:2px;transition:.3s}",
     ".alpen-global-mobile{display:none}",
-    "@media(max-width:1100px){.alpen-global-links{display:none}.alpen-global-hamburger{display:flex}.alpen-global-mobile{position:absolute;top:72px;left:0;right:0;z-index:999;background:rgba(8,10,14,.97);backdrop-filter:blur(20px);padding:20px 24px;flex-direction:column;gap:6px;border-bottom:1px solid rgba(255,255,255,.08)}.alpen-global-mobile.show{display:flex}.alpen-global-mobile a{color:#9aa3b2;text-decoration:none;padding:14px 16px;border-radius:10px;font:500 .95rem 'Inter',system-ui,sans-serif}.alpen-global-mobile a:hover,.alpen-global-mobile a[aria-current='page']{background:rgba(199,62,62,.12);color:#f2f4f7}.alpen-global-mobile a.alpen-cta{background:linear-gradient(135deg,#b91c1c,#c73e3e);color:#fff;font-weight:700}}",
+    "body.alpen-has-global-nav{padding-top:72px}",
+    "@media(max-width:1100px){.alpen-global-links{display:none}.alpen-global-hamburger{display:flex}.alpen-global-mobile{position:absolute;top:72px;left:0;right:0;z-index:999;background:rgba(8,10,14,.96);backdrop-filter:blur(20px);padding:20px 24px;flex-direction:column;gap:6px;border-bottom:1px solid rgba(255,255,255,.08)}.alpen-global-mobile.show{display:flex}.alpen-global-mobile a{color:#9aa3b2;text-decoration:none;padding:14px 16px;border-radius:10px;font:500 .95rem 'Inter',system-ui,sans-serif}.alpen-global-mobile a:hover,.alpen-global-mobile a[aria-current='page']{background:rgba(199,62,62,.12);color:#f2f4f7}.alpen-global-mobile a.alpen-cta{background:linear-gradient(135deg,#b91c1c,#c73e3e);color:#fff;font-weight:700}}",
     "@media(max-width:520px){.alpen-global-nav-inner{padding:0 16px}.alpen-global-logo{font-size:1.15rem}.alpen-global-mobile{padding:16px}}"
   ].join("");
 
-  function current(key) { return key === (p.indexOf("/regeln") === 0 ? "rules" : p.indexOf("/guide") === 0 ? "guide" : p.indexOf("/reviews") === 0 ? "reviews" : "map") ? " aria-current=\"page\"" : ""; }
-  function a(href, text, key, cls) { return "<a href=\"" + href + "\"" + current(key) + (cls ? " class=\"" + cls + "\"" : "") + ">" + text + "</a>"; }
+  function current(key) {
+    return key === (p.indexOf("/regeln") === 0 ? "rules" : "")
+      ? " aria-current=\"page\"" : "";
+  }
+  function a(href, text, key, cls, external) {
+    return "<a href=\"" + href + "\"" + current(key) + (cls ? " class=\"" + cls + "\"" : "") + (external ? " target=\"_blank\" rel=\"noopener noreferrer\"" : "") + ">" + text + "</a>";
+  }
 
   function render() {
     if (document.getElementById("alpenGlobalNav")) return;
     var links = [
-      a("https://alpensmp.net/#home", "Home", "home"),
-      a("https://alpensmp.net/#live", "Live", "live"),
-      a("https://alpensmp.net/#about", "Über uns", "about"),
-      a("https://alpensmp.net/#features", "Features", "features"),
-      a("https://alpensmp.net/#join", "Beitreten", "join"),
-      a("https://alpensmp.net/#reviews", "Stimmen", "reviews"),
-      a("https://alpensmp.net/#faq", "FAQ", "faq"),
+      a("https://alpensmp.net/#home", "Home", ""),
+      a("https://alpensmp.net/#live", "Live", ""),
+      a("https://alpensmp.net/#about", "Über uns", ""),
+      a("https://alpensmp.net/#features", "Features", ""),
+      a("https://alpensmp.net/#join", "Beitreten", ""),
+      a("https://alpensmp.net/#reviews", "Stimmen", ""),
+      a("https://alpensmp.net/#faq", "FAQ", ""),
       a("https://alpensmp.net/regeln/", "📜 Server-Regeln", "rules", "alpen-rules"),
-      a("https://alpensmp.net/guide/", "Spieler-Guide", "guide", "alpen-rules"),
-      a("https://alpensmp.net/#join", "SPIELEN", "join", "alpen-cta")
+      a("https://alpensmp.net/#join", "SPIELEN", "", "alpen-cta")
     ].join("");
     var mobile = [
-      a("https://alpensmp.net/#home", "Home", "home"), a("https://alpensmp.net/#live", "Live", "live"),
-      a("https://alpensmp.net/#about", "Über uns", "about"), a("https://alpensmp.net/#features", "Features", "features"),
-      a("https://alpensmp.net/#join", "Beitreten", "join"), a("https://alpensmp.net/#reviews", "Stimmen", "reviews"),
-      a("https://alpensmp.net/#faq", "FAQ", "faq"), a("https://alpensmp.net/regeln/", "📜 Server-Regeln", "rules"),
-      a("https://alpensmp.net/guide/", "Spieler-Guide", "guide"), a("https://alpensmp.net/#join", "SPIELEN", "join", "alpen-cta")
+      a("https://alpensmp.net/#home", "Home", ""), a("https://alpensmp.net/#live", "Live", ""),
+      a("https://alpensmp.net/#about", "Über uns", ""), a("https://alpensmp.net/#features", "Features", ""),
+      a("https://alpensmp.net/#join", "Beitreten", ""), a("https://alpensmp.net/#reviews", "Stimmen", ""),
+      a("https://alpensmp.net/#faq", "FAQ", ""), a("https://alpensmp.net/regeln/", "📜 Server-Regeln", "rules"),
+      a("https://discord.gg/FfR56Ddtj8", "Discord", "", "", true),
+      a("https://www.tiktok.com/@alpensmp", "TikTok", "", "", true),
+      a("https://alpensmp.net/#join", "SPIELEN", "", "alpen-cta")
     ].join("");
 
     var host = document.createElement("div");
-    host.innerHTML = "<nav id=\"alpenGlobalNav\" class=\"alpen-global-nav\" aria-label=\"Hauptnavigation\"><div class=\"alpen-global-nav-inner\"><a class=\"alpen-global-logo\" href=\"https://alpensmp.net/\"><img src=\"https://alpensmp.net/logo.png\" alt=\"AlpenSMP Logo\"><span>ALPEN<span>SMP</span></span></a><div class=\"alpen-global-links\">" + links + "</div><button class=\"alpen-global-hamburger\" type=\"button\" aria-label=\"Menü öffnen\" aria-expanded=\"false\"><span></span><span></span><span></span></button></div><div class=\"alpen-global-mobile\">" + mobile + "</div></nav>";
+    host.innerHTML = "<nav id=\"alpenGlobalNav\" class=\"alpen-global-nav\" aria-label=\"Hauptnavigation\"><div class=\"alpen-global-nav-inner\"><a class=\"alpen-global-logo\" href=\"https://alpensmp.net/#home\"><img src=\"https://alpensmp.net/logo.png\" alt=\"AlpenSMP Logo\" width=\"36\" height=\"36\"><span>ALPEN<span>SMP</span></span></a><div class=\"alpen-global-links\">" + links + "</div><button class=\"alpen-global-hamburger\" type=\"button\" aria-label=\"Menü öffnen\" aria-expanded=\"false\"><span></span><span></span><span></span></button></div><div class=\"alpen-global-mobile\">" + mobile + "</div></nav>";
     var nav = host.firstElementChild;
     var oldNav = document.querySelector("body > nav");
     if (oldNav) oldNav.remove();
     var oldBar = document.querySelector("body > .bar");
     if (oldBar) oldBar.remove();
     document.body.insertBefore(nav, document.body.firstChild);
+    document.body.classList.add("alpen-has-global-nav");
 
     var button = nav.querySelector(".alpen-global-hamburger");
     var menu = nav.querySelector(".alpen-global-mobile");
     button.addEventListener("click", function () {
       var open = menu.classList.toggle("show");
       button.setAttribute("aria-expanded", String(open));
+      button.setAttribute("aria-label", open ? "Menü schließen" : "Menü öffnen");
+    });
+    menu.querySelectorAll("a").forEach(function (link) {
+      link.addEventListener("click", function () {
+        menu.classList.remove("show");
+        button.setAttribute("aria-expanded", "false");
+      });
     });
   }
 
