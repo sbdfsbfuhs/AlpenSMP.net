@@ -18,10 +18,11 @@
   window.writeActiveStatus = function (payload) {
     if (!requireStaff()) return Promise.reject();
     const expires = typeof statusExpiresAt === "function" ? statusExpiresAt() : null;
+    const kind = payload.type || payload.color || "custom";
     const body = {
-      id: "active", status_type: payload.type, type: payload.type,
+      id: "active", status_type: kind, type: kind,
       title: payload.title || "", message: payload.message || "",
-      is_active: payload.type !== "online", color: payload.color || "",
+      is_active: kind !== "online", color: payload.color || kind || "",
       created_by: currentUser.username, updated_by: currentUser.username,
       created_role: currentUser.role || "", created_at: Date.now(), updated_at: Date.now(),
       expires_at: expires
@@ -29,6 +30,13 @@
     return db.ref("site_status/active").set(body).then(function () {
       return db.ref("site_status/log").push(body);
     }).then(function () { toast("Status gesetzt"); });
+  };
+  window.saveCustomStatus = function () {
+    const title = (document.getElementById("customStatusTitle").value || "").trim();
+    const message = (document.getElementById("customStatusMessage").value || "").trim();
+    const color = (document.getElementById("customStatusColor") && document.getElementById("customStatusColor").value) || "custom";
+    if (!title) return toast("Titel fehlt");
+    return writeActiveStatus({ type: color, title: title, message: message, color: color });
   };
   window.loadWebsitePanel = function () {
     if (!requireStaff()) return;
