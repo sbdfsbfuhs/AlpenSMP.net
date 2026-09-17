@@ -37,7 +37,7 @@
   setTimeout(intoFooter, 1200);
   if (!document.querySelector("script[data-alpen-chrome]")) {
     var s = document.createElement("script");
-    s.src = "https://alpensmp.net/alpen-chrome.js?v=15";
+    s.src = "https://alpensmp.net/alpen-chrome.js?v=16";
     s.setAttribute("data-alpen-chrome", "1");
     document.body.appendChild(s);
   }
