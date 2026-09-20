@@ -1,6 +1,7 @@
 /* Version nur im Footer, kein zweites Copyright */
 (function () {
-  if (window.__alpenVersionBadge) return;
+  if (window.__alpenVersionBadge17) return;
+  window.__alpenVersionBadge17 = true;
   window.__alpenVersionBadge = true;
   var p = (location.pathname || "/").toLowerCase();
   var label = "Website 1.3";
@@ -47,10 +48,18 @@
     k.setAttribute("data-alpen-ki-widget", "1");
     document.body.appendChild(k);
   }
-  if ((p === "/" || p === "/index.html" || p === "") && !document.querySelector("script[data-alpen-status-fix]")) {
-    var stf = document.createElement("script");
-    stf.src = "https://alpensmp.net/status-fix.js?v=1";
-    stf.setAttribute("data-alpen-status-fix", "1");
-    document.body.appendChild(stf);
+  if (p === "/" || p === "/index.html" || p === "") {
+    if (!document.querySelector("script[data-alpen-status-fix-2]")) {
+      var stf = document.createElement("script");
+      stf.src = "https://alpensmp.net/status-fix.js?v=2";
+      stf.setAttribute("data-alpen-status-fix-2", "1");
+      document.body.appendChild(stf);
+    }
+    if (!document.querySelector("script[data-alpen-song-4]")) {
+      var sg = document.createElement("script");
+      sg.src = "https://alpensmp.net/alpen-song.js?v=29";
+      sg.setAttribute("data-alpen-song-4", "1");
+      document.body.appendChild(sg);
+    }
   }
 })();
