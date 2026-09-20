@@ -47,4 +47,10 @@
     k.setAttribute("data-alpen-ki-widget", "1");
     document.body.appendChild(k);
   }
+  if ((p === "/" || p === "/index.html" || p === "") && !document.querySelector("script[data-alpen-status-fix]")) {
+    var stf = document.createElement("script");
+    stf.src = "https://alpensmp.net/status-fix.js?v=1";
+    stf.setAttribute("data-alpen-status-fix", "1");
+    document.body.appendChild(stf);
+  }
 })();
