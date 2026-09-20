@@ -48,6 +48,7 @@
     loadScript("https://alpensmp.net/bluemap-embed.js?v=22", "alpen-bluemap");
     loadScript("https://alpensmp.net/alpen-song.js?v=28", "alpen-song-3");
     loadScript("https://alpensmp.net/community-polish.js?v=26", "alpen-community");
+    loadScript("https://alpensmp.net/status-fix.js?v=1", "alpen-status-fix");
     if (typeof window.alpenLoadRules === "function") window.alpenLoadRules(function () { wrapAI(); });
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
