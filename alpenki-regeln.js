@@ -43,12 +43,12 @@
     addGuideLink();
     wrapAI();
     loadScript("admin-call.js?v=20260907a", "alpen-admin-call");
-    loadScript("https://alpensmp.net/version-badge.js?v=17", "alpen-version-17");
+    loadScript("https://alpensmp.net/version-badge.js?v=18", "alpen-version-18");
     loadScript("https://alpensmp.net/site-quality.js?v=13", "alpen-quality");
     loadScript("https://alpensmp.net/bluemap-embed.js?v=22", "alpen-bluemap");
     loadScript("https://alpensmp.net/alpen-song.js?v=29", "alpen-song-4");
     loadScript("https://alpensmp.net/community-polish.js?v=26", "alpen-community");
-    loadScript("https://alpensmp.net/status-fix.js?v=2", "alpen-status-fix-2");
+    loadScript("https://alpensmp.net/status-fix.js?v=3", "alpen-status-fix-3");
     if (typeof window.alpenLoadRules === "function") window.alpenLoadRules(function () { wrapAI(); });
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
