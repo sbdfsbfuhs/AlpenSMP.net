@@ -1,1 +1,29 @@
-SEE_LOCAL_FILE
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AlpenSMP – Deutscher Minecraft Survival Server</title>
+<meta name="theme-color" content="#080a0e">
+<link rel="icon" type="image/png" href="logo.png">
+<style>html,body{margin:0;background:#080a0e;color:#f2f4f7;font-family:Inter,system-ui,sans-serif}#boot{padding:48px 24px;text-align:center}</style>
+</head>
+<body>
+<div id="boot">AlpenSMP wird geladen…</div>
+<script>
+(function(){
+  var src='https://cdn.jsdelivr.net/gh/sbdfsbfuhs/AlpenSMP.net@7142a52706bbaa094c05272ccb919684c37a2f1c/index.html';
+  fetch(src).then(function(r){ if(!r.ok) throw new Error(r.status); return r.text(); }).then(function(html){
+    document.open();
+    document.write(html);
+    document.close();
+    var s=document.createElement('script');
+    s.src='/status-fix.js?v=4';
+    document.body.appendChild(s);
+  }).catch(function(){
+    document.getElementById('boot').innerHTML='Seite lädt nicht automatisch. Bitte <a href="'+src+'" style="color:#e05c5c">hier öffnen</a>.';
+  });
+})();
+</script>
+</body>
+</html>
