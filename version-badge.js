@@ -1,7 +1,7 @@
 /* Version nur im Footer, kein zweites Copyright */
 (function () {
-  if (window.__alpenVersionBadge19) return;
-  window.__alpenVersionBadge19 = true;
+  if (window.__alpenVersionBadge20) return;
+  window.__alpenVersionBadge20 = true;
   window.__alpenVersionBadge = true;
   var p = (location.pathname || "/").toLowerCase();
   var label = "Website 1.3";
@@ -53,5 +53,11 @@
     stf.src = "https://alpensmp.net/status-fix.js?v=4";
     stf.setAttribute("data-alpen-status-fix-4", "1");
     document.body.appendChild(stf);
+  }
+  if (p.indexOf("/team") === -1 && !document.querySelector("script[data-alpen-support]")) {
+    var su = document.createElement("script");
+    su.src = "https://alpensmp.net/support-ads.js?v=1";
+    su.setAttribute("data-alpen-support", "1");
+    document.body.appendChild(su);
   }
 })();
