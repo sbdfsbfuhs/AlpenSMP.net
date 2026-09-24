@@ -1,4 +1,4 @@
-/* Öffentliche Website sperren, wenn Team Lockdown setzt */
+/* Öffentliche Website sperren, Team-Login bleibt unten */
 (function () {
   if (window.__alpenLockdown) return;
   window.__alpenLockdown = true;
@@ -33,9 +33,24 @@
     if (!el) {
       el = document.createElement('div');
       el.id = 'alpenLockdown';
-      el.innerHTML = '<div class="alpen-ld-box"><img src="/logo.png" alt=""><h1 id="alpenLdTitle"></h1><p id="alpenLdMsg"></p><a href="https://discord.gg/FfR56Ddtj8" target="_blank" rel="noopener noreferrer">Discord</a></div>';
+      el.innerHTML =
+        '<div class="alpen-ld-box">' +
+        '<img src="/logo.png" alt="">' +
+        '<h1 id="alpenLdTitle"></h1>' +
+        '<p id="alpenLdMsg"></p>' +
+        '<a class="alpen-ld-discord" href="https://discord.gg/FfR56Ddtj8" target="_blank" rel="noopener noreferrer">Discord</a>' +
+        '</div>' +
+        '<a class="alpen-ld-team" href="https://alpensmp.net/team/">Team anmelden</a>';
       var st = document.createElement('style');
-      st.textContent = '#alpenLockdown{position:fixed;inset:0;z-index:20000;background:#080a0e;color:#f2f4f7;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font-family:Inter,system-ui,sans-serif}.alpen-ld-box{max-width:420px}.alpen-ld-box img{width:72px;height:72px;margin:0 auto 16px;display:block}.alpen-ld-box h1{font-size:1.6rem;margin:0 0 10px}.alpen-ld-box p{color:#9aa3b2;line-height:1.55;margin:0 0 22px}.alpen-ld-box a{display:inline-block;background:#c73e3e;color:#fff;text-decoration:none;padding:10px 18px;border-radius:10px;font-weight:600}';
+      st.textContent =
+        '#alpenLockdown{position:fixed;inset:0;z-index:20000;background:#080a0e;color:#f2f4f7;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 24px 72px;text-align:center;font-family:Inter,system-ui,sans-serif}' +
+        '.alpen-ld-box{max-width:420px}' +
+        '.alpen-ld-box img{width:72px;height:72px;margin:0 auto 16px;display:block}' +
+        '.alpen-ld-box h1{font-size:1.6rem;margin:0 0 10px}' +
+        '.alpen-ld-box p{color:#9aa3b2;line-height:1.55;margin:0 0 22px}' +
+        '.alpen-ld-discord{display:inline-block;background:#c73e3e;color:#fff;text-decoration:none;padding:10px 18px;border-radius:10px;font-weight:600}' +
+        '.alpen-ld-team{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);color:#6b7280;font-size:13px;text-decoration:none;opacity:.7}' +
+        '.alpen-ld-team:hover{color:#e05c5c;opacity:1}';
       document.head.appendChild(st);
       document.body.appendChild(el);
     }
