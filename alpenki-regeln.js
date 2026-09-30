@@ -56,7 +56,7 @@
     loadScript("https://alpensmp.net/lockdown.js?v=2", "alpen-lockdown");
     loadScript("https://alpensmp.net/commands-public.js?v=5", "alpen-cmds");
     loadScript("https://alpensmp.net/hero-invite.js?v=3", "alpen-hero");
-    loadScript("https://alpensmp.net/alpen-ki-widget.js?v=16", "alpen-ki-widget");
+    loadScript("https://alpensmp.net/alpen-ki-widget.js?v=17", "alpen-ki-widget");
     if (typeof window.alpenLoadRules === "function") window.alpenLoadRules(function () { wrapAI(); });
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
