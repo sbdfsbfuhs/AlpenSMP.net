@@ -1,7 +1,7 @@
-/* Hero: links Branding, rechts Join, MOTD unter Buttons, alte IP-Box weg */
+/* Hero: Originaltext bleibt. Join-Karten + MOTD nur dazu. */
 (function () {
-  if (window.__alpenHeroInvite) return;
-  window.__alpenHeroInvite = true;
+  if (window.__alpenHeroInvite5) return;
+  window.__alpenHeroInvite5 = true;
   var path = (location.pathname || '/').toLowerCase();
   if (path.indexOf('/team') !== -1) return;
   if (path !== '/' && path !== '/index.html' && path !== '') return;
@@ -17,8 +17,7 @@
     if (btn) {
       var old = btn.textContent;
       btn.textContent = 'Kopiert';
-      btn.classList.add('copied');
-      setTimeout(function () { btn.textContent = old; btn.classList.remove('copied'); }, 1400);
+      setTimeout(function () { btn.textContent = old; }, 1400);
     }
   }
 
@@ -26,22 +25,22 @@
     var st = document.createElement('style');
     st.id = 'alpenHeroCss';
     st.textContent =
-      '#alpenHeroLayout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(280px,.85fr);gap:36px 40px;align-items:center;width:100%;max-width:1180px;margin:0 auto;text-align:left}' +
-      '#alpenHeroLayout .alpen-hero-left{display:flex;flex-direction:column;align-items:flex-start}' +
-      '#alpenHeroLayout h1{font-size:clamp(3.4rem,7vw,6.1rem)!important;line-height:.92!important;letter-spacing:-.03em;margin:8px 0 14px!important}' +
-      '#alpenHeroLayout .hero-actions,#alpenHeroLayout .hero-btns{justify-content:flex-start;margin-top:18px}' +
-      '#alpenMotd{display:flex;align-items:center;gap:10px;margin:18px 0 0;max-width:100%;padding:10px 14px;border-radius:999px;border:1px solid rgba(255,213,79,.28);background:linear-gradient(90deg,rgba(28,24,16,.88),rgba(18,16,12,.92));color:#f0e2a8;font-family:ui-monospace,Consolas,monospace;font-size:.84rem;line-height:1.4}' +
-      '#alpenMotd b{color:#ffe082;white-space:nowrap;font-family:inherit}' +
-      '.alpen-join-grid{display:flex;flex-direction:column;gap:12px;width:100%}' +
-      '.alpen-join-card{padding:16px;border-radius:16px;border:1px solid rgba(255,255,255,.1);background:rgba(8,10,14,.66);backdrop-filter:blur(12px)}' +
-      '.alpen-join-card h3{margin:0 0 10px;font-size:1rem}' +
+      '#hero .container,#hero{position:relative}' +
+      '#hero h1,.hero h1{display:block!important;opacity:1!important;visibility:visible!important}' +
+      '#hero .hero-actions,.hero .hero-actions{display:flex!important;opacity:1!important}' +
+      '#alpenMotd{display:flex;align-items:center;gap:10px;margin:18px auto 0;max-width:640px;padding:10px 16px;border-radius:999px;border:1px solid rgba(255,213,79,.28);background:linear-gradient(90deg,rgba(28,24,16,.88),rgba(18,16,12,.92));color:#f0e2a8;font-family:ui-monospace,Consolas,monospace;font-size:.84rem}' +
+      '#alpenMotd b{color:#ffe082;white-space:nowrap;margin-right:6px}' +
+      '#alpenJoinGrid{width:min(380px,100%);margin:22px auto 0}' +
+      '@media(min-width:980px){#alpenJoinGrid{position:absolute;right:24px;top:50%;transform:translateY(-50%);margin:0}}' +
+      '.alpen-join-grid{display:flex;flex-direction:column;gap:12px}' +
+      '.alpen-join-card{padding:16px;border-radius:16px;border:1px solid rgba(255,255,255,.1);background:rgba(8,10,14,.72);backdrop-filter:blur(12px);text-align:left}' +
+      '.alpen-join-card h3{margin:0 0 8px;font-size:1rem}' +
       '.alpen-join-row{display:flex;gap:8px;margin-top:8px}' +
       '.alpen-join-row input{flex:1;min-width:0;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:#fff;border-radius:10px;padding:10px 12px;font-family:ui-monospace,monospace}' +
       '.alpen-join-row button{flex-shrink:0;background:#c73e3e;border:0;color:#fff;border-radius:10px;padding:10px 12px;font-weight:700;cursor:pointer}' +
-      '.alpen-join-row button.copied{background:#34d399}' +
       '.alpen-join-card small{display:block;margin-top:8px;color:rgba(242,244,247,.6);font-size:.78rem}' +
-      '.hero .ip-chip,.hero .server-ip,.hero .server-ip-box,.hero .copy-ip,#hero .ip-row{display:none!important}' +
-      '@media(max-width:900px){#alpenHeroLayout{grid-template-columns:1fr;text-align:center}#alpenHeroLayout .alpen-hero-left{align-items:center}#alpenHeroLayout .hero-actions{justify-content:center}}';
+      '#alpenHeroLayout{display:contents}' +
+      '#alpenHeroLayout .alpen-hero-left,#alpenHeroLayout .alpen-hero-right{display:contents}';
     document.head.appendChild(st);
   }
 
@@ -49,53 +48,54 @@
     return document.querySelector('#hero, section.hero, .hero');
   }
 
-  function killOldCopy(root) {
-    root.querySelectorAll('button,a,div,p,span').forEach(function (el) {
-      if (el.closest('#alpenJoinGrid') || el.closest('#alpenMotd') || el.closest('.hero-actions')) return;
-      var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
-      if (!t) return;
-      if (/^Kopieren$/i.test(t) || /^IP kopieren$/i.test(t) && !el.closest('#alpenJoinGrid')) {
-        var box = el.closest('div') || el;
-        if (box.id === 'alpenHeroLayout' || box.classList.contains('alpen-hero-left')) el.remove();
-        else if ((box.textContent || '').replace(/\s+/g, ' ').trim().length < 40) box.remove();
-        else el.remove();
-        return;
-      }
-      if (/SERVER-?ADRESSE/i.test(t) && t.length < 90) {
-        (el.closest('div') || el).style.display = 'none';
+  function hideLoneCopy() {
+    var hero = findHero();
+    if (!hero) return;
+    hero.querySelectorAll('button').forEach(function (btn) {
+      if (btn.closest('#alpenJoinGrid') || btn.closest('.hero-actions')) return;
+      var t = (btn.textContent || '').trim();
+      if (t === 'Kopieren' || t === 'IP kopieren' && !btn.closest('#alpenJoinGrid')) {
+        btn.style.display = 'none';
+        var p = btn.parentElement;
+        if (p && (p.textContent || '').replace(/\s+/g, ' ').trim().length < 24) p.style.display = 'none';
       }
     });
   }
 
-  function ensureLayout(hero) {
-    if (document.getElementById('alpenHeroLayout')) return document.getElementById('alpenHeroLayout');
-    var box = hero.querySelector('.container') || hero;
-    var wrap = document.createElement('div');
-    wrap.id = 'alpenHeroLayout';
-    var left = document.createElement('div');
-    left.className = 'alpen-hero-left';
-    var right = document.createElement('div');
-    right.className = 'alpen-hero-right';
-    while (box.firstChild) left.appendChild(box.firstChild);
-    wrap.appendChild(left);
-    wrap.appendChild(right);
-    box.appendChild(wrap);
-    return wrap;
+  function undoBadWrap() {
+    var wrap = document.getElementById('alpenHeroLayout');
+    if (!wrap) return;
+    var parent = wrap.parentNode;
+    if (!parent) return;
+    while (wrap.firstChild) {
+      var col = wrap.firstChild;
+      if (col.classList && (col.classList.contains('alpen-hero-left') || col.classList.contains('alpen-hero-right'))) {
+        while (col.firstChild) parent.insertBefore(col.firstChild, wrap);
+        wrap.removeChild(col);
+      } else {
+        parent.insertBefore(col, wrap);
+      }
+    }
+    parent.removeChild(wrap);
   }
 
-  function motdEl() {
-    var bar = document.getElementById('alpenMotd');
-    if (bar) return bar;
-    bar = document.createElement('div');
+  function ensureMotd(hero) {
+    if (document.getElementById('alpenMotd')) return;
+    var bar = document.createElement('div');
     bar.id = 'alpenMotd';
     bar.innerHTML = '<b>Vom Server</b><span>' + MOTD + '</span>';
-    return bar;
+    var actions = hero.querySelector('.hero-actions, .hero-btns, .hero-buttons');
+    if (actions && actions.parentNode) actions.parentNode.insertBefore(bar, actions.nextSibling);
+    else {
+      var h1 = hero.querySelector('h1');
+      if (h1 && h1.parentNode) h1.parentNode.appendChild(bar);
+      else hero.appendChild(bar);
+    }
   }
 
-  function joinEl() {
-    var grid = document.getElementById('alpenJoinGrid');
-    if (grid) return grid;
-    grid = document.createElement('div');
+  function ensureJoin(hero) {
+    if (document.getElementById('alpenJoinGrid')) return;
+    var grid = document.createElement('div');
     grid.id = 'alpenJoinGrid';
     grid.className = 'alpen-join-grid';
     grid.innerHTML =
@@ -109,30 +109,23 @@
       '<div class="alpen-join-row"><input readonly value="' + PORT + '">' +
       '<button type="button" data-copy="' + PORT + '">Port kopieren</button></div>' +
       '<small>Port ' + PORT + ' \u00b7 Crossplay</small></div>';
+    hero.appendChild(grid);
     grid.querySelectorAll('button[data-copy]').forEach(function (btn) {
       btn.onclick = function () { copy(btn.getAttribute('data-copy'), btn); };
     });
-    return grid;
   }
 
-  function place() {
+  function run() {
     var hero = findHero();
     if (!hero) return;
-    var wrap = ensureLayout(hero);
-    var left = wrap.querySelector('.alpen-hero-left');
-    var right = wrap.querySelector('.alpen-hero-right');
-    var bar = motdEl();
-    var grid = joinEl();
-    var actions = left.querySelector('.hero-actions, .hero-btns, .hero-buttons');
-    if (bar.parentNode) bar.parentNode.removeChild(bar);
-    if (actions && actions.parentNode === left) actions.parentNode.insertBefore(bar, actions.nextSibling);
-    else left.appendChild(bar);
-    right.appendChild(grid);
-    killOldCopy(hero);
+    undoBadWrap();
+    ensureMotd(hero);
+    ensureJoin(hero);
+    hideLoneCopy();
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', place);
-  else place();
-  setTimeout(place, 250);
-  setTimeout(place, 900);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
+  else run();
+  setTimeout(run, 200);
+  setTimeout(run, 800);
 })();
