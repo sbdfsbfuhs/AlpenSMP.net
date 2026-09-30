@@ -69,13 +69,12 @@
     card.className = "card";
     card.id = "alpenLockdownCard";
     card.style.marginTop = "26px";
-    card.innerHTML = "<h2>🔒 Lockdown</h2><p class=\"desc\">Sperrt die öffentliche Website (Start, Guide, Regeln, Reviews). Staff-Center bleibt erreichbar.</p>" +
+    card.innerHTML = "<h2>🔒 Lockdown</h2><p class=\"desc\">Sperrt die öffentliche Website.</p>" +
       "<div style=\"display:flex;gap:8px;flex-wrap:wrap\">" +
       "<button class=\"btn\" onclick=\"setLockdown('down')\">Nicht erreichbar</button>" +
       "<button class=\"btn\" onclick=\"setLockdown('edit')\">Wird bearbeitet</button>" +
       "<button class=\"btn\" onclick=\"setLockdown('custom')\">Custom + Lockdown</button>" +
-      "<button class=\"btn btn-ghost\" onclick=\"setLockdown('off')\">Lockdown aus</button>" +
-      "</div><p class=\"hint\">Custom nutzt Titel und Nachricht aus der Status-Meldung oben.</p>";
+      "<button class=\"btn btn-ghost\" onclick=\"setLockdown('off')\">Lockdown aus</button></div>";
     tab.appendChild(card);
   }
   window.loadWebsitePanel = function () {
@@ -94,10 +93,9 @@
   loadExtra("staff-polish.js?v=20260910g", "alpen-staff-polish");
   loadExtra("guide-editor.js?v=06", "alpen-guide-editor");
   loadExtra("mc-panel-button.js?v=20260925", "alpen-mc-panel");
-  loadExtra("player-commands.js?v=1", "alpen-player-cmds");
+  loadExtra("player-commands.js?v=2", "alpen-player-cmds");
   loadExtra("https://alpensmp.net/version-badge.js?v=11", "alpen-version");
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { applyAccess(); injectLockdownCard(); });
   else { applyAccess(); injectLockdownCard(); }
   setTimeout(function () { applyAccess(); injectLockdownCard(); }, 400);
-  setTimeout(injectLockdownCard, 1200);
 })();

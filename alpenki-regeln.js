@@ -50,7 +50,7 @@
     loadScript("https://alpensmp.net/community-polish.js?v=26", "alpen-community");
     loadScript("https://alpensmp.net/status-fix.js?v=4", "alpen-status-fix-4");
     loadScript("https://alpensmp.net/lockdown.js?v=2", "alpen-lockdown");
-    loadScript("https://alpensmp.net/commands-public.js?v=4", "alpen-cmds");
+    loadScript("https://alpensmp.net/commands-public.js?v=5", "alpen-cmds");
     if (typeof window.alpenLoadRules === "function") window.alpenLoadRules(function () { wrapAI(); });
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
