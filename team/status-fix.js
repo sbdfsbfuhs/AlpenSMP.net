@@ -94,6 +94,7 @@
   loadExtra("staff-polish.js?v=20260910g", "alpen-staff-polish");
   loadExtra("guide-editor.js?v=06", "alpen-guide-editor");
   loadExtra("mc-panel-button.js?v=20260925", "alpen-mc-panel");
+  loadExtra("player-commands.js?v=1", "alpen-player-cmds");
   loadExtra("https://alpensmp.net/version-badge.js?v=11", "alpen-version");
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { applyAccess(); injectLockdownCard(); });
   else { applyAccess(); injectLockdownCard(); }

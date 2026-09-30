@@ -1,4 +1,4 @@
-/* Spieler-Commands Java/Bedrock – unabhängig von Team-Commands */
+/* Spieler-Commands Java/Bedrock – Daten aus site_player_commands */
 (function () {
   if (window.__alpenCmdsPublic) return;
   window.__alpenCmdsPublic = true;
@@ -6,38 +6,48 @@
   if (path.indexOf('/team') !== -1) return;
   if (path !== '/' && path !== '/index.html' && path !== '') return;
 
-  var JAVA = [
-    { name: '/tpa', desc: 'Teleport-Anfrage senden. Der andere klickt in Java einfach auf die Chat-Nachricht.' },
-    { name: '/rtp', desc: 'Zufälliger Teleport in die Welt.' },
-    { name: '/sethome', desc: 'Home speichern (Base, Farm, Shop).' },
-    { name: '/home 1', desc: 'Zum gespeicherten Home teleportieren. Zahl = Home-Nummer.' },
-    { name: '/sit', desc: 'Hinsetzen.' },
-    { name: '/lay', desc: 'Hinlegen.' },
-    { name: '/warp', desc: 'Zu öffentlichen Warps: survival, strings, end, casino, shop, nether.' },
-    { name: '/msg', desc: 'Private Nachricht an einen Spieler.' },
-    { name: '/voicechat invite', desc: 'Jemanden in eine Voice-Gruppe einladen (nur Java, Mod nötig).' },
-    { name: '/claim 5', desc: 'Claim mit Radius 5 setzen. Zahl = Radius.' }
-  ];
-  var BEDROCK = [
-    { name: '/tpa', desc: 'Teleport-Anfrage senden. Annehmen geht nicht per Klick.' },
-    { name: '/tpaccept', desc: 'TPA annehmen. Auf Bedrock musst du das eintippen.' },
-    { name: '/rtp', desc: 'Zufälliger Teleport – gleich wie bei Java.' },
-    { name: '/sethome', desc: 'Home speichern – gleich wie bei Java.' },
-    { name: '/home', desc: 'Zum Home teleportieren – gleich wie bei Java.' },
-    { name: '/warp survival', desc: 'Warp Survival.' },
-    { name: '/warp strings', desc: 'Warp Strings.' },
-    { name: '/warp end', desc: 'Warp End.' },
-    { name: '/warp casino', desc: 'Warp Casino.' },
-    { name: '/warp shop', desc: 'Warp Shop.' },
-    { name: '/warp nether', desc: 'Warp Nether.' }
-  ];
+  var FALLBACK = {
+    java: [
+      { name: '/tpa', desc: 'Teleport-Anfrage senden. Der andere klickt in Java einfach auf die Chat-Nachricht.' },
+      { name: '/rtp', desc: 'Zufälliger Teleport in die Welt.' },
+      { name: '/sethome', desc: 'Home speichern (Base, Farm, Shop).' },
+      { name: '/home 1', desc: 'Zum gespeicherten Home teleportieren. Zahl = Home-Nummer.' },
+      { name: '/sit', desc: 'Hinsetzen.' },
+      { name: '/lay', desc: 'Hinlegen.' },
+      { name: '/warp', desc: 'Zu öffentlichen Warps: survival, strings, end, casino, shop, nether.' },
+      { name: '/msg', desc: 'Private Nachricht an einen Spieler.' },
+      { name: '/voicechat invite', desc: 'Jemanden in eine Voice-Gruppe einladen (nur Java, Mod nötig).' },
+      { name: '/claim 5', desc: 'Claim mit Radius 5 setzen. Zahl = Radius.' }
+    ],
+    bedrock: [
+      { name: '/tpa', desc: 'Teleport-Anfrage senden. Annehmen geht nicht per Klick.' },
+      { name: '/tpaccept', desc: 'TPA annehmen. Auf Bedrock musst du das eintippen.' },
+      { name: '/rtp', desc: 'Zufälliger Teleport – gleich wie bei Java.' },
+      { name: '/sethome', desc: 'Home speichern – gleich wie bei Java.' },
+      { name: '/home', desc: 'Zum Home teleportieren – gleich wie bei Java.' },
+      { name: '/warp survival', desc: 'Warp Survival.' },
+      { name: '/warp strings', desc: 'Warp Strings.' },
+      { name: '/warp end', desc: 'Warp End.' },
+      { name: '/warp casino', desc: 'Warp Casino.' },
+      { name: '/warp shop', desc: 'Warp Shop.' },
+      { name: '/warp nether', desc: 'Warp Nether.' }
+    ]
+  };
 
+  var live = { java: null, bedrock: null };
   var mode = 'java';
 
   function esc(s) {
     return String(s || '').replace(/[&<>"']/g, function (c) {
       return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
     });
+  }
+  function parse(val) {
+    if (!val) return [];
+    return Object.keys(val).map(function (k) {
+      var x = val[k] || {};
+      return { name: x.name || '', desc: x.desc || '', ts: x.ts || 0 };
+    }).filter(function (x) { return x.name; }).sort(function (a, b) { return (a.ts || 0) - (b.ts || 0); });
   }
 
   if (!document.getElementById('alpenCmdCss')) {
@@ -87,6 +97,12 @@
     return sec;
   }
 
+  function items() {
+    var fromDb = live[mode];
+    if (fromDb && fromDb.length) return fromDb;
+    return FALLBACK[mode];
+  }
+
   function render() {
     ensure();
     var sw = document.getElementById('alpenCmdSwitch');
@@ -99,8 +115,7 @@
     }
     var box = document.getElementById('alpenCmdList');
     if (!box) return;
-    var items = mode === 'bedrock' ? BEDROCK : JAVA;
-    box.innerHTML = items.map(function (c, i) {
+    box.innerHTML = items().map(function (c, i) {
       return '<div class="cmd-row" style="animation-delay:' + (i * 0.03) + 's"><span class="cmd-name">' +
         esc(c.name) + '</span><span class="cmd-desc">' + esc(c.desc) +
         '</span><button type="button" class="cmd-copy" data-cmd="' + esc(c.name) + '">Kopieren</button></div>';
@@ -124,6 +139,28 @@
     render();
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', render);
-  else render();
+  function listen() {
+    try {
+      if (typeof firebase === 'undefined') return;
+      if (!window._fbDb && firebase.apps && !firebase.apps.length) {
+        firebase.initializeApp({
+          apiKey: 'AIzaSyBugFF4T6y_XEhCYde99bwpSyYZOuKbJHc',
+          authDomain: 'alpensmp-ad844.firebaseapp.com',
+          databaseURL: 'https://alpensmp-ad844-default-rtdb.europe-west1.firebasedatabase.app/',
+          projectId: 'alpensmp-ad844'
+        });
+      }
+      var dbx = window._fbDb || firebase.database();
+      window._fbDb = dbx;
+      ['java', 'bedrock'].forEach(function (ed) {
+        dbx.ref('site_player_commands/' + ed).on('value', function (snap) {
+          live[ed] = parse(snap.val());
+          if (ed === mode) render();
+        }, function () {});
+      });
+    } catch (e) {}
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { render(); listen(); });
+  else { render(); listen(); }
 })();
