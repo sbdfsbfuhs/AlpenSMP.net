@@ -1,13 +1,147 @@
-import { RULES } from "@/lib/alpen/content";
-import { SITE } from "@/lib/alpen/site";
+import { BEDROCK_COMMANDS, COMMANDS, FAQ, FEATURES, GUIDE, RULES } from "./content.ts";
+import { SITE } from "./site.ts";
+
+let lastTopic = "";
+
+export function resetAssistantMemory() {
+  lastTopic = "";
+}
+
+function fold(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/ä/g, "ae")
+    .replace(/ö/g, "oe")
+    .replace(/ü/g, "ue")
+    .replace(/ß/g, "ss");
+}
+
+function distance(a: string, b: string) {
+  const row = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i += 1) {
+    let prev = i;
+    for (let j = 1; j <= b.length; j += 1) {
+      const next = a[i - 1] === b[j - 1] ? row[j - 1] : Math.min(row[j - 1], row[j], prev) + 1;
+      row[j - 1] = prev;
+      prev = next;
+    }
+    row[b.length] = prev;
+  }
+  return row[b.length] ?? a.length;
+}
+
+const DICT = [
+  "sodium",
+  "bedrock",
+  "claim",
+  "discord",
+  "prefix",
+  "freecam",
+  "optifine",
+  "killaura",
+  "whitelist",
+  "griefprevention",
+  "swissred",
+  "java",
+  "port",
+  "regeln",
+  "voice",
+  "tiktok",
+  "karte",
+  "spawn",
+  "home",
+  "xray",
+  "owner",
+  "joinen",
+  "ticket",
+  "version",
+  "minimap",
+  "survival",
+  "paper",
+];
+
+const KEEP = new Set([
+  "hallo",
+  "danke",
+  "bitte",
+  "gehts",
+  "nicht",
+  "schon",
+  "erlaubt",
+  "verboten",
+  "server",
+  "spielen",
+  "kuchen",
+  "backe",
+  "wer",
+  "bist",
+]);
+
+function correctToken(token: string) {
+  if (token.length < 4 || KEEP.has(token)) return token;
+  const flat = fold(token);
+  if (DICT.includes(flat)) return flat;
+  let best = token;
+  let bestD = 99;
+  for (const word of DICT) {
+    const limit = word.length > 8 ? 2 : 1;
+    const d = distance(flat, word);
+    if (d > 0 && d <= limit && d < bestD) {
+      best = word;
+      bestD = d;
+    }
+    const extra = flat.length - word.length;
+    if (extra > 0 && extra <= 2 && flat.startsWith(word) && extra < bestD) {
+      best = word;
+      bestD = extra;
+    }
+  }
+  return best;
+}
+
+function normalize(raw: string) {
+  const q = raw
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s./-]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b(einsteigen|beitreten|connecten|mitspielen|reinkommen|einloggen|rein kommen)\b/g, "joinen")
+    .replace(/\b(serveradresse|ipadresse|server adresse|ip adresse)\b/g, "ip");
+  return q
+    .split(" ")
+    .map(correctToken)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const FOCUS =
+  /\b(bedrock|port|ip|java|joinen|regel|cheat|mod|xray|claim|discord|ticket|prefix|voice|karte|version|home|tpa|spawn|whitelist|sodium|freecam|optifine|killaura|owner|swissred|ban|strafe|cracked)\b/;
+
+function prepare(raw: string) {
+  const own = normalize(raw);
+  const follow = /^(und|was ist mit|und auf|wie ist es mit)\b/.test(own);
+  if (follow && lastTopic && !FOCUS.test(own)) return `${lastTopic} ${own}`;
+  return own;
+}
+
+function remember(q: string) {
+  if (/\b(bedrock|port)\b/.test(q)) lastTopic = "bedrock port";
+  else if (/\b(ip|java|joinen|adresse)\b/.test(q)) lastTopic = "ip java";
+  else if (/\b(regel|cheat|mod|xray|claim)\b/.test(q)) lastTopic = "regeln";
+  else if (/\b(discord|ticket)\b/.test(q)) lastTopic = "discord";
+  else if (/\b(prefix|farbe|farbcode)\b/.test(q)) lastTopic = "prefix";
+  else if (/\b(voice|mikro)\b/.test(q)) lastTopic = "voice";
+}
 
 function cite(id: number, title: string) {
   return `Regel ${id} (${title})`;
 }
 
 export function answerQuestion(raw: string): string {
-  const q = raw.toLowerCase().trim();
+  const q = prepare(raw);
   if (!q) return "Schreib eine Frage – zum Beispiel nach der IP, Claims oder „Darf ich X-Ray?“.";
+  remember(q);
 
   const num = q.match(/regel\s*(\d{1,2})/) || q.match(/§\s*(\d{1,2})/);
   if (num) {
@@ -87,12 +221,12 @@ export function answerQuestion(raw: string): string {
   if (/pixelart|porno|sexuell|rassist|skin/.test(q)) {
     return "Laut Regel 5 und 9 sind sexuelle, pornografische, extremistische, rassistische oder diskriminierende Bauwerke, Pixelarts, Schilder, Karten, Skins und Namen verboten.";
   }
-  if (/hallo|hi\b|hey|moin|servus|guten (tag|morgen|abend)/.test(q)) {
-    return "Hey. Ich bin die AlpenKI. Frag nach der IP, nach SwissRed, nach Claims oder den Regeln. Oder sag: setz dich, schlaf, wink.";
+  if (/hallo|hi\b|hey|moin|servus|guten (tag|morgen|abend)|wie geht/.test(q)) {
+    return "Hey. Mir geht's gut, ich sitz nur hier. Ich bin die AlpenKI, ein automatischer Assistent. Frag nach der IP, nach SwissRed oder den Regeln.";
   }
   if (/danke|thanks|merci/.test(q)) return "Gern. Viel Spaß auf AlpenSMP.";
   if (/wer bist du|was bist du|wie heißt du|dein name|bist du/.test(q)) {
-    return "Ich bin die AlpenKI, das Maskottchen von AlpenSMP. Ich kenne die Regeln, die IP und die Befehle. Sag wink, setz dich oder schlaf, dann mach ich das.";
+    return "Ich bin die AlpenKI, das Maskottchen von AlpenSMP. Ein automatischer Assistent, kein Mensch. Ich kenne die Regeln, die IP und die Befehle.";
   }
   if (/was ist alpen|was macht alpen|erzähl.*server|über den server|wer seid ihr/.test(q)) {
     return "AlpenSMP ist ein deutscher Vanilla-Survival-Server. Java und Bedrock, eine Welt, ohne Pay-to-Win. Community, Claims, Homes und Voice Chat.";
@@ -100,16 +234,19 @@ export function answerQuestion(raw: string): string {
   if (/wie join|wie komm|beitreten|joinen|mitspielen/.test(q)) {
     return `Java: ${SITE.ip}, ohne Port. Bedrock: ${SITE.play}, Port ${SITE.bedrockPort}. Version ungefähr ${SITE.version}.`;
   }
-  if (/mascot|maskottchen|häschen|hase|känchen/.test(q)) {
+  if (/mascot|maskottchen|häschen|hase|känchen|murmeltier/.test(q)) {
     return "Das bin ich. Cremefarben, roter Schal. Klick mich, dann öffnet sich dieser Chat. Ich kann sitzen, schlafen, winken und gähnen.";
   }
   if (/witz|haha|lustig|joke/.test(q)) return "Warum hat der Creeper keine Freunde? Weil er immer explodiert, wenn es spannend wird. haha";
   if (/regel/.test(q)) return "Das offizielle Regelwerk hat 14 Regeln. Frag zum Beispiel „Was steht in Regel 5?“ oder „Sind Sodium und Freecam erlaubt?“.";
   if (/was kannst du|hilfe mir|was geht|befehle an dich/.test(q)) {
-    return "Ich antworte zu IP, Version, Mods, Claims, Homes, Voice, Discord, Regeln und zum Owner SwissRed. Außerdem: setz dich, schlaf, steh auf, wink, gähn.";
+    return "Ich antworte zu IP, Version, Mods, Claims, Homes, Voice, Discord, Regeln und zum Owner SwissRed. Außerdem: setz dich, schlaf, steh auf, wink, gähn. Ich bin ein automatischer Assistent.";
   }
 
-  return "Bro, hab kein Plan was du meinst. Öffne Discord, da hilft das Team.";
+  const recalled = recall(q);
+  if (recalled) return recalled;
+
+  return "Das steht so nicht bei mir. Meinst du die IP, die Regeln oder Discord? Ich bin ein automatischer Assistent, kein Mensch.";
 }
 
 function knownFacts(q: string): string | null {
@@ -131,7 +268,7 @@ function knownFacts(q: string): string | null {
     return "Privatdaten geb ich nicht raus. Fest steht nur: Der Owner heißt ingame SwissRed.";
   }
   if (/bist du (der )?(owner|swiss)|heißt du swiss|heisst du swiss|bist du swissred/.test(q)) {
-    return "Nein. Ich bin die AlpenKI, das Maskottchen mit dem roten Schal. Der Owner heißt ingame SwissRed.";
+    return "Nein. Ich bin die AlpenKI, das Maskottchen mit dem roten Schal. Ein automatischer Assistent, kein Mensch. Der Owner heißt ingame SwissRed.";
   }
   if (/ownerin|zweite owner|mitowner/.test(q)) {
     return "In den Community-Stimmen wird eine Ownerin erwähnt. Einen festen öffentlichen Ingame-Namen dafür hab ich nicht. Der Owner, der feststeht, heißt SwissRed.";
@@ -188,7 +325,7 @@ function knownFacts(q: string): string | null {
     return "Ob jemand ins Team kommt, entscheidet SwissRed. Fragen geht über Discord, nicht per Spam im Chat. Regel 6: Support nicht für unnötige Diskussionen missbrauchen.";
   }
   if (/kannst du bannen|banne mich|bist du (ein )?admin|kannst du kicken/.test(q)) {
-    return "Nein. Ich bin nur die AlpenKI. Bannen und Kicken macht das Team. Im Spiel rufst du sie mit /call admin.";
+    return "Nein. Ich bin nur die AlpenKI, ein automatischer Assistent. Bannen und Kicken macht das Team. Im Spiel rufst du sie mit /call admin.";
   }
   if (/minigame|lobby|skyblock|bedwars/.test(q)) {
     return "Nein. AlpenSMP ist ein Survival-SMP, keine Minigame-Lobby und kein Skyblock.";
@@ -274,16 +411,214 @@ export type KiAction = { label: string; href: string };
 
 export function replyTo(raw: string): { text: string; actions: KiAction[] } {
   const text = answerQuestion(raw);
-  const q = raw.toLowerCase();
+  const q = prepare(raw);
   const actions: KiAction[] = [];
-  const unknown = text.startsWith("Bro,");
-  if (/regel/.test(q)) actions.push({ label: "Regeln", href: "/regeln" });
+  const unknown = text.startsWith("Das steht so nicht");
+  if (unknown) {
+    actions.push({ label: "IP", href: "/server" }, { label: "Regeln", href: "/regeln" }, { label: "Discord", href: SITE.discord });
+  }
+  if (/regel/.test(q) && !actions.some((item) => item.href === "/regeln")) actions.push({ label: "Regeln", href: "/regeln" });
   if (/tiktok/.test(q)) actions.push({ label: "TikTok", href: SITE.tiktok });
-  if (unknown || /discord|ticket|hilfe|support/.test(q)) actions.push({ label: "Discord öffnen", href: SITE.discord });
-  if (/ip|join|beitreten|bedrock|port|version|server/.test(q)) actions.push({ label: "Server", href: "/server" });
+  if ((unknown || /discord|ticket|hilfe|support/.test(q)) && !actions.some((item) => item.href === SITE.discord)) {
+    actions.push({ label: "Discord öffnen", href: SITE.discord });
+  }
+  if (/ip|joinen|beitreten|bedrock|port|version|server/.test(q) && !actions.some((item) => item.href === "/server")) {
+    actions.push({ label: "Server", href: "/server" });
+  }
   if (/karte|\bmap\b|bluemap/.test(q)) actions.push({ label: "Karte", href: "/karte" });
   if (/prefix|farbe|farbcode/.test(q)) actions.push({ label: "Prefix-Farben", href: "/prefix" });
   if (/home|tpa|befehl|command|guide/.test(q)) actions.push({ label: "Guide", href: "/guide" });
   if (/faq|frage/.test(q)) actions.push({ label: "FAQ", href: "/faq" });
   return { text, actions };
+}
+
+const STOP = new Set([
+  "nicht",
+  "eine",
+  "einen",
+  "einer",
+  "einem",
+  "dass",
+  "oder",
+  "aber",
+  "wenn",
+  "dann",
+  "auch",
+  "noch",
+  "nur",
+  "schon",
+  "kann",
+  "wird",
+  "sein",
+  "sind",
+  "hast",
+  "habe",
+  "dein",
+  "deine",
+  "meine",
+  "hier",
+  "dort",
+  "gibt",
+  "welche",
+  "dieser",
+  "diese",
+  "dieses",
+  "haben",
+  "fuer",
+  "ist",
+  "ein",
+  "ich",
+  "mir",
+  "dir",
+  "uns",
+  "euch",
+  "sie",
+  "man",
+  "mal",
+  "bitte",
+  "gerne",
+  "gern",
+  "sehr",
+  "mehr",
+  "kein",
+  "keine",
+  "doch",
+  "also",
+  "denn",
+  "weil",
+  "nach",
+  "von",
+  "bei",
+  "aus",
+  "ueber",
+  "unter",
+  "ohne",
+  "durch",
+  "kannst",
+  "darf",
+  "muss",
+  "soll",
+  "will",
+  "werden",
+  "macht",
+  "machen",
+  "geht",
+  "gehen",
+  "mein",
+  "ihre",
+  "ihren",
+  "was",
+  "wie",
+  "wer",
+  "wann",
+  "warum",
+  "dem",
+  "den",
+  "der",
+  "die",
+  "das",
+  "und",
+  "mit",
+  "auf",
+  "zum",
+  "zur",
+  "vom",
+  "sich",
+  "dich",
+  "mich",
+  "etwas",
+  "alles",
+  "nichts",
+  "immer",
+  "wieder",
+  "einfach",
+  "gerade",
+  "heute",
+  "server",
+  "spiel",
+  "spielen",
+  "spieler",
+  "minecraft",
+  "alpen",
+  "alpensmp",
+  "gibt",
+  "haben",
+  "dein",
+  "deine",
+]);
+
+type Doc = { text: string; answer: string };
+
+function knowledge(): Doc[] {
+  const list: Doc[] = [];
+  for (const rule of RULES) {
+    const parts = [`${cite(rule.id, rule.title)}:`, ...rule.paragraphs];
+    if (rule.forbidden?.length) parts.push(`Verboten: ${rule.forbidden.join(", ")}.`);
+    if (rule.allowed?.length) parts.push(`Erlaubt: ${rule.allowed.join(", ")}.`);
+    if (rule.bullets?.length) parts.push(`${rule.bullets.join(", ")}.`);
+    if (rule.note) parts.push(rule.note);
+    list.push({
+      text: fold(
+        [rule.title, ...rule.paragraphs, ...(rule.forbidden ?? []), ...(rule.allowed ?? []), ...(rule.bullets ?? []), rule.note ?? ""].join(
+          " ",
+        ),
+      ),
+      answer: parts.join(" "),
+    });
+  }
+  for (const item of FAQ) list.push({ text: fold(`${item.q} ${item.a}`), answer: item.a });
+  for (const feature of FEATURES) {
+    list.push({
+      text: fold([feature.title, feature.summary, ...feature.body].join(" ")),
+      answer: feature.body.join(" "),
+    });
+  }
+  for (const chapter of GUIDE) {
+    list.push({
+      text: fold([chapter.title, chapter.description, chapter.keywords, ...chapter.blocks].join(" ")),
+      answer: chapter.blocks.join(" "),
+    });
+  }
+  for (const cmd of [...COMMANDS, ...BEDROCK_COMMANDS]) {
+    list.push({ text: fold(`${cmd.cmd} ${cmd.text}`), answer: `${cmd.cmd}: ${cmd.text}` });
+  }
+  list.push({
+    text: fold(`java ip ${SITE.ip} ${SITE.play} port ${SITE.javaPort} ${SITE.bedrockPort} version ${SITE.version} discord`),
+    answer: `Java: ${SITE.ip}, ohne Port. Bedrock: ${SITE.play}, Port ${SITE.bedrockPort}. Version ${SITE.version}.`,
+  });
+  return list;
+}
+
+let docsCache: Doc[] | null = null;
+
+function docs() {
+  docsCache ??= knowledge();
+  return docsCache;
+}
+
+function recall(q: string): string | null {
+  const tokens = [...new Set(q.split(" ").map((token) => fold(token)).filter((token) => token.length > 3 && !STOP.has(token)))];
+  if (!tokens.length) return null;
+  const all = docs();
+  const df = new Map<string, number>();
+  for (const token of tokens) {
+    let count = 0;
+    for (const doc of all) if (doc.text.includes(token)) count += 1;
+    df.set(token, count);
+  }
+  let bestScore = 0;
+  let best = "";
+  for (const doc of all) {
+    let score = 0;
+    for (const token of tokens) {
+      const count = df.get(token) ?? 0;
+      if (!count || !doc.text.includes(token)) continue;
+      score += count <= 2 ? 4 : count <= 6 ? 2 : 1;
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      best = doc.answer;
+    }
+  }
+  return bestScore >= 4 ? best : null;
 }

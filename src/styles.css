@@ -1226,7 +1226,34 @@
 .paw-r { transform-box: fill-box; transform-origin: 50% 18%; }
 .tail { transform-box: fill-box; transform-origin: 20% 50%; }
 
-.pose-wave .paw-r { animation: wave-arm 0.55s ease-in-out 3; }
+.face-happy,
+.face-tired,
+.face-wow,
+.face-think { opacity: 0; }
+.mood-happy .face-normal,
+.mood-tired .face-normal,
+.mood-wow .face-normal,
+.mood-think .face-normal { opacity: 0; }
+.mood-happy .face-happy,
+.mood-tired .face-tired,
+.mood-wow .face-wow,
+.mood-think .face-think { opacity: 1; }
+.brows, .brow { transform-box: fill-box; transform-origin: center; }
+.mood-wow .brows { transform: translateY(-4px); }
+.mood-tired .brows { transform: translateY(3px); }
+.mood-think .brow-l { transform: translateY(-3px) rotate(-12deg); }
+.mood-happy .teeth { transform: translateY(2px); }
+.mood-tired .teeth,
+.mood-wow .teeth,
+.mood-think .teeth,
+.pose-sleep .teeth { opacity: 0; }
+.arm-r { transform-box: fill-box; transform-origin: 8% 0%; }
+.paw-tip { transform-box: fill-box; transform-origin: center top; }
+.pose-wave .arm-r { animation: wave-lift 2s ease-in-out; }
+.pose-wave .paw-tip { animation: wave-flick 0.28s ease-in-out 6; }
+.pose-wave .head { animation: wave-head 2s ease-in-out; }
+.pose-wave .scarf { animation: scarf-flap 0.45s ease-in-out 4; }
+.scarf { transform-box: fill-box; transform-origin: 40% 10%; }
 .pose-sleep .lids,
 .pose-pet .lids { animation: none; transform: scaleY(1); }
 .pose-sleep .live { animation-duration: 7s; }
@@ -1237,20 +1264,32 @@
 
 .mascot-quip {
   position: absolute;
-  left: 58%;
-  top: 46%;
-  z-index: 5;
+  right: 0;
+  bottom: calc(100% + 1.35rem);
+  z-index: 6;
   width: max-content;
-  max-width: 11rem;
+  max-width: min(12rem, calc(100vw - 5.5rem));
+  border: 0;
   border-radius: 1rem;
-  border: 1px solid #3a141c;
   background: #14080b;
   color: #fff6f6;
-  padding: 0.45rem 0.65rem;
+  padding: 0.45rem 0.7rem;
   font-size: 0.78rem;
+  font-weight: 650;
   line-height: 1.35;
-  box-shadow: 0 14px 36px #000;
-  pointer-events: none;
+  text-align: left;
+  box-shadow: 0 12px 28px #000;
+  cursor: pointer;
+}
+
+.mascot-quip::after {
+  content: "";
+  position: absolute;
+  right: 1.15rem;
+  bottom: -0.42rem;
+  border-width: 0.45rem 0.4rem 0;
+  border-style: solid;
+  border-color: #14080b transparent transparent;
 }
 
 .mascot-quip.is-say::before {
@@ -1403,6 +1442,11 @@
     height: 72px;
   }
 
+  .mascot-quip {
+    max-width: 9.2rem;
+    font-size: 0.72rem;
+  }
+
   .thought {
     left: 0 !important;
     right: 0;
@@ -1467,6 +1511,22 @@
   0%, 100% { transform: rotate(0deg); }
   50% { transform: rotate(-7deg); }
 }
+@keyframes wave-lift {
+  0%, 100% { transform: rotate(0deg); }
+  18%, 78% { transform: rotate(-62deg); }
+}
+@keyframes wave-head {
+  0%, 100% { transform: rotate(0deg); }
+  24%, 76% { transform: rotate(9deg); }
+}
+@keyframes wave-flick {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(22deg); }
+}
+@keyframes scarf-flap {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(12deg); }
+}
 @keyframes wave-arm {
   0%, 100% { transform: rotate(0deg); }
   50% { transform: rotate(-28deg); }
@@ -1502,12 +1562,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .live, .lids, .scarf, .mascot-art, .head, .paw-r, .ear-l, .tail, .zzz, .hearts, .thought {
+  .live, .lids, .scarf, .mascot-art, .head, .paw-r, .arm-r, .paw-tip, .ear-l, .tail, .zzz, .hearts, .thought {
     animation: none;
   }
 
-  .pose-wave .paw-r {
-    transform: rotate(-28deg);
+  .pose-wave .arm-r {
+    transform: rotate(-62deg);
   }
 }
 

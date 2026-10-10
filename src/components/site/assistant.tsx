@@ -16,6 +16,24 @@ import { fbGet } from "@/lib/alpen/staff";
 
 type Msg = { role: "bot" | "user"; text: string; actions?: KiAction[] };
 
+const PAGE_QUIPS: Record<string, string[]> = {
+  index: ["Frag mich nach der IP oder den Regeln.", "Ich sitz hier, falls du was brauchst."],
+  server: ["Tipp: Die IP kannst du mit einem Klick kopieren.", "Java ohne Port, Bedrock mit 19132."],
+  features: ["Claims, Homes und Voice. Frag einfach."],
+  regeln: ["Fair Play ist hier wichtig.", "Unsicher bei einem Mod? Frag mich."],
+  guide: ["Die Befehle kann ich dir auch erklären."],
+  karte: ["Hier siehst du die Welt. Gerade macht die Karte Pause."],
+  community: ["Komm in den Discord.", "Discord ist freiwillig."],
+  faq: ["Steht deine Frage nicht dabei? Ich kenn das Regelwerk."],
+  kontakt: ["Kurze Frage? Ich antworte. Sonst das Ticket."],
+  prefix: ["Der Team-Prefix. Nicht dein Spielername."],
+  team: ["Öffentliche Fragen beantworte ich auf den anderen Seiten."],
+};
+
+function quipsFor(home: string) {
+  return PAGE_QUIPS[home] ?? PAGE_QUIPS.index ?? [];
+}
+
 // Art. 50 Abs. 1 AI Act kann einen Hinweis verlangen, wenn ein KI-System direkt mit Personen spricht.
 // AlpenKI ist eine feste Antworttabelle, kein Sprachmodell. Der Hinweis steht trotzdem sofort im Chat,
 // damit niemand eine menschliche Antwort erwartet. Siehe /ki-transparenz.
@@ -89,12 +107,18 @@ export function SiteMascot({
   const [text, setText] = useState("");
   const [msgs, setMsgs] = useState<Msg[]>([{ role: "bot", text: STARTER }]);
   const [gaze, setGaze] = useState({ x: 0, y: 0 });
+  const [quip, setQuip] = useState<string | null>(null);
   const [hidden, setHidden] = useState(false);
   const [away, setAway] = useState(false);
   const [spotPos, setSpotPos] = useState<{ x: number; y: number } | null>(null);
   const [dragging, setDragging] = useState(false);
   const dragRef = useRef(false);
   const chatRef = useRef(false);
+  const awayRef = useRef(false);
+  const hiddenRef = useRef(false);
+  awayRef.current = away;
+  hiddenRef.current = hidden;
+  const quipRef = useRef("");
   const lastTouch = useRef(Date.now());
   const logRef = useRef<HTMLDivElement>(null);
   const lockUntil = useRef(0);
@@ -161,7 +185,6 @@ export function SiteMascot({
   }, []);
 
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     if (window.sessionStorage.getItem("alpen-waved") === "1") return;
     window.sessionStorage.setItem("alpen-waved", "1");
     setAct("wave");
@@ -204,10 +227,13 @@ export function SiteMascot({
         const mode = settingsRef.current.mode;
         const ordered = readOrder(settingsRef.current.order);
         const current = actRef.current;
-        const quiet = Date.now() - lastTouch.current > (fine ? 50000 : 70000);
-        if (mode === "auto" && !ordered && !chatRef.current && !dragRef.current && Date.now() >= lockUntil.current) {
-          if (quiet && current !== "sleep" && current !== "wave") setAct("sleep");
-          else if (!quiet && current === "sit" && (fine || Math.random() < 0.35)) {
+        if (mode === "auto" && !ordered && !chatRef.current && !dragRef.current && !awayRef.current && Date.now() >= lockUntil.current) {
+          const idleFor = Date.now() - lastTouch.current;
+          if (fine && idleFor > 40000 && idleFor < 80000 && current === "sit") {
+            setAct("wave");
+            window.setTimeout(() => setAct((value) => (value === "wave" ? "sit" : value)), 2000);
+          } else if (idleFor > (fine ? 80000 : 70000) && current !== "sleep" && current !== "wave") setAct("sleep");
+          else if (current === "sit" && (fine || Math.random() < 0.35)) {
             const extra = (["look", "scratch", "scarf"] as Act[])[Math.floor(Math.random() * 3)] ?? "look";
             setAct(extra);
             window.setTimeout(() => {
@@ -225,6 +251,49 @@ export function SiteMascot({
     };
   }, []);
 
+  useEffect(() => {
+    const fine = window.matchMedia("(pointer: fine)").matches;
+    const lines = [line, ...quipsFor(home)].filter((item, index, all) => item && all.indexOf(item) === index);
+    const pick = () => {
+      const choices = lines.filter((item) => item !== quipRef.current);
+      const next = choices[Math.floor(Math.random() * choices.length)] ?? lines[0];
+      quipRef.current = next ?? "";
+      return next ?? null;
+    };
+    if (!fine) {
+      if (window.sessionStorage.getItem("alpen-quip-once") === "1") return;
+      window.sessionStorage.setItem("alpen-quip-once", "1");
+      const id = window.setTimeout(() => {
+        if (chatRef.current || awayRef.current || hiddenRef.current) return;
+        window.sessionStorage.setItem("alpen-quip-once", "1");
+        setQuip(pick());
+        window.setTimeout(() => setQuip(null), 4500);
+      }, 2300);
+      return () => window.clearTimeout(id);
+    }
+    let timer = 0;
+    let hide = 0;
+    let stopped = false;
+    const later = () => {
+      const wait = 45000 + Math.random() * 45000;
+      timer = window.setTimeout(() => {
+        if (stopped) return;
+        if (!chatRef.current && !awayRef.current && !dragRef.current && !hiddenRef.current) {
+          const next = pick();
+          setQuip(next);
+          hide = window.setTimeout(() => setQuip(null), 4500);
+        }
+        later();
+      }, wait);
+    };
+    later();
+    return () => {
+      stopped = true;
+      window.clearTimeout(timer);
+      window.clearTimeout(hide);
+    };
+  }, [home, line]);
+
   function place() {
     const node = spot.current;
     if (!node) return;
@@ -239,6 +308,7 @@ export function SiteMascot({
     lastTouch.current = Date.now();
     setClosing(false);
     setChat(true);
+    setQuip(null);
     if (actRef.current === "sleep") setAct("sit");
     else {
       setAct("wave");
@@ -378,6 +448,11 @@ export function SiteMascot({
       <button type="button" className="mascot-hide" onClick={hideMascot}>
         Ausblenden
       </button>
+      {quip && !chat && !away ? (
+        <button type="button" className="mascot-quip" onClick={() => setQuip(null)}>
+          {quip}
+        </button>
+      ) : null}
       <button
         type="button"
         className={`mascot-unit ${dragging ? "is-drag" : ""}`}
