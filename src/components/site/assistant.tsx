@@ -1,52 +1,108 @@
 import { Send, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { answerQuestion } from "@/lib/alpen/assistant";
+import { replyTo, type KiAction } from "@/lib/alpen/assistant";
 import {
   holdMs,
   MASCOT_DEFAULT,
   mascotLine,
-  pickIdle,
   readOrder,
-  waitMs,
   type Act,
   type MascotSettings,
 } from "@/lib/alpen/mascot";
-import { MascotView } from "@/components/site/mascot-3d";
+import { MascotView } from "@/components/site/mascot-art";
+import { DiscordLink, TikTokLink } from "@/components/site/shell";
 import { fbGet } from "@/lib/alpen/staff";
 
-type Msg = { role: "bot" | "user"; text: string };
+type Msg = { role: "bot" | "user"; text: string; actions?: KiAction[] };
 
-const STARTER = "Hallo. Frag mich zu den Regeln – oder sag einfach: setz dich, schlaf, wink.";
+// Art. 50 Abs. 1 AI Act kann einen Hinweis verlangen, wenn ein KI-System direkt mit Personen spricht.
+// AlpenKI ist eine feste Antworttabelle, kein Sprachmodell. Der Hinweis steht trotzdem sofort im Chat,
+// damit niemand eine menschliche Antwort erwartet. Siehe /ki-transparenz.
+const STARTER = "Ich bin ein automatischer Assistent, kein Mensch. Frag mich zur IP, zu SwissRed oder zu den Regeln – oder sag: setz dich, schlaf, wink.";
+const PROMPTS = ["Wer ist der Owner?", "Wo wohnt SwissRed?", "Welche Befehle gibt es?", "Darf ich X-Ray?"];
+
+function BotReply({
+  text,
+  actions,
+  scroller,
+}: {
+  text: string;
+  actions?: KiAction[];
+  scroller: { current: HTMLDivElement | null };
+}) {
+  const [count, setCount] = useState(0);
+  const done = count >= text.length;
+  useEffect(() => {
+    if (done) return;
+    const id = window.setTimeout(() => setCount((value) => Math.min(text.length, value + 1)), 14);
+    return () => window.clearTimeout(id);
+  }, [count, done, text]);
+  useEffect(() => {
+    const node = scroller.current;
+    if (node) node.scrollTop = node.scrollHeight;
+  }, [count, scroller]);
+  return (
+    <div className="ki-bot">
+      <p>
+        {text.slice(0, count)}
+        {done ? null : <i className="mascot-caret" />}
+      </p>
+      {done && actions?.length ? (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {actions.map((action) =>
+            action.href.includes("discord") ? (
+              <DiscordLink key={action.label}>{action.label}</DiscordLink>
+            ) : action.href.includes("tiktok") ? (
+              <TikTokLink key={action.label}>{action.label}</TikTokLink>
+            ) : (
+              <a key={action.label} className="ki-chip" href={action.href}>
+                {action.label}
+              </a>
+            ),
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 export function SiteMascot({
   line,
   align = "start",
   inset = false,
   bias,
+  home = "index",
 }: {
   line: string;
   align?: "start" | "end";
   inset?: boolean;
   bias?: Act;
+  home?: string;
 }) {
   const spot = useRef<HTMLSpanElement>(null);
   const [settings, setSettings] = useState<MascotSettings>(MASCOT_DEFAULT);
-  const [act, setAct] = useState<Act>("stand");
+  const [act, setAct] = useState<Act>("sit");
   const [chat, setChat] = useState(false);
   const [closing, setClosing] = useState(false);
   const [box, setBox] = useState<{ left: number; bottom: number; width: number } | null>(null);
   const [text, setText] = useState("");
   const [msgs, setMsgs] = useState<Msg[]>([{ role: "bot", text: STARTER }]);
   const [gaze, setGaze] = useState({ x: 0, y: 0 });
-  const [quip, setQuip] = useState<string | null>(null);
+  const [hidden, setHidden] = useState(false);
+  const [away, setAway] = useState(false);
+  const [spotPos, setSpotPos] = useState<{ x: number; y: number } | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const dragRef = useRef(false);
+  const chatRef = useRef(false);
+  const lastTouch = useRef(Date.now());
+  const logRef = useRef<HTMLDivElement>(null);
   const lockUntil = useRef(0);
-  const actRef = useRef<Act>("stand");
+  const actRef = useRef<Act>("sit");
   const settingsRef = useRef(settings);
-  const biasRef = useRef(bias);
   actRef.current = act;
   settingsRef.current = settings;
-  biasRef.current = bias;
+  chatRef.current = chat;
 
   useEffect(() => {
     const pull = () => {
@@ -94,54 +150,80 @@ export function SiteMascot({
       return;
     }
     if (settings.mode === "interactive" || settings.mode === "idle" || settings.mode === "stand") {
-      if (settings.mode !== "stand") setAct("stand");
+      setAct("sit");
       return;
     }
     setAct(settings.mode);
   }, [settings.mode, settings.order]);
 
   useEffect(() => {
-    const ordered = readOrder(settings.order);
-    const looping = settings.mode === "auto" || settings.mode === "stand" || settings.mode === "interactive";
-    if (!looping || (settings.mode === "auto" && ordered && ordered !== "auto")) return;
+    setHidden(window.localStorage.getItem("alpen-mascot-hidden") === "1");
+  }, []);
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (window.sessionStorage.getItem("alpen-waved") === "1") return;
+    window.sessionStorage.setItem("alpen-waved", "1");
+    setAct("wave");
+    const id = window.setTimeout(() => setAct((current) => (current === "wave" ? "sit" : current)), 2000);
+    return () => window.clearTimeout(id);
+  }, []);
+
+  useEffect(() => {
+    const onFocus = (event: FocusEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target || target.closest(".thought") || target.closest(".mascot-dock")) return;
+      if (target.matches("input, textarea, select")) setAway(true);
+    };
+    const onBlur = () => setAway(false);
+    document.addEventListener("focusin", onFocus);
+    document.addEventListener("focusout", onBlur);
+    const viewport = window.visualViewport;
+    const onResize = () => {
+      if (!viewport) return;
+      setAway(window.innerHeight - viewport.height > 140);
+    };
+    viewport?.addEventListener("resize", onResize);
+    return () => {
+      document.removeEventListener("focusin", onFocus);
+      document.removeEventListener("focusout", onBlur);
+      viewport?.removeEventListener("resize", onResize);
+    };
+  }, []);
+
+  useEffect(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) return;
+    const fine = window.matchMedia("(pointer: fine)").matches;
     let timer = 0;
     let stopped = false;
-    const later = (fn: () => void, ms: number) => {
+    const plan = () => {
+      const wait = fine ? 12000 + Math.random() * 8000 : 30000 + Math.random() * 30000;
       timer = window.setTimeout(() => {
-        if (!stopped) fn();
-      }, ms);
-    };
-    const loop = () => {
-      later(() => {
-        if (Date.now() < lockUntil.current) {
-          later(loop, lockUntil.current - Date.now());
-          return;
-        }
-        const next = pickIdle(settingsRef.current, biasRef.current, settingsRef.current.mode === "stand" ? "small" : "full");
-        setAct(next);
-        later(() => {
-          if (next === "sleep") {
-            setAct("wake");
-            later(() => {
-              setAct("walk");
-              later(() => {
-                setAct("stand");
-                loop();
-              }, holdMs("walk"));
-            }, holdMs("wake"));
-            return;
+        if (stopped) return;
+        const mode = settingsRef.current.mode;
+        const ordered = readOrder(settingsRef.current.order);
+        const current = actRef.current;
+        const quiet = Date.now() - lastTouch.current > (fine ? 50000 : 70000);
+        if (mode === "auto" && !ordered && !chatRef.current && !dragRef.current && Date.now() >= lockUntil.current) {
+          if (quiet && current !== "sleep" && current !== "wave") setAct("sleep");
+          else if (!quiet && current === "sit" && (fine || Math.random() < 0.35)) {
+            const extra = (["look", "scratch", "scarf"] as Act[])[Math.floor(Math.random() * 3)] ?? "look";
+            setAct(extra);
+            window.setTimeout(() => {
+              if (["look", "scratch", "scarf"].includes(actRef.current)) setAct("sit");
+            }, 1600);
           }
-          setAct("stand");
-          loop();
-        }, holdMs(next));
-      }, waitMs(settingsRef.current));
+        }
+        plan();
+      }, wait);
     };
-    loop();
+    plan();
     return () => {
       stopped = true;
       window.clearTimeout(timer);
     };
-  }, [settings.mode, settings.order, settings.idle, settings.pace, settings.sleep, settings.sit, settings.special]);
+  }, []);
 
   function place() {
     const node = spot.current;
@@ -154,9 +236,14 @@ export function SiteMascot({
   }
 
   function openChat() {
+    lastTouch.current = Date.now();
     setClosing(false);
     setChat(true);
-    setAct("up");
+    if (actRef.current === "sleep") setAct("sit");
+    else {
+      setAct("wave");
+      window.setTimeout(() => setAct((current) => (current === "wave" ? "sit" : current)), 2000);
+    }
     place();
   }
 
@@ -165,73 +252,18 @@ export function SiteMascot({
     window.setTimeout(() => {
       setChat(false);
       setClosing(false);
-      if (settingsRef.current.mode === "auto" && !readOrder(settingsRef.current.order)) setAct("stand");
+      if (settingsRef.current.mode === "auto" && !readOrder(settingsRef.current.order)) setAct("sit");
     }, 320);
   }
 
   useEffect(() => {
-    const scripts = [
-      [line, "Wirklich. Frag einfach. haha"],
-      ["Frag mich nach der IP.", "Oder nach den Regeln. haha"],
-      ["Java oder Bedrock?", "Beides geht. haha"],
-      ["Darf ich X-Ray?", "Nein. hahaha"],
-      ["Klick mich.", "Ich beiß nicht. haha"],
-      ["Homes sind erlaubt.", "Claims auch. haha"],
-      ["Bin ich müde?", "Nein. Doch. haha"],
-      ["Wer klaut Diamanten?", "Ich sag nichts. haha"],
-    ];
-    let stop = false;
-    const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
-    const run = async () => {
-      await wait(800);
-      while (!stop) {
-        if (actRef.current === "sleep") {
-          setQuip(null);
-          await wait(1200);
-          continue;
-        }
-        const script = scripts[Math.floor(Math.random() * scripts.length)] ?? [line];
-        let text = "";
-        setQuip("");
-        for (const ch of script[0] ?? "") {
-          if (stop) return;
-          text += ch;
-          setQuip(text);
-          await wait(36 + Math.random() * 34);
-        }
-        await wait(650);
-        if (!stop && script[1] && Math.random() < 0.75) {
-          while (text.length && !stop) {
-            text = text.slice(0, -1);
-            setQuip(text);
-            await wait(22);
-          }
-          await wait(160);
-          for (const ch of script[1]) {
-            if (stop) return;
-            text += ch;
-            setQuip(text);
-            await wait(34);
-          }
-        }
-        await wait(1800);
-        if (!stop) setQuip(null);
-        await wait(4200 + Math.random() * 4800);
-      }
-    };
-    void run();
-    return () => {
-      stop = true;
-    };
-  }, [line]);
-
-  useEffect(() => {
+    if (!window.matchMedia("(pointer: fine)").matches) return;
     const follow = (event: globalThis.MouseEvent) => {
       const node = spot.current;
-      if (!node || actRef.current === "sleep") return;
+      if (!node || actRef.current === "sleep" || actRef.current === "pet") return;
       const rect = node.getBoundingClientRect();
-      const x = (event.clientX - (rect.left + rect.width / 2)) / 280;
-      const y = (rect.top + rect.height * 0.42 - event.clientY) / 280;
+      const x = (event.clientX - (rect.left + rect.width / 2)) / 180;
+      const y = (rect.top + rect.height * 0.42 - event.clientY) / 180;
       setGaze({
         x: Math.max(-1, Math.min(1, x)),
         y: Math.max(-0.75, Math.min(0.75, y)),
@@ -241,28 +273,61 @@ export function SiteMascot({
     return () => window.removeEventListener("mousemove", follow);
   }, []);
 
+  function onPointerDown(event: React.PointerEvent<HTMLButtonElement>) {
+    if (event.button !== 0 || event.pointerType !== "mouse") return;
+    const node = event.currentTarget;
+    const width = node.offsetWidth;
+    const height = node.offsetHeight;
+    dragRef.current = false;
+    lastTouch.current = Date.now();
+    const move = (ev: PointerEvent) => {
+      if (Math.hypot(ev.clientX - event.clientX, ev.clientY - event.clientY) > 4) {
+        dragRef.current = true;
+        setDragging(true);
+      }
+      const x = ev.clientX - width * 0.5;
+      const y = ev.clientY - height * 0.22;
+      setSpotPos({
+        x: Math.min(window.innerWidth - 28, Math.max(-width + 36, x)),
+        y: Math.min(window.innerHeight - 24, Math.max(-8, y)),
+      });
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      setDragging(false);
+      if (dragRef.current) {
+        lastTouch.current = Date.now();
+        setAct("sit");
+      }
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  }
+
   function pet() {
     const mode = settingsRef.current.mode;
     const ordered = readOrder(settingsRef.current.order);
     if (mode !== "auto" && mode !== "interactive") return;
     if (ordered && ordered !== "auto") return;
-    if (actRef.current === "sleep") return;
-    const previous = actRef.current;
+    if (actRef.current === "sleep" || dragRef.current) return;
+    lastTouch.current = Date.now();
     setAct("pet");
     window.setTimeout(() => {
-      if (actRef.current === "pet") setAct(previous === "pet" ? "stand" : previous);
-    }, 1600);
+      if (actRef.current === "pet") setAct("sit");
+    }, 1400);
   }
 
-  function send() {
-    const q = text.trim();
+  function send(raw?: string) {
+    const q = (raw ?? text).trim();
     if (!q) return;
     const intent = readOrder(q);
     if (intent) window.dispatchEvent(new CustomEvent("alpen-mascot-order", { detail: intent }));
-    const asked = /[?]|\b(was|wie|wo|wann|darf|gibt|regel|ip|mod|home|tpa)\b/i.test(q);
-    const reply = intent && !asked ? mascotLine(intent) : asked && intent ? `${mascotLine(intent)} ${answerQuestion(q)}` : answerQuestion(q);
+    const asked = /[?]|\b(was|wie|wo|wann|darf|gibt|regel|ip|mod|home|tpa|wer|welche)\b/i.test(q);
+    const reply = intent && !asked ? { text: mascotLine(intent), actions: [] as KiAction[] } : replyTo(q);
     setText("");
-    setMsgs((list) => [...list, { role: "user", text: q }, { role: "bot", text: reply }]);
+    setMsgs((list) => [...list, { role: "user", text: q }, { role: "bot", text: reply.text, actions: reply.actions }]);
+    lastTouch.current = Date.now();
   }
 
   useEffect(() => {
@@ -277,47 +342,110 @@ export function SiteMascot({
     };
   }, [chat]);
 
-  const unit = (
-    <div className={`flex py-6 ${align === "end" ? "justify-end" : "justify-start"}`}>
+  useEffect(() => {
+    const node = logRef.current;
+    if (!node) return;
+    node.scrollTop = node.scrollHeight;
+  }, [msgs, chat]);
+
+  function hideMascot() {
+    window.localStorage.setItem("alpen-mascot-hidden", "1");
+    setHidden(true);
+  }
+
+  if (hidden) {
+    const restore =
+      typeof document === "undefined"
+        ? null
+        : createPortal(
+            <button
+              type="button"
+              className="mascot-restore"
+              onClick={() => {
+                window.localStorage.removeItem("alpen-mascot-hidden");
+                setHidden(false);
+              }}
+            >
+              AlpenKI
+            </button>,
+            document.body,
+          );
+    return inset ? restore : <div className="shell">{restore}</div>;
+  }
+
+  const mascot = (
+    <div className={`mascot-dock ${away ? "is-away" : ""}`} style={spotPos ? { left: spotPos.x, top: spotPos.y, right: "auto", bottom: "auto" } : undefined}>
+      <button type="button" className="mascot-hide" onClick={hideMascot}>
+        Ausblenden
+      </button>
       <button
         type="button"
-        className="mascot-unit"
+        className={`mascot-unit ${dragging ? "is-drag" : ""}`}
         aria-label="AlpenKI öffnen"
-        onMouseEnter={pet}
-        onClick={openChat}
+        onPointerDown={onPointerDown}
+        onPointerEnter={(event) => {
+          if (event.pointerType === "mouse") pet();
+        }}
+        onClick={(event) => {
+          if (dragRef.current) {
+            dragRef.current = false;
+            event.preventDefault();
+            return;
+          }
+          lastTouch.current = Date.now();
+          if (actRef.current === "sleep") {
+            setAct("sit");
+            return;
+          }
+          openChat();
+        }}
       >
         <span className={`mascot-stage ${chat ? "is-chat" : ""}`} ref={spot}>
-          {quip !== null && !chat ? (
-            <span className="mascot-quip">
-              {quip}
-              <i className="mascot-caret" />
+          {act === "pet" ? (
+            <span className="hearts" aria-hidden="true">
+              ♥
             </span>
           ) : null}
-          {act === "pet" ? <span className="hearts">♥</span> : null}
-          <MascotView act={act} gaze={chat ? { x: 0, y: 0.85 } : act === "sleep" ? { x: 0, y: 0 } : gaze} />
+          <MascotView act={act} gaze={act === "sleep" || act === "pet" ? { x: 0, y: 0 } : gaze} cling={dragging} />
         </span>
       </button>
-      {chat && box
+      {chat && box && typeof document !== "undefined"
         ? createPortal(
             <section
               className={`thought ${closing ? "is-closing" : ""}`}
               style={{ left: box.left, bottom: box.bottom, width: box.width }}
               role="dialog"
-              aria-label="AlpenKI"
+              aria-label="AlpenKI, automatischer Assistent, kein Mensch"
             >
               <header className="flex items-center justify-between border-b border-line px-4 py-3">
-                <p className="text-sm font-semibold">AlpenKI</p>
+                <div>
+                  <p className="text-sm font-semibold">AlpenKI</p>
+                  <p className="text-xs text-muted">Automatischer Assistent, kein Mensch.</p>
+                </div>
                 <button type="button" className="grid size-9 place-items-center text-muted" aria-label="Schließen" onClick={closeChat}>
                   <X className="size-4" />
                 </button>
               </header>
-              <div className="flex max-h-80 flex-col gap-3 overflow-y-auto px-4 py-4">
-                {msgs.map((msg, i) => (
-                  <p key={i} className={msg.role === "user" ? "ki-user" : "ki-bot"}>
-                    {msg.text}
-                  </p>
-                ))}
+              <div ref={logRef} className="flex max-h-80 flex-col gap-3 overflow-y-auto px-4 py-4">
+                {msgs.map((msg, i) =>
+                  msg.role === "user" ? (
+                    <div key={i} className="ki-user">
+                      <p>{msg.text}</p>
+                    </div>
+                  ) : (
+                    <BotReply key={i} text={msg.text} actions={msg.actions} scroller={logRef} />
+                  ),
+                )}
               </div>
+              {msgs.length === 1 ? (
+                <div className="flex flex-wrap gap-2 px-4 pb-2">
+                  {PROMPTS.map((prompt) => (
+                    <button key={prompt} type="button" className="ki-chip" onClick={() => send(prompt)}>
+                      {prompt}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
               <form
                 className="flex gap-2 border-t border-line p-3"
                 onSubmit={(event) => {
@@ -336,6 +464,7 @@ export function SiteMascot({
         : null}
     </div>
   );
+  const unit = typeof document === "undefined" ? null : createPortal(mascot, document.body);
 
   if (inset) return unit;
   return <div className="shell">{unit}</div>;

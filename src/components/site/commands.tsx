@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { CopyBurstButton } from "@/components/site/copy-burst";
 import { BEDROCK_COMMANDS, COMMANDS } from "@/lib/alpen/content";
 import { entries, fbGet } from "@/lib/alpen/staff";
 
@@ -52,28 +53,15 @@ export function PlayerCommands() {
 }
 
 function CommandRow({ cmd, text }: { cmd: string; text: string }) {
-  const [copied, setCopied] = useState(false);
-
   return (
-    <li className={`card card-still flex items-center gap-3 p-4 ${copied ? "is-copied" : ""}`}>
+    <li className="card card-still flex items-center gap-3 p-4">
       <div className="min-w-0 flex-1">
         <code className="font-semibold text-gold">{cmd}</code>
         <p className="mt-1 text-sm text-muted">{text}</p>
       </div>
-      <button
-        type="button"
-        className="copy-btn"
-        aria-label={`${cmd} kopieren`}
-        onClick={() => {
-          void navigator.clipboard.writeText(cmd).then(() => {
-            setCopied(true);
-            window.setTimeout(() => setCopied(false), 1200);
-          });
-        }}
-      >
-        <span className="copy-sparks" aria-hidden="true" />
-        {copied ? "Kopiert" : "Kopieren"}
-      </button>
+      <CopyBurstButton value={cmd} ariaLabel={`${cmd} kopieren`}>
+        Kopieren
+      </CopyBurstButton>
     </li>
   );
 }

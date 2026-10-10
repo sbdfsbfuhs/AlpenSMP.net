@@ -1,3 +1,2 @@
-/** Same staff gate as the existing AlpenSMP team login. */
+/** Staff owner account name. The password is not stored in the website. */
 export const STAFF_OWNER = "owner";
-export const STAFF_GATE = "Fisch22*";

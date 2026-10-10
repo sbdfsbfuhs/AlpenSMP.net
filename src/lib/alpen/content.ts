@@ -232,7 +232,8 @@ export const FEATURES: Feature[] = [
     summary: "Beide Editionen spielen auf derselben Welt.",
     body: [
       "Java- und Bedrock-Spieler teilen sich dieselbe Welt.",
-      "Java: Adresse alpensmp.falixsrv.me. Bedrock: dieselbe Adresse plus Port 27491.",
+      "Java: alpensmp.net. Den Port trägst du nicht ein. Der SRV-Eintrag schickt den Client auf play.alpensmp.net, Port 25565.",
+      "Bedrock: play.alpensmp.net, Port 19132. Bedrock ignoriert den SRV-Eintrag.",
       "Empfohlene Version: Minecraft 1.21.11. Andere Versionen können funktionieren. Minecraft 26.2+ kann aktuell Verbindungsprobleme verursachen.",
     ],
   },
@@ -280,7 +281,7 @@ export const PILLARS = [
 export const FAQ = [
   {
     q: "Wie kann ich AlpenSMP beitreten?",
-    a: "Minecraft öffnen, Mehrspieler auswählen und die Server-Adresse alpensmp.falixsrv.me eingeben. Für Bedrock zusätzlich den Port 27491 angeben. Unter Server findest du alles zum direkten Kopieren.",
+    a: "Java: alpensmp.net, Port nicht eintragen. Der SRV-Eintrag schickt den Client auf play.alpensmp.net, Port 25565. Bedrock: play.alpensmp.net, Port 19132, weil Bedrock den SRV-Eintrag ignoriert.",
   },
   {
     q: "Welche Minecraft-Version wird empfohlen?",
@@ -292,11 +293,11 @@ export const FAQ = [
   },
   {
     q: "Wie lautet die Server-IP?",
-    a: "alpensmp.falixsrv.me – du kannst sie auf der Startseite oder unter Server mit einem Klick kopieren.",
+    a: "Java: alpensmp.net. Bedrock: play.alpensmp.net. Kopieren geht auf der Startseite und unter Server.",
   },
   {
     q: "Welchen Port brauche ich auf Bedrock?",
-    a: "Der Bedrock-Port ist 27491. Adresse: alpensmp.falixsrv.me.",
+    a: "Port 19132, Adresse play.alpensmp.net. Bedrock ignoriert den SRV-Eintrag, deshalb nicht nur alpensmp.net.",
   },
   {
     q: "Brauche ich Discord, um spielen zu können?",
@@ -336,7 +337,7 @@ export const FAQ = [
   },
   {
     q: "Wo ist die Live-Karte?",
-    a: "Die BlueMap der Hauptworld (Overworld) öffnet sich über den Bereich Karte. Sie zeigt die gemeinsame Overworld in einem eigenen Tab.",
+    a: "Unter Karte. Sie ist gerade nicht erreichbar, weil der Speicher auf dem Kartenserver voll ist. Schau ein anderes Mal wieder vorbei. Spielen geht trotzdem.",
   },
   {
     q: "Darf ich X-Ray, Fly oder KillAura?",
@@ -406,8 +407,8 @@ export const GUIDE: GuideChapter[] = [
     description: "IP, Port, Version.",
     keywords: "join ip bedrock port version",
     blocks: [
-      "Java: alpensmp.falixsrv.me",
-      "Bedrock: dieselbe Adresse, Port 27491",
+      "Java: alpensmp.net. Port nicht eintragen. Der SRV-Eintrag geht auf play.alpensmp.net, Port 25565.",
+      "Bedrock: play.alpensmp.net, Port 19132. Bedrock ignoriert den SRV-Eintrag.",
       "Empfohlen: Minecraft 1.21.11. Version 26.2+ kann Verbindungsprobleme machen.",
     ],
   },

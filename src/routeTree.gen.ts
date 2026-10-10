@@ -15,7 +15,9 @@ import { Route as FaqRouteImport } from './routes/faq'
 import { Route as FeaturesRouteImport } from './routes/features'
 import { Route as GuideRouteImport } from './routes/guide'
 import { Route as KarteRouteImport } from './routes/karte'
+import { Route as KiTransparenzRouteImport } from './routes/ki-transparenz'
 import { Route as KontaktRouteImport } from './routes/kontakt'
+import { Route as PrefixRouteImport } from './routes/prefix'
 import { Route as RegelnRouteImport } from './routes/regeln'
 import { Route as ServerRouteImport } from './routes/server'
 import { Route as TeamRouteImport } from './routes/team'
@@ -50,9 +52,19 @@ const KarteRoute = KarteRouteImport.update({
   path: '/karte',
   getParentRoute: () => rootRouteImport,
 } as any)
+const KiTransparenzRoute = KiTransparenzRouteImport.update({
+  id: '/ki-transparenz',
+  path: '/ki-transparenz',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const KontaktRoute = KontaktRouteImport.update({
   id: '/kontakt',
   path: '/kontakt',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrefixRoute = PrefixRouteImport.update({
+  id: '/prefix',
+  path: '/prefix',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RegelnRoute = RegelnRouteImport.update({
@@ -78,7 +90,9 @@ export interface FileRoutesByFullPath {
   '/features': typeof FeaturesRoute
   '/guide': typeof GuideRoute
   '/karte': typeof KarteRoute
+  '/ki-transparenz': typeof KiTransparenzRoute
   '/kontakt': typeof KontaktRoute
+  '/prefix': typeof PrefixRoute
   '/regeln': typeof RegelnRoute
   '/server': typeof ServerRoute
   '/team': typeof TeamRoute
@@ -90,7 +104,9 @@ export interface FileRoutesByTo {
   '/features': typeof FeaturesRoute
   '/guide': typeof GuideRoute
   '/karte': typeof KarteRoute
+  '/ki-transparenz': typeof KiTransparenzRoute
   '/kontakt': typeof KontaktRoute
+  '/prefix': typeof PrefixRoute
   '/regeln': typeof RegelnRoute
   '/server': typeof ServerRoute
   '/team': typeof TeamRoute
@@ -103,7 +119,9 @@ export interface FileRoutesById {
   '/features': typeof FeaturesRoute
   '/guide': typeof GuideRoute
   '/karte': typeof KarteRoute
+  '/ki-transparenz': typeof KiTransparenzRoute
   '/kontakt': typeof KontaktRoute
+  '/prefix': typeof PrefixRoute
   '/regeln': typeof RegelnRoute
   '/server': typeof ServerRoute
   '/team': typeof TeamRoute
@@ -117,7 +135,9 @@ export interface FileRouteTypes {
     | '/features'
     | '/guide'
     | '/karte'
+    | '/ki-transparenz'
     | '/kontakt'
+    | '/prefix'
     | '/regeln'
     | '/server'
     | '/team'
@@ -129,7 +149,9 @@ export interface FileRouteTypes {
     | '/features'
     | '/guide'
     | '/karte'
+    | '/ki-transparenz'
     | '/kontakt'
+    | '/prefix'
     | '/regeln'
     | '/server'
     | '/team'
@@ -141,7 +163,9 @@ export interface FileRouteTypes {
     | '/features'
     | '/guide'
     | '/karte'
+    | '/ki-transparenz'
     | '/kontakt'
+    | '/prefix'
     | '/regeln'
     | '/server'
     | '/team'
@@ -154,7 +178,9 @@ export interface RootRouteChildren {
   FeaturesRoute: typeof FeaturesRoute
   GuideRoute: typeof GuideRoute
   KarteRoute: typeof KarteRoute
+  KiTransparenzRoute: typeof KiTransparenzRoute
   KontaktRoute: typeof KontaktRoute
+  PrefixRoute: typeof PrefixRoute
   RegelnRoute: typeof RegelnRoute
   ServerRoute: typeof ServerRoute
   TeamRoute: typeof TeamRoute
@@ -204,11 +230,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KarteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ki-transparenz': {
+      id: '/ki-transparenz'
+      path: '/ki-transparenz'
+      fullPath: '/ki-transparenz'
+      preLoaderRoute: typeof KiTransparenzRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/kontakt': {
       id: '/kontakt'
       path: '/kontakt'
       fullPath: '/kontakt'
       preLoaderRoute: typeof KontaktRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/prefix': {
+      id: '/prefix'
+      path: '/prefix'
+      fullPath: '/prefix'
+      preLoaderRoute: typeof PrefixRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/regeln': {
@@ -242,7 +282,9 @@ const rootRouteChildren: RootRouteChildren = {
   FeaturesRoute: FeaturesRoute,
   GuideRoute: GuideRoute,
   KarteRoute: KarteRoute,
+  KiTransparenzRoute: KiTransparenzRoute,
   KontaktRoute: KontaktRoute,
+  PrefixRoute: PrefixRoute,
   RegelnRoute: RegelnRoute,
   ServerRoute: ServerRoute,
   TeamRoute: TeamRoute,

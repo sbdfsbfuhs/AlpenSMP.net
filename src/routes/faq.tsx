@@ -24,11 +24,11 @@ function FaqPage() {
         lede="IP, Version, Bedrock, Claims, Voice und Support – die Antworten, die auf AlpenSMP wirklich gelten."
       />
       <div className="shell max-w-3xl py-12">
-        <div className="divide-y divide-line overflow-hidden rounded-lg border border-line">
+        <div className="stagger divide-y divide-line overflow-hidden rounded-lg border border-line">
           {FAQ.map((item, index) => {
             const isOpen = open === index;
             return (
-              <div key={item.q} className="bg-surface">
+              <div key={item.q} className="faq-row bg-surface" data-open={isOpen}>
                 <button
                   type="button"
                   className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left font-semibold"
@@ -36,16 +36,16 @@ function FaqPage() {
                   onClick={() => setOpen(isOpen ? null : index)}
                 >
                   {item.q}
-                  <span className="text-gold" aria-hidden="true">
+                  <span className="faq-mark text-gold" aria-hidden="true">
                     {isOpen ? "–" : "+"}
                   </span>
                 </button>
-                {isOpen ? <p className="px-5 pb-5 text-sm text-muted">{item.a}</p> : null}
+                {isOpen ? <p className="panel-in px-5 pb-5 text-sm text-muted">{item.a}</p> : null}
               </div>
             );
           })}
         </div>
-        <SiteMascot bias="scratch" inset align="end" line="Steht deine Frage nicht dabei? Ich kenne das Regelwerk." />
+        <SiteMascot home="faq" bias="scratch" inset align="end" line="Steht deine Frage nicht dabei? Ich kenne das Regelwerk." />
       </div>
     </Shell>
   );

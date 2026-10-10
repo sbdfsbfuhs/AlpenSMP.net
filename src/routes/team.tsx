@@ -1,10 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { CopyBurstButton } from "@/components/site/copy-burst";
 import { PageHero, Shell } from "@/components/site/shell";
 import { SiteMascot } from "@/components/site/assistant";
-import { AbsenceBoard, BanGuideEditor, GuideEditor, LockdownTexts, MascotDesk, PlayerCommandEditor, RulesEditor, TasksBoard } from "@/components/site/staff-extra";
+import { AbsenceBoard, BanGuideEditor, GuideEditor, PlayerCommandEditor, RulesEditor, TasksBoard } from "@/components/site/staff-extra";
 import { can, roleLabel, ROLES, asRole, type Role } from "@/lib/alpen/roles";
 import {
+  createStaffAccount,
   entries,
   fbGet,
   fbPush,
@@ -13,9 +15,18 @@ import {
   fbUpdate,
   formatRemaining,
   formatWhen,
+  freshStamp,
+  isPermanentBan,
   loginStaff,
+  logStaff,
   parseDuration,
+  permLeft,
   readSession,
+  removeStaffAccount,
+  resetStaffPassword,
+  savePassword,
+  setStaffPaused,
+  setStaffRole,
   writeSession,
   type CommandItem,
   type CommunityItem,
@@ -33,20 +44,21 @@ export const Route = createFileRoute("/team")({
   component: StaffPage,
 });
 
-type Tab = "moderation" | "help" | "commands" | "community" | "rules" | "ban" | "tasks" | "absence" | "guide" | "mascot" | "settings" | "website" | "archive" | "users";
+type Tab = "roster" | "moderation" | "help" | "community" | "tasks" | "absence" | "chat" | "commands" | "rules" | "ban" | "guide" | "settings" | "website" | "archive" | "users";
 type Filter = "active" | "expired" | "archived" | "all";
 
-const TABS: { id: Tab; label: string; area: "moderation" | "help" | "commandsRead" | "community" | "rulesRead" | "banGuide" | "tasks" | "absence" | "guide" | "mascot" | "settings" | "website" | "archive" | "roles" }[] = [
+const TABS: { id: Tab; label: string; area: "roster" | "moderation" | "help" | "community" | "tasks" | "absence" | "chat" | "commandsRead" | "rulesRead" | "banGuide" | "guide" | "settings" | "website" | "archive" | "roles" }[] = [
+  { id: "roster", label: "Team", area: "roster" },
   { id: "moderation", label: "Moderation", area: "moderation" },
   { id: "help", label: "Hilfe", area: "help" },
-  { id: "commands", label: "Commands", area: "commandsRead" },
   { id: "community", label: "Community", area: "community" },
-  { id: "rules", label: "Regeln", area: "rulesRead" },
-  { id: "ban", label: "Ban-Leitfaden", area: "banGuide" },
   { id: "tasks", label: "Aufgaben", area: "tasks" },
   { id: "absence", label: "Abwesenheit", area: "absence" },
+  { id: "chat", label: "Chat", area: "chat" },
+  { id: "commands", label: "Commands", area: "commandsRead" },
+  { id: "rules", label: "Regeln", area: "rulesRead" },
+  { id: "ban", label: "Ban-Leitfaden", area: "banGuide" },
   { id: "guide", label: "Guide", area: "guide" },
-  { id: "mascot", label: "Maskottchen", area: "mascot" },
   { id: "settings", label: "Einstellungen", area: "settings" },
   { id: "website", label: "Website", area: "website" },
   { id: "archive", label: "Archiv", area: "archive" },
@@ -59,8 +71,28 @@ function StaffPage() {
   const [toast, setToast] = useState("");
 
   useEffect(() => {
-    setUser(readSession());
-    setReady(true);
+    const saved = readSession();
+    if (!saved) {
+      setReady(true);
+      return;
+    }
+    void fbGet<{ role?: string; mustChangePw?: boolean; disabled?: boolean }>(`staffUsers/${saved.username}`)
+      .then((row) => {
+        if (!row || row.disabled || !saved.email) {
+          writeSession(null);
+          setUser(null);
+        } else {
+          const next = { ...saved, role: row.role || saved.role, mustChangePw: Boolean(row.mustChangePw) };
+          writeSession(next);
+          setUser(next);
+        }
+        setReady(true);
+      })
+      .catch(() => {
+        writeSession(null);
+        setUser(null);
+        setReady(true);
+      });
   }, []);
 
   function note(text: string) {
@@ -69,9 +101,13 @@ function StaffPage() {
   }
 
   function logout() {
-    if (user) void fbRemove(`presence/${user.username}`);
-    writeSession(null);
-    setUser(null);
+    const name = user?.username;
+    void (name ? fbRemove(`presence/${name}`) : Promise.resolve())
+      .catch(() => undefined)
+      .finally(() => {
+        writeSession(null);
+        setUser(null);
+      });
   }
 
   return (
@@ -81,7 +117,7 @@ function StaffPage() {
         title="Staff-Center"
         lede="Moderation, Hilfe, Commands und Freigaben. Dieselben Daten wie bisher – in der neuen Oberfläche."
       />
-      <SiteMascot bias="sit" align="end" line="Öffentliche Fragen beantworte ich auf den anderen Seiten." />
+      <SiteMascot home="team" bias="sit" align="end" line="Öffentliche Fragen beantworte ich auf den anderen Seiten." />
       <div className="shell py-10">
         {!ready ? <p className="text-muted">Lade Zugang…</p> : null}
         {ready && !user ? <Login onIn={setUser} /> : null}
@@ -97,7 +133,7 @@ function StaffPage() {
 }
 
 function Login({ onIn }: { onIn: (user: StaffSession) => void }) {
-  const [username, setUsername] = useState("");
+  const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -107,7 +143,7 @@ function Login({ onIn }: { onIn: (user: StaffSession) => void }) {
     setBusy(true);
     setError("");
     try {
-      const session = await loginStaff(username, password);
+      const session = await loginStaff(name, password);
       writeSession(session);
       await fbSet(`presence/${session.username}`, { username: session.username, role: session.role, online: true, lastSeen: Date.now() });
       onIn(session);
@@ -121,10 +157,10 @@ function Login({ onIn }: { onIn: (user: StaffSession) => void }) {
   return (
     <form className="card card-still panel-in mx-auto max-w-md p-6" onSubmit={submit}>
       <h2 className="text-xl font-semibold">Anmelden</h2>
-      <p className="mt-2 text-sm text-muted">Owner- und Team-Accounts vom bisherigen Staff-Bereich.</p>
+      <p className="mt-2 text-sm text-muted">Team-Name und Passwort. Wer schon erfasst ist und noch kein Passwort hat, wählt es hier. Danach kommt man damit rein.</p>
       <label className="mt-5 block text-sm">
         Name
-        <input className="field mt-1" value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" />
+        <input className="field mt-1" value={name} onChange={(e) => setName(e.target.value)} autoComplete="username" />
       </label>
       <label className="mt-3 block text-sm">
         Passwort
@@ -144,9 +180,13 @@ function ForcePassword({ user, onDone, note }: { user: StaffSession; onDone: (us
 
   async function save(event: FormEvent) {
     event.preventDefault();
-    if (a.length < 4) return note("Min. 4 Zeichen");
+    if (!a) return note("Passwort fehlt");
     if (a !== b) return note("Stimmt nicht überein");
-    await fbUpdate(`staffUsers/${user.username}`, { password: a, mustChangePw: false });
+    try {
+      await savePassword(user.username, a);
+    } catch (err) {
+      return note(err instanceof Error ? err.message : "Speichern fehlgeschlagen");
+    }
     const next = { ...user, mustChangePw: false };
     writeSession(next);
     onDone(next);
@@ -166,14 +206,76 @@ function ForcePassword({ user, onDone, note }: { user: StaffSession; onDone: (us
 function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => void; note: (text: string) => void }) {
   const real = user.role;
   const [view, setView] = useState<Role>(asRole(user.role));
-  const shown = (can(real, "roles") || real === "admin" ? view : user.role) as string;
+  const shown = (real === "owner" ? view : user.role) as string;
+  const reviews = useLive<{ status?: string }>("community_reviews");
+  const images = useLive<{ status?: string }>("community_images");
+  const help = useLive<{ status?: string; archived?: boolean }>("helpRequests");
   const tabs = TABS.filter((item) => {
+    if (item.id === "moderation") return can(shown, "moderation") || can(shown, "moderationRead") || can(shown, "notes");
     if (item.id === "commands") return can(shown, "commandsRead") || can(shown, "staffCommands");
     if (item.id === "rules") return can(shown, "rulesRead") || can(shown, "rulesEdit");
     return can(shown, item.area);
   });
-  const [tab, setTab] = useState<Tab>(tabs[0]?.id ?? "settings");
+  const banRows = useLive<ModItem>("bans");
+  const warnRows = useLive<ModItem>("warns");
+  useEffect(() => {
+    if (!can(real, "moderation")) return;
+    const now = Date.now();
+    for (const [key, item] of Object.entries(banRows)) {
+      if (item.archived || item.pending || !isPermanentBan(item)) continue;
+      const start = item.confirmedAt || item.ts || 0;
+      if (!start || now - start < 86_400_000) continue;
+      void fbUpdate(`bans/${key}`, {
+        archived: true,
+        archivedBy: "system",
+        archivedAt: now,
+        archiveReason: "Permanent, automatisch nach 24 Stunden",
+        updatedAt: now,
+      });
+    }
+    for (const [key, item] of Object.entries(warnRows)) {
+      if (item.archived || !item.endsAt || item.endsAt > now) continue;
+      void fbUpdate(`warns/${key}`, {
+        archived: true,
+        archivedBy: "system",
+        archivedAt: now,
+        archiveReason: "Warnung abgelaufen",
+        updatedAt: now,
+      });
+    }
+  }, [banRows, warnRows, real]);
+  const [tab, setTab] = useState<Tab>("roster");
   const safeTab = tabs.some((item) => item.id === tab) ? tab : tabs[0]?.id;
+  const badges: Partial<Record<Tab, number>> = {
+    community: Object.values(reviews).filter((item) => item.status !== "approved" && item.status !== "rejected").length
+      + Object.values(images).filter((item) => item.status !== "approved" && item.status !== "rejected").length,
+    help: Object.values(help).filter((item) => !item.archived && item.status !== "erledigt").length,
+  };
+
+  useEffect(() => {
+    const beat = (writing = false) => {
+      void fbUpdate(`presence/${user.username}`, {
+        username: user.username,
+        role: user.role,
+        online: true,
+        lastSeen: Date.now(),
+        ...(writing ? { writingAt: Date.now() } : {}),
+      }).catch(() => undefined);
+    };
+    beat();
+    const timer = window.setInterval(() => beat(), 20000);
+    let wait = 0;
+    const onType = () => {
+      window.clearTimeout(wait);
+      wait = window.setTimeout(() => beat(true), 400);
+    };
+    document.addEventListener("input", onType);
+    return () => {
+      window.clearInterval(timer);
+      window.clearTimeout(wait);
+      document.removeEventListener("input", onType);
+    };
+  }, [user.username, user.role]);
 
   return (
     <div>
@@ -192,7 +294,7 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
           </button>
         </div>
       </div>
-      {can(real, "roles") || real === "admin" ? (
+      {real === "owner" ? (
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <span className="text-sm text-muted">Ansicht als</span>
           {ROLES.map((role) => (
@@ -200,23 +302,29 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
               {roleLabel(role)}
             </button>
           ))}
-          <span className="text-xs text-faint">Ändert nicht die echte Rolle.</span>
+          <span className="text-xs text-faint">Nur für dich. Ändert nicht die echte Rolle.</span>
         </div>
       ) : null}
-      <div className="mt-5 flex gap-2 overflow-x-auto pb-1">
-        {tabs.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={item.id === safeTab ? "btn-gold shrink-0" : "btn-ghost shrink-0"}
-            onClick={() => setTab(item.id)}
-          >
-            {item.label}
-          </button>
-        ))}
+      <PlayerSearch />
+      {real === "owner" ? <CheckInBanner /> : null}
+      <div className="mt-5 flex gap-2 overflow-x-auto px-1 pb-2">
+        {tabs.map((item) => {
+          const count = badges[item.id] || 0;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              className={item.id === safeTab ? "btn-gold shrink-0" : "btn-ghost shrink-0"}
+              onClick={() => setTab(item.id)}
+            >
+              {item.label}
+              {count > 0 ? <span className="ml-2 inline-flex min-w-5 justify-center rounded-full bg-red-600 px-1.5 text-xs font-bold text-white">{count}</span> : null}
+            </button>
+          );
+        })}
       </div>
-      <div className="panel-in mt-6" key={safeTab}>
-        {safeTab === "moderation" ? <Moderation user={user} note={note} /> : null}
+      <div className="panel-in mt-6 px-1" key={safeTab}>
+        {safeTab === "moderation" ? <Moderation user={user} note={note} ban={can(shown, "moderation") && can(real, "moderation")} writeNotes={can(shown, "notes") && can(real, "notes")} /> : null}
         {safeTab === "help" ? <HelpDesk user={user} note={note} act={can(shown, "helpAct") && can(real, "helpAct")} moderate={can(shown, "moderation") && can(real, "moderation")} /> : null}
         {safeTab === "commands" ? (
           <div className="space-y-6">
@@ -237,14 +345,10 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
         {safeTab === "tasks" ? <TasksBoard real={real} view={shown} note={note} username={user.username} /> : null}
         {safeTab === "absence" ? <AbsenceBoard real={real} view={shown} note={note} username={user.username} /> : null}
         {safeTab === "guide" ? <GuideEditor real={real} view={shown} note={note} /> : null}
-        {safeTab === "mascot" ? <MascotDesk real={real} note={note} /> : null}
+        {safeTab === "roster" ? <Roster owner={real === "owner"} /> : null}
+        {safeTab === "chat" ? <StaffChat user={user} builder={can(shown, "builderChat") && can(real, "builderChat")} /> : null}
         {safeTab === "settings" ? <Settings user={user} note={note} /> : null}
-        {safeTab === "website" ? (
-          <div>
-            <Website user={user} note={note} />
-            <LockdownTexts real={real} view={shown} note={note} />
-          </div>
-        ) : null}
+        {safeTab === "website" ? <Website user={user} note={note} /> : null}
         {safeTab === "archive" ? <Archive user={user} note={note} /> : null}
         {safeTab === "users" ? <Accounts note={note} actor={user} /> : null}
       </div>
@@ -278,21 +382,23 @@ function useLive<T>(path: string) {
   return data;
 }
 
-function Moderation({ user, note }: { user: StaffSession; note: (text: string) => void }) {
+function Neu({ ts, updatedAt }: { ts?: number; updatedAt?: number }) {
+  if (!freshStamp(ts, updatedAt)) return null;
+  return <span className="ml-2 rounded bg-emerald-500 px-1.5 py-0.5 text-[10px] font-bold uppercase text-black">Neu</span>;
+}
+
+function Moderation({ user, note, ban, writeNotes }: { user: StaffSession; note: (text: string) => void; ban: boolean; writeNotes: boolean }) {
   const bans = useLive<ModItem>("bans");
-  const kicks = useLive<ModItem>("kicks");
   const warns = useLive<ModItem>("warns");
   const notes = useLive<ModItem>("notes");
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <ModForm title="Ban" path="bans" user={user} note={note} withDuration presets={["5min", "1h", "1d", "7d", "30d", "Permanent"]} reasons={[["Griefing", "1d"], ["Beleidigung", "7d"], ["Cheating", "30d"]]} />
-      <List title="Bans" path="bans" items={entries(bans)} user={user} note={note} timed />
-      <ModForm title="Kick" path="kicks" user={user} note={note} withDuration />
-      <List title="Kicks" path="kicks" items={entries(kicks)} user={user} note={note} timed />
-      <ModForm title="Warnung" path="warns" user={user} note={note} />
-      <List title="Warnungen" path="warns" items={entries(warns)} user={user} note={note} />
-      <NoteForm user={user} note={note} />
-      <List title="Notizen" path="notes" items={entries(notes)} user={user} note={note} notes />
+      {ban ? <ModForm title="Ban" path="bans" user={user} note={note} withDuration presets={["5min", "1h", "1d", "7d", "30d", "Permanent"]} reasons={[["Griefing", "1d"], ["Beleidigung", "7d"], ["Cheating", "30d"]]} /> : null}
+      <List title="Bans" path="bans" items={entries(bans)} user={user} note={note} timed write={ban} />
+      {ban ? <ModForm title="Warnung" path="warns" user={user} note={note} withDuration presets={["1d", "7d", "30d"]} /> : null}
+      <List title="Warnungen" path="warns" items={entries(warns)} user={user} note={note} timed write={ban} />
+      {writeNotes ? <NoteForm user={user} note={note} /> : null}
+      <List title="Notizen" path="notes" items={entries(notes)} user={user} note={note} notes write={writeNotes} />
     </div>
   );
 }
@@ -316,7 +422,21 @@ function ModForm({
 }) {
   const [name, setName] = useState("");
   const [reason, setReason] = useState("");
-  const [duration, setDuration] = useState(withDuration ? "Permanent" : "");
+  const [duration, setDuration] = useState(withDuration ? (path === "warns" ? "7d" : "Permanent") : "");
+  const [proof, setProof] = useState("");
+  const known = useLive<ModItem>(path);
+  const guide = useLive<{ offense?: string; duration?: string }>("banGuide");
+  const needle = name.trim().toLowerCase();
+  const past = withDuration && needle.length >= 2
+    ? entries(known).filter(([, item]) => (item.name || "").toLowerCase().includes(needle))
+    : [];
+  const reasonNeedle = reason.trim().toLowerCase();
+  const tips = withDuration && reasonNeedle.length >= 3
+    ? entries(guide).filter(([, item]) => {
+      const offense = (item.offense || "").toLowerCase();
+      return offense && (offense.includes(reasonNeedle) || reasonNeedle.includes(offense));
+    })
+    : [];
 
   async function save(event: FormEvent) {
     event.preventDefault();
@@ -328,13 +448,19 @@ function ModForm({
       ts: Date.now(),
     };
     if (withDuration) {
-      body.duration = duration.trim() || "Permanent";
+      body.duration = duration.trim() || (path === "warns" ? "7d" : "Permanent");
       body.endsAt = parseDuration(body.duration);
+      if (path === "bans" && isPermanentBan({ duration: body.duration, endsAt: body.endsAt })) {
+        body.pending = true;
+      }
     }
+    if (path === "bans" && proof.trim()) body.proof = proof.trim().slice(0, 500);
     await fbPush(path, body);
+    void logStaff(user.username, title, `${name.trim()} · ${reason.trim() || "–"}`);
     setName("");
     setReason("");
-    note(`${title} gespeichert`);
+    setProof("");
+    note(body.pending ? "Ban wartet auf eine zweite Person" : `${title} gespeichert`);
   }
 
   return (
@@ -343,6 +469,7 @@ function ModForm({
       <input className="field mt-3" placeholder="Spieler" value={name} onChange={(e) => setName(e.target.value)} />
       <input className="field mt-2" placeholder="Grund" value={reason} onChange={(e) => setReason(e.target.value)} />
       {withDuration ? <input className="field mt-2" placeholder="Dauer" value={duration} onChange={(e) => setDuration(e.target.value)} /> : null}
+      {path === "bans" ? <input className="field mt-2" placeholder="Beweis-Link, optional" value={proof} onChange={(e) => setProof(e.target.value)} /> : null}
       {presets ? (
         <div className="mt-2 flex flex-wrap gap-2">
           {presets.map((item) => (
@@ -361,12 +488,32 @@ function ModForm({
           ))}
         </div>
       ) : null}
+      {tips.length ? (
+        <div className="mt-3 space-y-1 text-sm">
+          <p className="text-muted">Passende Dauer aus dem Leitfaden</p>
+          {tips.map(([key, item]) => (
+            <button key={key} type="button" className="btn-ghost mr-2 mt-1 px-3" onClick={() => item.duration && setDuration(item.duration)}>
+              {item.offense} · {item.duration}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      {past.length ? (
+        <ul className="mt-3 space-y-1 text-sm">
+          {past.slice(0, 5).map(([key, item]) => (
+            <li key={key} className={isPermanentBan(item) ? "text-red-300" : "text-muted"}>
+              Schon erfasst: {item.reason} · {item.duration || "ohne Dauer"} · {formatWhen(item.ts)}{item.archived ? " · archiviert" : ""}
+            </li>
+          ))}
+        </ul>
+      ) : null}
       <button className="btn-gold mt-4" type="submit">Eintragen</button>
     </form>
   );
 }
 
 function NoteForm({ user, note }: { user: StaffSession; note: (text: string) => void }) {
+  const [name, setName] = useState("");
   const [text, setText] = useState("");
   return (
     <form
@@ -374,14 +521,17 @@ function NoteForm({ user, note }: { user: StaffSession; note: (text: string) => 
       onSubmit={(event) => {
         event.preventDefault();
         if (!text.trim()) return note("Leer");
-        void fbPush("notes", { text: text.trim(), by: user.username, ts: Date.now() }).then(() => {
+        void fbPush("notes", { name: name.trim(), text: text.trim(), by: user.username, ts: Date.now() }).then(() => {
+          void logStaff(user.username, "Notiz", text.trim().slice(0, 80));
+          setName("");
           setText("");
           note("Notiz gespeichert");
         });
       }}
     >
       <h2 className="text-lg font-semibold">Team-Notiz</h2>
-      <textarea className="field mt-3 min-h-24" value={text} onChange={(e) => setText(e.target.value)} />
+      <input className="field mt-3" placeholder="Spieler" value={name} onChange={(e) => setName(e.target.value)} />
+      <textarea className="field mt-2 min-h-24" placeholder="Notiz" value={text} onChange={(e) => setText(e.target.value)} />
       <button className="btn-gold mt-4" type="submit">Notiz speichern</button>
     </form>
   );
@@ -395,6 +545,7 @@ function List({
   note,
   timed,
   notes,
+  write,
 }: {
   title: string;
   path: string;
@@ -403,6 +554,7 @@ function List({
   note: (text: string) => void;
   timed?: boolean;
   notes?: boolean;
+  write?: boolean;
 }) {
   const [filter, setFilter] = useState<Filter>(notes ? "all" : "active");
   const [q, setQ] = useState("");
@@ -434,16 +586,28 @@ function List({
         ) : null}
       </div>
       <input className="field mt-3" placeholder="Suchen" value={q} onChange={(e) => setQ(e.target.value)} />
-      <ul className="mt-3 max-h-80 space-y-2 overflow-auto">
-        {rows.map(([key, item]) => (
-          <li key={key} className="cmd-in rounded-md border border-line bg-bg px-3 py-2 text-sm">
-            <p className="font-semibold">{notes ? item.text : item.name}</p>
-            {!notes ? <p className="text-muted">{item.reason}</p> : null}
+      <ul className="mt-3 max-h-80 space-y-2 overflow-auto p-1">
+        {rows.map(([key, item]) => {
+          const perm = path === "bans" && isPermanentBan(item) && !item.archived;
+          const waiting = Boolean(perm && item.pending);
+          const proof = item.proof && /^https?:\/\//i.test(item.proof) ? item.proof : "";
+          return (
+          <li key={key} className={`cmd-in rounded-md border bg-bg px-3 py-2 text-sm${perm && !waiting ? " border-red-500 bg-red-950/40" : waiting ? " border-amber-500" : freshStamp(item.ts, item.updatedAt) ? " mark-new border-line" : " border-line"}`}>
+            <p className={`font-semibold${perm && !waiting ? " text-red-200" : ""}`}>{notes ? item.name || item.text : item.name}<Neu ts={item.ts} updatedAt={item.updatedAt} /></p>
+            {!notes ? <p className="text-muted">{item.reason}</p> : <p className="text-muted">{item.text}</p>}
             <p className="text-xs text-faint">
-              {timed ? formatRemaining(item.endsAt) : ""} {item.duration ? `· ${item.duration}` : ""} · {item.by} · {formatWhen(item.ts)}
+              {timed && !waiting ? formatRemaining(item.endsAt) : ""} {item.duration ? `· ${item.duration}` : ""} · {item.by} · {formatWhen(item.ts)}
             </p>
-            <div className="mt-2 flex gap-2">
-              {!item.archived ? (
+            {proof ? <a className="mt-1 inline-block text-xs text-gold" href={proof} target="_blank" rel="noreferrer">Beweis</a> : null}
+            {waiting ? <p className="text-xs font-semibold text-amber-300">Wartet auf eine zweite Person. Noch nicht gültig.</p> : null}
+            {perm && !waiting ? <p className="text-xs font-semibold text-red-300">{permLeft(item.confirmedAt || item.ts)}</p> : null}
+            <div className="mt-2 flex flex-wrap gap-2">
+              {waiting && write && item.by !== user.username ? (
+                <button type="button" className="btn-gold px-3" onClick={() => void fbUpdate(`${path}/${key}`, { pending: false, confirmedBy: user.username, confirmedAt: Date.now(), updatedAt: Date.now() }).then(() => note("Ban gilt jetzt"))}>
+                  Bestätigen
+                </button>
+              ) : null}
+              {write && !item.archived && !waiting ? (
                 <button type="button" className="btn-ghost px-3" onClick={() => void archive(path, key, user, note)}>
                   Archiv
                 </button>
@@ -455,7 +619,8 @@ function List({
               ) : null}
             </div>
           </li>
-        ))}
+          );
+        })}
         {!rows.length ? <li className="text-sm text-muted">Keine Einträge</li> : null}
       </ul>
     </section>
@@ -481,8 +646,8 @@ function HelpDesk({ user, note, act, moderate }: { user: StaffSession; note: (te
   return (
     <div className="space-y-3">
       {rows.map(([key, item]) => (
-        <article key={key} className="card card-still cmd-in p-5">
-          <p className="font-semibold">{item.by}</p>
+        <article key={key} className={`card card-still cmd-in p-5${freshStamp(item.ts, item.updatedAt) ? " mark-new" : ""}`}>
+          <p className="font-semibold">{item.by}<Neu ts={item.ts} updatedAt={item.updatedAt} /></p>
           <p className="mt-2 text-sm">{item.msg}</p>
           <p className="mt-1 text-xs text-faint">{formatWhen(item.ts)} {item.status ? `· ${item.status}` : ""}</p>
           <ul className="mt-3 space-y-2">
@@ -494,7 +659,7 @@ function HelpDesk({ user, note, act, moderate }: { user: StaffSession; note: (te
           </ul>
           {act ? <ReplyBox id={key} user={user} ticket={item.ticketCode} note={note} /> : null}
           {act ? (
-            <button type="button" className="btn-ghost mt-3" onClick={() => void fbUpdate(`helpRequests/${key}`, { status: "erledigt" }).then(() => note("Als erledigt markiert"))}>
+            <button type="button" className="btn-ghost mt-3" onClick={() => void fbUpdate(`helpRequests/${key}`, { status: "erledigt", doneBy: user.username, updatedAt: Date.now() }).then(() => note("Als erledigt markiert"))}>
               Erledigt
             </button>
           ) : null}
@@ -575,7 +740,9 @@ function Commands({ user, note }: { user: StaffSession; note: (text: string) => 
               <p className="text-xs text-faint">{item.category || "Allgemein"} · {item.by} · {formatWhen(item.ts)}</p>
             </div>
             <div className="flex gap-2">
-              <button type="button" className="btn-ghost" onClick={() => void navigator.clipboard.writeText(`${item.name} ${item.desc}`)}>Kopieren</button>
+              <CopyBurstButton value={`${item.name} ${item.desc}`} className="btn-ghost" ariaLabel="Befehl kopieren">
+                Kopieren
+              </CopyBurstButton>
               {can(user.role, "commandsEdit") ? (
                 <>
                   <button type="button" className="btn-ghost" onClick={() => { setEditKey(key); setName(item.name || ""); setDesc(item.desc || ""); setCategory(item.category || ""); }}>Bearbeiten</button>
@@ -638,14 +805,14 @@ function Queue({
       <h2 className="text-lg font-semibold">{title}</h2>
       <div className="mt-3 space-y-3">
         {rows.map(([key, item]) => (
-          <article key={key} className="card card-still p-4">
-            <p className="font-semibold">{item.name} {item.rating ? `· ${item.rating}/5` : ""}</p>
+          <article key={key} className={`card card-still p-4${freshStamp(item.ts, item.updatedAt) ? " mark-new" : ""}`}>
+            <p className="font-semibold">{item.name} {item.rating ? `· ${item.rating}/5` : ""}<Neu ts={item.ts} updatedAt={item.updatedAt} /></p>
             <p className="mt-1 text-sm text-muted">{shots ? item.caption : item.text}</p>
             {item.imageUrl ? <img src={item.imageUrl} alt="" className="mt-3 max-h-40 rounded-md object-cover" /> : null}
             <p className="mt-2 text-xs text-faint">{item.status || "offen"} · {formatWhen(item.ts)}</p>
             <div className="mt-3 flex gap-2">
-              <button type="button" className="btn-gold" onClick={() => void fbUpdate(`${path}/${key}`, { status: "approved", moderatedBy: user.username, moderatedAt: Date.now() }).then(() => note("Freigegeben"))}>Frei</button>
-              <button type="button" className="btn-ghost" onClick={() => void fbUpdate(`${path}/${key}`, { status: "rejected", moderatedBy: user.username, moderatedAt: Date.now() }).then(() => note("Abgelehnt"))}>Ablehnen</button>
+              <button type="button" className="btn-gold" onClick={() => void fbUpdate(`${path}/${key}`, { status: "approved", moderatedBy: user.username, moderatedAt: Date.now(), updatedAt: Date.now() }).then(() => note("Freigegeben"))}>Frei</button>
+              <button type="button" className="btn-ghost" onClick={() => void fbUpdate(`${path}/${key}`, { status: "rejected", moderatedBy: user.username, moderatedAt: Date.now(), updatedAt: Date.now() }).then(() => note("Abgelehnt"))}>Ablehnen</button>
             </div>
           </article>
         ))}
@@ -662,12 +829,15 @@ function Settings({ user, note }: { user: StaffSession; note: (text: string) => 
 
   async function save(event: FormEvent) {
     event.preventDefault();
-    if (a.length < 4) return note("Min. 4 Zeichen");
+    if (!a) return note("Passwort fehlt");
     if (a !== b) return note("Stimmt nicht überein");
-    if (user.role === "owner" && user.username === "owner") return note("Owner-Passwort bleibt das feste Zugangspasswort");
-    const row = await fbGet<{ password?: string }>(`staffUsers/${user.username}`);
-    if (row?.password !== oldPw) return note("Altes Passwort falsch");
-    await fbUpdate(`staffUsers/${user.username}`, { password: a, mustChangePw: false });
+    try {
+      const session = await loginStaff(user.email, oldPw);
+      await savePassword(user.username, a);
+      writeSession({ ...session, mustChangePw: false });
+    } catch (err) {
+      return note(err instanceof Error ? err.message : "Altes Passwort falsch");
+    }
     note("Passwort geändert");
   }
 
@@ -684,31 +854,47 @@ function Settings({ user, note }: { user: StaffSession; note: (text: string) => 
 
 function Website({ user, note }: { user: StaffSession; note: (text: string) => void }) {
   const [total, setTotal] = useState("");
-  const [online, setOnline] = useState("");
   const [ip, setIp] = useState("");
   const [port, setPort] = useState("");
   const [version, setVersion] = useState("");
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
+  const [color, setColor] = useState("#f5c400");
+  const [buttonLabel, setButtonLabel] = useState("");
+  const [buttonHref, setButtonHref] = useState("");
+  const [lockTitle, setLockTitle] = useState("Kurz offline");
+  const [lockMessage, setLockMessage] = useState("Die Website ist kurz abgeschaltet.");
 
   useEffect(() => {
-    fbGet<{ total_players_ever?: number; current_players?: number }>("site_stats").then((row) => {
+    fbGet<{ total_players_ever?: number }>("site_stats").then((row) => {
       if (!row) return;
       setTotal(String(row.total_players_ever ?? ""));
-      setOnline(String(row.current_players ?? ""));
+    }).catch(() => {});
+    fbGet<{ title?: string; message?: string; color?: string; button_label?: string; button_href?: string; lockdown?: boolean }>("site_status/active").then((row) => {
+      if (!row) return;
+      if (row.lockdown) {
+        setLockTitle(row.title || "Kurz offline");
+        setLockMessage(row.message || "");
+      } else {
+        setTitle(row.title || "");
+        setMessage(row.message || "");
+      }
+      if (row.color?.startsWith("#")) setColor(row.color);
+      setButtonLabel(row.button_label || "");
+      setButtonHref(row.button_href || "");
     }).catch(() => {});
   }, []);
 
   async function saveTotal(next: number) {
     await fbUpdate("site_stats", { total_players_ever: next, updated_at: Date.now(), updated_by: user.username });
     await fbSet("total_players_ever", next);
-    await fbPush("site_stats_history", { t: Date.now(), n: Number(online || 0), total_players_ever: next, online_count: Number(online || 0), by: user.username });
+    await fbPush("site_stats_history", { t: Date.now(), n: 0, total_players_ever: next, online_count: 0, by: user.username });
     setTotal(String(next));
     note("Spielerzahl gespeichert");
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div className="space-y-4">
       <form className="card card-still p-5" onSubmit={(e) => { e.preventDefault(); void saveTotal(Number(total)); }}>
         <h2 className="text-lg font-semibold">Spieler insgesamt</h2>
         <input className="field mt-3" value={total} onChange={(e) => setTotal(e.target.value)} />
@@ -722,20 +908,6 @@ function Website({ user, note }: { user: StaffSession; note: (text: string) => v
         className="card card-still p-5"
         onSubmit={(e) => {
           e.preventDefault();
-          const n = Number(online);
-          void fbUpdate("site_stats", { current_players: n, updated_at: Date.now(), updated_by: user.username })
-            .then(() => fbPush("site_stats_history", { t: Date.now(), n, total_players_ever: Number(total || 0), online_count: n, by: user.username }))
-            .then(() => note("Graph-Punkt gespeichert"));
-        }}
-      >
-        <h2 className="text-lg font-semibold">Live-Stand</h2>
-        <input className="field mt-3" value={online} onChange={(e) => setOnline(e.target.value)} />
-        <button className="btn-gold mt-3" type="submit">Online-Stand + Graph speichern</button>
-      </form>
-      <form
-        className="card card-still p-5"
-        onSubmit={(e) => {
-          e.preventDefault();
           const body = {
             id: "active",
             status_type: "custom",
@@ -743,26 +915,40 @@ function Website({ user, note }: { user: StaffSession; note: (text: string) => v
             title,
             message,
             is_active: true,
-            color: "custom",
+            lockdown: false,
+            color,
+            button_label: buttonLabel,
+            button_href: buttonHref,
             created_by: user.username,
             updated_by: user.username,
             created_at: Date.now(),
             updated_at: Date.now(),
             expires_at: null,
           };
-          void fbSet("site_status/active", body).then(() => fbPush("site_status/log", body)).then(() => note("Status gesetzt"));
+          void fbSet("site_status/active", body).then(() => fbPush("site_status/log", body)).then(() => note("Banner gesetzt"));
         }}
       >
-        <h2 className="text-lg font-semibold">Status-Meldung</h2>
+        <h2 className="text-lg font-semibold">Banner</h2>
+        <p className="mt-1 text-sm text-muted">Gelbes Absperrband oben. Die Website bleibt an.</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button type="button" className="btn-ghost" onClick={() => { setTitle("Bedrock aus"); setMessage("Bedrock ist wegen eines Minecraft-Updates kurz offline."); setColor("#f5c400"); }}>Bedrock aus</button>
+          <button type="button" className="btn-ghost" onClick={() => { setTitle("Server-Neustart"); setMessage("Der Server startet gerade neu. Gleich wieder da."); setColor("#f5c400"); }}>Neustart</button>
+        </div>
         <input className="field mt-3" placeholder="Titel" value={title} onChange={(e) => setTitle(e.target.value)} />
         <textarea className="field mt-2 min-h-20" placeholder="Text" value={message} onChange={(e) => setMessage(e.target.value)} />
+        <label className="mt-3 flex items-center gap-3 text-sm">
+          Farbe
+          <input type="color" value={color} onChange={(e) => setColor(e.target.value)} />
+        </label>
+        <input className="field mt-2" placeholder="Knopf-Text, optional" value={buttonLabel} onChange={(e) => setButtonLabel(e.target.value)} />
+        <input className="field mt-2" placeholder="Knopf-Link, z. B. Discord" value={buttonHref} onChange={(e) => setButtonHref(e.target.value)} />
         <div className="mt-3 flex flex-wrap gap-2">
-          <button className="btn-gold" type="submit">Setzen</button>
+          <button className="btn-gold" type="submit">Banner setzen</button>
           <button
             className="btn-ghost"
             type="button"
             onClick={() => {
-              const body = { id: "active", status_type: "online", type: "online", title: "Online", message: "Alles läuft stabil.", is_active: false, color: "green", created_by: user.username, updated_by: user.username, created_at: Date.now(), updated_at: Date.now(), expires_at: null };
+              const body = { id: "active", status_type: "online", type: "online", title: "Online", message: "Alles läuft stabil.", is_active: false, lockdown: false, color, button_label: "", button_href: "", created_by: user.username, updated_by: user.username, created_at: Date.now(), updated_at: Date.now(), expires_at: null };
               void fbSet("site_status/active", body).then(() => note("Banner aus"));
             }}
           >
@@ -770,6 +956,50 @@ function Website({ user, note }: { user: StaffSession; note: (text: string) => v
           </button>
         </div>
       </form>
+      {can(user.role, "lockdown") ? (
+        <form
+          className="card card-still p-5"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const body = {
+              id: "active",
+              status_type: "lockdown",
+              type: "lockdown",
+              title: lockTitle || "Kurz offline",
+              message: lockMessage || "Die Website ist kurz abgeschaltet.",
+              is_active: true,
+              lockdown: true,
+              color,
+              button_label: "",
+              button_href: "",
+              created_by: user.username,
+              updated_by: user.username,
+              created_at: Date.now(),
+              updated_at: Date.now(),
+              expires_at: null,
+            };
+            void fbSet("site_status/active", body).then(() => note("Website aus. Team-Login bleibt."));
+          }}
+        >
+          <h2 className="text-lg font-semibold">Website aus</h2>
+          <p className="mt-1 text-sm text-muted">Lockdown schaltet die öffentliche Seite aus. Dieser Titel und Text ist genau das, was Besucher dann sehen. Die Team-Anmeldung bleibt.</p>
+          <input className="field mt-3" placeholder="Titel" value={lockTitle} onChange={(e) => setLockTitle(e.target.value)} />
+          <textarea className="field mt-2 min-h-20" placeholder="Text für Besucher" value={lockMessage} onChange={(e) => setLockMessage(e.target.value)} />
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button className="btn-gold" type="submit">Website aus</button>
+            <button
+              className="btn-ghost"
+              type="button"
+              onClick={() => {
+                const body = { id: "active", status_type: "online", type: "online", title: "Online", message: "Alles läuft stabil.", is_active: false, lockdown: false, color, button_label: "", button_href: "", created_by: user.username, updated_by: user.username, created_at: Date.now(), updated_at: Date.now(), expires_at: null };
+                void fbSet("site_status/active", body).then(() => note("Website wieder an"));
+              }}
+            >
+              Website wieder an
+            </button>
+          </div>
+        </form>
+      ) : null}
       <form
         className="card card-still p-5"
         onSubmit={(e) => {
@@ -782,24 +1012,21 @@ function Website({ user, note }: { user: StaffSession; note: (text: string) => v
           void fbUpdate("site_settings", payload).then(() => note("Einstellungen gespeichert"));
         }}
       >
-        <h2 className="text-lg font-semibold">Website</h2>
-        <input className="field mt-3" placeholder="IP" value={ip} onChange={(e) => setIp(e.target.value)} />
-        <input className="field mt-2" placeholder="Bedrock-Port" value={port} onChange={(e) => setPort(e.target.value)} />
+        <h2 className="text-lg font-semibold">Serverangaben</h2>
+        <input className="field mt-3" placeholder="Java: alpensmp.net" value={ip} onChange={(e) => setIp(e.target.value)} />
+        <input className="field mt-2" placeholder="Bedrock-Port: 19132" value={port} onChange={(e) => setPort(e.target.value)} />
         <input className="field mt-2" placeholder="Version" value={version} onChange={(e) => setVersion(e.target.value)} />
         <button className="btn-gold mt-3" type="submit">Speichern</button>
       </form>
     </div>
   );
 }
-
 function Archive({ user, note }: { user: StaffSession; note: (text: string) => void }) {
   const bans = useLive<ModItem>("bans");
-  const kicks = useLive<ModItem>("kicks");
   const warns = useLive<ModItem>("warns");
   const help = useLive<ModItem>("helpRequests");
   const rows = [
     ...entries(bans).map(([key, item]) => ({ path: "bans", key, item })),
-    ...entries(kicks).map(([key, item]) => ({ path: "kicks", key, item })),
     ...entries(warns).map(([key, item]) => ({ path: "warns", key, item })),
     ...entries(help).map(([key, item]) => ({ path: "helpRequests", key, item })),
   ].filter((row) => row.item.archived);
@@ -821,11 +1048,273 @@ function Archive({ user, note }: { user: StaffSession; note: (text: string) => v
   );
 }
 
+function PlayerSearch() {
+  const bans = useLive<ModItem>("bans");
+  const warns = useLive<ModItem>("warns");
+  const notes = useLive<ModItem>("notes");
+  const [q, setQ] = useState("");
+  const needle = q.trim().toLowerCase();
+  const grouped = new Map<string, { kind: string; detail: string; ts?: number; perm: boolean; proof?: string; extra?: string }[]>();
+  if (needle.length >= 2) {
+    const add = (name: string, row: { kind: string; detail: string; ts?: number; perm: boolean; proof?: string; extra?: string }) => {
+      const key = name.trim() || "Ohne Namen";
+      const blob = `${key} ${row.detail} ${row.extra || ""}`.toLowerCase();
+      if (!blob.includes(needle)) return;
+      const list = grouped.get(key) ?? [];
+      list.push(row);
+      grouped.set(key, list);
+    };
+    for (const [, item] of entries(bans)) {
+      add(item.name || "", { kind: "Ban", detail: `${item.reason || ""} · ${item.duration || formatRemaining(item.endsAt)}${item.pending ? " · wartet" : ""}${item.archived ? " · archiviert" : ""}`, ts: item.ts, perm: isPermanentBan(item), proof: item.proof });
+    }
+    for (const [, item] of entries(warns)) {
+      add(item.name || "", { kind: "Warnung", detail: `${item.reason || ""} · ${item.duration || ""}${item.archived ? " · archiviert" : ""}`, ts: item.ts, perm: false });
+    }
+    for (const [, item] of entries(notes)) {
+      add(item.name || "", { kind: "Notiz", detail: item.text || "", ts: item.ts, perm: false, extra: item.text });
+    }
+  }
+
+  return (
+    <section className="card card-still mt-4 p-4">
+      <label className="text-sm font-semibold" htmlFor="player-search">Spieler-Akte</label>
+      <input id="player-search" className="field mt-2" placeholder="Spielername" value={q} onChange={(e) => setQ(e.target.value)} />
+      <div className="mt-3 space-y-3">
+        {[...grouped.entries()].slice(0, 8).map(([name, rows]) => (
+          <article key={name} className="rounded-md border border-line p-3">
+            <h2 className="font-semibold">{name}</h2>
+            <ul className="mt-2 space-y-2">
+              {rows.map((row, index) => (
+                <li key={`${row.kind}-${index}`} className={row.perm ? "text-sm text-red-200" : "text-sm text-muted"}>
+                  <span className="font-semibold text-fg">{row.kind}.</span> {row.detail} · {formatWhen(row.ts)}
+                  {row.proof && /^https?:\/\//i.test(row.proof) ? <a className="ml-2 text-gold" href={row.proof} target="_blank" rel="noreferrer">Beweis</a> : null}
+                </li>
+              ))}
+            </ul>
+          </article>
+        ))}
+        {needle.length >= 2 && grouped.size === 0 ? <p className="text-sm text-muted">Nichts zu diesem Namen</p> : null}
+      </div>
+    </section>
+  );
+}
+
+function CheckInBanner() {
+  const users = useLive<{ disabled?: boolean }>("staffUsers");
+  const presence = useLive<{ lastSeen?: number }>("presence");
+  const absences = useLive<{ by?: string; from?: string; until?: string }>("absences");
+  const today = new Date().toISOString().slice(0, 10);
+  const away = new Set(entries(absences).filter(([, item]) => item.from && item.until && item.from <= today && today <= item.until).map(([, item]) => item.by || ""));
+  const late = entries(users).filter(([name, item]) => {
+    if (item.disabled || away.has(name)) return false;
+    const seen = presence[name]?.lastSeen || 0;
+    return !seen || Date.now() - seen > 3 * 86_400_000;
+  });
+  if (!late.length) return null;
+  return (
+    <p className="mt-4 rounded-md border border-red-500 bg-red-950/40 px-3 py-2 text-sm text-red-200">
+      Seit mehr als 3 Tagen nicht im Team und nicht abwesend: {late.map(([name]) => name).join(", ")}
+    </p>
+  );
+}
+
+function StaffChat({ user, builder }: { user: StaffSession; builder: boolean }) {
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
+      <ChatRoom path="chats/team" title="Team" user={user} />
+      {builder || user.role === "owner" ? <ChatRoom path="chats/builder" title="Builder" user={user} /> : null}
+    </div>
+  );
+}
+
+function ChatRoom({ path, title, user }: { path: string; title: string; user: StaffSession }) {
+  const rows = useLive<{ by?: string; text?: string; ts?: number }>(path);
+  const pin = useLive<{ text?: string; by?: string; ts?: number }>("chats/pin");
+  const [text, setText] = useState("");
+  const [draft, setDraft] = useState("");
+  const list = entries(rows).sort((a, b) => (a[1].ts || 0) - (b[1].ts || 0)).slice(-80);
+  const pinned = path === "chats/team" ? pin.current : undefined;
+  return (
+    <section className="card card-still p-4">
+      <h2 className="text-lg font-semibold">{title}</h2>
+      {path === "chats/team" && pinned?.text ? (
+        <p className="mt-3 rounded-md border border-gold bg-gold/10 px-3 py-2 text-sm">
+          {pinned.text}
+          {user.role === "owner" ? (
+            <button type="button" className="btn-ghost ml-2 px-3" onClick={() => void fbRemove("chats/pin/current")}>Weg</button>
+          ) : null}
+        </p>
+      ) : null}
+      {path === "chats/team" && user.role === "owner" ? (
+        <form
+          className="mt-3 flex gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!draft.trim()) return;
+            void fbSet("chats/pin/current", { text: draft.trim().slice(0, 160), by: user.username, ts: Date.now() }).then(() => setDraft(""));
+          }}
+        >
+          <input className="field" placeholder="Oben anpinnen, zum Beispiel Restart" value={draft} onChange={(e) => setDraft(e.target.value)} />
+          <button className="btn-ghost" type="submit">Anpinnen</button>
+        </form>
+      ) : null}
+      <ul className="mt-3 max-h-80 space-y-2 overflow-auto p-1">
+        {list.map(([key, item]) => (
+          <li key={key} className="rounded-md border border-line px-3 py-2 text-sm">
+            <p><span className="font-semibold">{item.by}</span> <span className="text-xs text-faint">{formatWhen(item.ts)}</span></p>
+            <p className="mt-1 whitespace-pre-wrap">{item.text}</p>
+            {user.role === "owner" ? (
+              <button type="button" className="btn-ghost mt-2 px-3" onClick={() => void fbRemove(`${path}/${key}`)}>Löschen</button>
+            ) : null}
+          </li>
+        ))}
+        {!list.length ? <li className="text-sm text-muted">Noch keine Nachrichten</li> : null}
+      </ul>
+      <form
+        className="mt-3 flex gap-2"
+        onSubmit={(event) => {
+          event.preventDefault();
+          const msg = text.trim();
+          if (!msg) return;
+          void fbPush(path, { by: user.username, text: msg.slice(0, 800), ts: Date.now() }).then(() => setText(""));
+        }}
+      >
+        <input className="field" placeholder="Nachricht" value={text} onChange={(e) => setText(e.target.value)} />
+        <button className="btn-gold" type="submit">Senden</button>
+      </form>
+    </section>
+  );
+}
+
+function WeekStats() {
+  const bans = useLive<ModItem>("bans");
+  const warns = useLive<ModItem>("warns");
+  const help = useLive<ModItem>("helpRequests");
+  const start = weekStart();
+  const names = new Map<string, { bans: number; warns: number; help: number }>();
+  const bump = (name: string | undefined, key: "bans" | "warns" | "help") => {
+    if (!name) return;
+    const row = names.get(name) ?? { bans: 0, warns: 0, help: 0 };
+    row[key] += 1;
+    names.set(name, row);
+  };
+  for (const item of Object.values(bans)) if ((item.ts || 0) >= start) bump(item.by, "bans");
+  for (const item of Object.values(warns)) if ((item.ts || 0) >= start) bump(item.by, "warns");
+  for (const item of Object.values(help)) if (item.status === "erledigt" && (item.updatedAt || 0) >= start) bump(item.doneBy, "help");
+  const rows = [...names.entries()].sort((a, b) => b[1].bans + b[1].warns + b[1].help - (a[1].bans + a[1].warns + a[1].help));
+  return (
+    <section className="card card-still p-4 text-sm">
+      <h3 className="font-semibold">Diese Woche, nur für dich</h3>
+      {rows.length ? (
+        <ul className="mt-2 space-y-1">
+          {rows.map(([name, row]) => (
+            <li key={name}>{name}: {row.bans} Bans · {row.warns} Warnungen · {row.help} Hilfe erledigt</li>
+          ))}
+        </ul>
+      ) : <p className="mt-2 text-muted">Diese Woche noch nichts</p>}
+    </section>
+  );
+}
+
+function weekStart() {
+  const date = new Date();
+  const day = (date.getDay() + 6) % 7;
+  date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() - day);
+  return date.getTime();
+}
+
+function Roster({ owner }: { owner: boolean }) {
+  const users = useLive<{ role?: string; disabled?: boolean }>("staffUsers");
+  const presence = useLive<{ lastSeen?: number; writingAt?: number }>("presence");
+  const tasks = useLive<{ title?: string; assignee?: string; by?: string; acceptedBy?: string; status?: string; done?: boolean; ts?: number; updatedAt?: number }>("tasks");
+  const absences = useLive<{ by?: string; from?: string; until?: string }>("absences");
+  const now = Date.now();
+  const today = new Date().toISOString().slice(0, 10);
+  const away = new Set(
+    entries(absences)
+      .filter(([, item]) => item.from && item.until && item.from <= today && today <= item.until)
+      .map(([, item]) => item.by || ""),
+  );
+  const late = entries(users).filter(([name, item]) => {
+    if (item.disabled || away.has(name)) return false;
+    const seen = presence[name]?.lastSeen || 0;
+    return !seen || now - seen > 3 * 86_400_000;
+  });
+
+  return (
+    <div className="space-y-3">
+      <h2 className="text-lg font-semibold">Team</h2>
+      <p className="text-sm text-muted">Mindestens alle 3 Tage reinschauen, ausser es gibt eine Abwesenheit. Je länger jemand fehlt, desto röter wird die Karte.</p>
+      {late.length ? (
+        <p className="rounded-md border border-red-500 bg-red-950/40 px-3 py-2 text-sm text-red-200">
+          Nicht online und nicht abwesend: {late.map(([name]) => name).join(", ")}
+        </p>
+      ) : null}
+      {owner ? <WeekStats /> : null}
+      {entries(users).map(([name, item]) => {
+        const seen = presence[name]?.lastSeen || 0;
+        const writing = presence[name]?.writingAt || 0;
+        const online = now - seen < 45_000;
+        const typing = now - writing < 8_000;
+        const absent = away.has(name);
+        const days = seen ? (now - seen) / 86_400_000 : 99;
+        const tone = item.disabled
+          ? "border-red-500 bg-red-950/40"
+          : absent
+            ? "border-sky-700"
+            : days < 1
+              ? "border-emerald-500"
+              : days < 2
+                ? "border-lime-600"
+                : days < 3
+                  ? "border-amber-500 bg-amber-950/30"
+                  : "border-red-600 bg-red-950/50";
+        const open = entries(tasks).filter(([, task]) => {
+          if (task.status === "archived" || task.done) return false;
+          return task.acceptedBy === name || task.assignee === name;
+        });
+        return (
+          <article key={name} className={`card card-still border-2 p-4 text-sm ${tone}`}>
+            <p className={`font-semibold${days >= 3 && !absent ? " text-red-200" : ""}`}>
+              <span className={`mr-2 inline-block h-2.5 w-2.5 rounded-full ${online ? "bg-emerald-400" : "bg-zinc-500"}`} />
+              {name} · {item.role || "helper"}
+              {item.disabled ? " · pausiert" : ""}
+              {absent ? " · abwesend" : online ? " · online" : seen ? ` · vor ${Math.max(1, Math.floor(days))} Tag${Math.floor(days) === 1 ? "" : "en"}` : " · noch nie online"}
+              {typing ? " · schreibt" : ""}
+            </p>
+            {open.length ? (
+              <ul className="mt-2 space-y-1 text-muted">
+                {open.map(([key, task]) => (
+                  <li key={key}>{task.title}<Neu ts={task.ts} updatedAt={task.updatedAt} /></li>
+                ))}
+              </ul>
+            ) : <p className="mt-1 text-muted">Keine offene Aufgabe</p>}
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
 function Accounts({ note, actor }: { note: (text: string) => void; actor: StaffSession }) {
-  const users = useLive<{ password?: string; role?: string; mustChangePw?: boolean }>("staffUsers");
+  const users = useLive<{ role?: string; mustChangePw?: boolean; uid?: string; disabled?: boolean; lastLogin?: number }>("staffUsers");
+  const presence = useLive<{ lastSeen?: number }>("presence");
+  const logs = useLive<{ by?: string; action?: string; detail?: string; ts?: number }>("staffLog");
+  const bans = useLive<ModItem>("bans");
+  const warns = useLive<ModItem>("warns");
+  const notes = useLive<ModItem>("notes");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("helper");
+  const [formError, setFormError] = useState("");
+
+  useEffect(() => {
+    if (actor.role !== "owner") return;
+    for (const [name, item] of entries(users)) {
+      if (!item.uid) void fbSet(`staffOpen/${name}`, { open: true, role: item.role || "helper" }).catch(() => undefined);
+    }
+  }, [users, actor.role]);
 
   return (
     <div className="space-y-4">
@@ -833,40 +1322,161 @@ function Accounts({ note, actor }: { note: (text: string) => void; actor: StaffS
         className="card card-still p-5"
         onSubmit={(event) => {
           event.preventDefault();
-          if (actor.role !== "owner") return note("Nur der Owner vergibt Rollen");
-          const name = username.trim().toLowerCase();
-          if (!name || !password) return note("Name + Passwort nötig");
-          if (name === "owner") return note("Reserviert");
-          void fbGet(`staffUsers/${name}`).then(async (existing) => {
-            if (existing) return note("Existiert schon");
-            await fbSet(`staffUsers/${name}`, { password, role, mustChangePw: true, createdAt: Date.now(), createdBy: actor.username });
-            setUsername("");
-            setPassword("");
-            note("Account angelegt");
-          });
+          setFormError("");
+          if (actor.role !== "owner") return setFormError("Nur der Owner vergibt Rollen");
+          void createStaffAccount({ username, password, role, createdBy: actor.username })
+            .then(() => {
+              setUsername("");
+              setPassword("");
+              setFormError("");
+              note("Account angelegt. Die Person meldet sich mit dem Namen an.");
+            })
+            .catch((err) => setFormError(err instanceof Error ? err.message : "Anlegen fehlgeschlagen"));
         }}
       >
         <h2 className="text-lg font-semibold">Account anlegen</h2>
-        <input className="field mt-3" placeholder="Name" value={username} onChange={(e) => setUsername(e.target.value)} />
-        <input className="field mt-2" placeholder="Startpasswort" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <p className="mt-2 text-sm text-muted">Nur Team-Name und Startpasswort. Keine private E-Mail. Ein gesetztes Passwort kann später niemand ansehen, auch du nicht. Du siehst es nur, während du es eintippst.</p>
+        <input className="field mt-3" placeholder="Name im Team" value={username} onChange={(e) => setUsername(e.target.value)} />
+        <input className="field mt-2" type="text" placeholder="Startpasswort" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
         <select className="field mt-2" value={role} onChange={(e) => setRole(e.target.value)}>
           <option value="helper">Helper</option>
           <option value="supporter">Supporter</option>
           <option value="builder">Builder</option>
           <option value="admin">Admin</option>
+          <option value="owner">Owner</option>
         </select>
+        {formError ? <p className="mt-3 text-sm text-ember">{formError}</p> : null}
         <button className="btn-gold mt-3" type="submit">Anlegen</button>
       </form>
-      <ul className="space-y-2">
+      <ul className="space-y-3">
         {entries(users).map(([name, item]) => (
-          <li key={name} className="card card-still flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
-            <p><span className="font-semibold">{name}</span> · {item.role} {item.mustChangePw ? "· muss Passwort ändern" : ""}</p>
-            {actor.role === "owner" ? (
-              <button type="button" className="btn-ghost" onClick={() => window.confirm("Account entfernen? Gespeicherte Bans bleiben.") && void fbRemove(`staffUsers/${name}`).then(() => note("Account entfernt"))}>Entfernen</button>
-            ) : null}
-          </li>
+          <AccountCard
+            key={name}
+            name={name}
+            item={item}
+            actor={actor}
+            note={note}
+            lastSeen={presence[name]?.lastSeen}
+            events={[
+              ...entries(logs)
+                .filter(([, row]) => row.by === name)
+                .map(([, row]) => ({ ts: row.ts || 0, text: `${row.action || "Aktion"}${row.detail ? ` · ${row.detail}` : ""}` })),
+              ...entries(bans)
+                .filter(([, row]) => row.by === name)
+                .map(([, row]) => ({ ts: row.ts || 0, text: `Ban · ${row.name || ""} · ${row.reason || ""}` })),
+              ...entries(warns)
+                .filter(([, row]) => row.by === name)
+                .map(([, row]) => ({ ts: row.ts || 0, text: `Warnung · ${row.name || ""} · ${row.reason || ""}` })),
+              ...entries(notes)
+                .filter(([, row]) => row.by === name)
+                .map(([, row]) => ({ ts: row.ts || 0, text: `Notiz · ${row.text || ""}` })),
+            ].sort((a, b) => b.ts - a.ts).slice(0, 40)}
+          />
         ))}
       </ul>
     </div>
+  );
+}
+
+function AccountCard({
+  name,
+  item,
+  actor,
+  note,
+  lastSeen,
+  events,
+}: {
+  name: string;
+  item: { role?: string; mustChangePw?: boolean; uid?: string; disabled?: boolean; lastLogin?: number };
+  actor: StaffSession;
+  note: (text: string) => void;
+  lastSeen?: number;
+  events: { ts: number; text: string }[];
+}) {
+  const mine = name === actor.username;
+  const [open, setOpen] = useState(false);
+  const [role, setRole] = useState(item.role || "helper");
+  const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(true);
+
+  return (
+    <li className={`card card-still p-4 text-sm${item.disabled ? " border border-red-500 bg-red-950/40" : ""}`}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className={`font-semibold${item.disabled ? " text-red-300" : ""}`}>
+            {name} · {item.role || "helper"}
+            {item.disabled ? " · pausiert" : ""}
+            {item.mustChangePw ? " · muss Passwort ändern" : ""}
+          </p>
+          <p className="mt-1 text-muted">
+            Login {formatWhen(item.lastLogin) || "noch nie"}
+            {lastSeen ? ` · zuletzt da ${formatWhen(lastSeen)}` : ""}
+            {!item.uid ? " · noch kein Passwort, setzt es beim nächsten Login" : ""}
+          </p>
+        </div>
+        <button type="button" className="btn-ghost" onClick={() => setOpen((value) => !value)}>
+          {open ? "Zuklappen" : "Aktivität"}
+        </button>
+      </div>
+      {actor.role === "owner" && !mine ? (
+        <div className="mt-4 grid gap-2 sm:grid-cols-2">
+          <div className="flex gap-2">
+            <select className="field" value={role} onChange={(e) => setRole(e.target.value)}>
+              <option value="helper">Helper</option>
+              <option value="supporter">Supporter</option>
+              <option value="builder">Builder</option>
+              <option value="admin">Admin</option>
+              <option value="owner">Owner</option>
+            </select>
+            <button type="button" className="btn-ghost" onClick={() => {
+              if (role === "owner" && !window.confirm("Diese Person wird Owner und darf alles.")) return;
+              void setStaffRole(name, role, actor.username).then(() => note("Rolle gespeichert")).catch((err) => note(err instanceof Error ? err.message : "Fehlgeschlagen"));
+            }}>
+              Rolle
+            </button>
+          </div>
+          <div className="flex gap-2">
+            <input className="field" type={showPw ? "text" : "password"} placeholder="Neues Passwort" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <button type="button" className="btn-ghost" onClick={() => setShowPw((value) => !value)}>{showPw ? "Verbergen" : "Ansehen"}</button>
+            <button
+              type="button"
+              className="btn-gold"
+              onClick={() =>
+                void resetStaffPassword(name, password, actor.username)
+                  .then(() => {
+                    note("Neues Passwort gilt. Einmal weitergeben, danach nicht mehr sichtbar.");
+                    setPassword("");
+                  })
+                  .catch((err) => note(err instanceof Error ? err.message : "Reset fehlgeschlagen"))
+              }
+            >
+              Reset
+            </button>
+          </div>
+          <button type="button" className="btn-ghost" onClick={() => void setStaffPaused(name, !item.disabled, actor.username).then(() => note(item.disabled ? "Account frei" : "Account pausiert")).catch((err) => note(err instanceof Error ? err.message : "Fehlgeschlagen"))}>
+            {item.disabled ? "Freigeben" : "Pausieren"}
+          </button>
+          <button
+            type="button"
+            className="btn-ghost"
+            onClick={() =>
+              window.confirm("Account löschen? Gespeicherte Bans bleiben.") &&
+              void removeStaffAccount(name, actor.username).then(() => note("Account gelöscht")).catch((err) => note(err instanceof Error ? err.message : "Löschen fehlgeschlagen"))
+            }
+          >
+            Löschen
+          </button>
+        </div>
+      ) : null}
+      {open ? (
+        <ul className="mt-4 space-y-2 border-t border-white/10 pt-3">
+          {events.length ? events.map((event, index) => (
+            <li key={`${event.ts}-${index}`} className="text-muted">
+              <span className="text-fg">{formatWhen(event.ts)}</span> · {event.text}
+            </li>
+          )) : <li className="text-muted">Noch keine Aktivität</li>}
+        </ul>
+      ) : null}
+    </li>
   );
 }

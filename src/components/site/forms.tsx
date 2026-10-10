@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { lookupTicket, submitCommunity, submitTicket, type TicketView } from "@/lib/alpen/live";
-import { SITE } from "@/lib/alpen/site";
+import { DiscordLink } from "@/components/site/shell";
 
 const COOLDOWN = 60_000;
 
@@ -223,9 +223,7 @@ export function TicketForm() {
             )}
           </div>
         ) : null}
-        <a className="btn-ice mt-4" href={SITE.discord} target="_blank" rel="noreferrer">
-          Oder Discord öffnen
-        </a>
+        <DiscordLink className="mt-4">Oder Discord öffnen</DiscordLink>
       </div>
     </div>
   );

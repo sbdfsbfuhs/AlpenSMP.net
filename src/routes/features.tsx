@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHero, Shell } from "@/components/site/shell";
 import { SiteMascot } from "@/components/site/assistant";
 import { COMMANDS, FEATURES } from "@/lib/alpen/content";
@@ -39,7 +39,7 @@ function FeaturesPage() {
           </article>
         ))}
       </div>
-      <SiteMascot bias="stretch" line="Claims, Homes und Voice – frag einfach." />
+      <SiteMascot home="features" bias="stretch" line="Claims, Homes und Voice – frag einfach." />
       <section className="border-t border-line bg-bg-raised py-14">
         <div className="shell">
           <p className="kicker">Befehle</p>
@@ -60,6 +60,9 @@ function FeaturesPage() {
             <a className="btn-ghost" href={SITE.modrinthApp} target="_blank" rel="noreferrer">
               Modrinth App
             </a>
+            <Link to="/prefix" className="btn-ghost">
+              Team-Prefix setzen
+            </Link>
           </div>
           <p className="mt-4 max-w-2xl text-sm text-muted">
             Joinen geht auch ohne Client-Mods. Voice Chat nur, wenn du den Mod installierst. Erlaubt sind ausserdem

@@ -53,14 +53,64 @@ export async function fetchSiteStats(): Promise<{ total: number | null; listed: 
 }
 
 export async function fetchHistory(): Promise<HistoryPoint[]> {
-  const res = await fetch(`${SITE.fb}/site_stats_history.json?orderBy="$key"&limitToLast=900`);
+  const res = await fetch(`${SITE.fb}/site_stats_history.json?orderBy="$key"&limitToLast=2200`);
   if (!res.ok) return [];
-  const data = (await res.json()) as Record<string, { t?: number; n?: number }> | null;
+  const data = (await res.json()) as Record<string, { t?: number; n?: number; by?: string }> | null;
   if (!data) return [];
   return Object.values(data)
+    .filter((row) => row && !row.by)
     .map((row) => ({ t: Number(row.t) || 0, n: Number(row.n) || 0 }))
     .filter((row) => row.t > 0)
     .sort((a, b) => a.t - b.t);
+}
+
+const SAMPLE_GAP = 5 * 60 * 1000;
+const WEEK = 7 * 24 * 60 * 60 * 1000;
+
+export async function recordPlayerSample(players: number) {
+  if (!Number.isFinite(players) || players < 0 || players > 1000) return;
+  const key = "alpensmp_sample_at";
+  const last = Number(localStorage.getItem(key) || 0);
+  if (Date.now() - last < SAMPLE_GAP) return;
+  const peek = await fetch(`${SITE.fb}/site_stats_history.json?orderBy="$key"&limitToLast=1`);
+  if (peek.ok) {
+    const latest = (await peek.json()) as Record<string, { t?: number }> | null;
+    const row = latest ? Object.values(latest)[0] : null;
+    if (row?.t && Date.now() - row.t < SAMPLE_GAP) {
+      localStorage.setItem(key, String(row.t));
+      return;
+    }
+  }
+  const res = await fetch(`${SITE.fb}/site_stats_history.json`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ t: Date.now(), n: players, online_count: players }),
+  });
+  if (res.ok) localStorage.setItem(key, String(Date.now()));
+  else localStorage.setItem(key, String(Date.now() - 3 * 60 * 1000));
+}
+
+export async function pruneOldHistory() {
+  const key = "alpensmp_prune_at";
+  if (Date.now() - Number(localStorage.getItem(key) || 0) < 10 * 60 * 1000) return;
+  localStorage.setItem(key, String(Date.now()));
+  const cutoff = Date.now() - WEEK;
+  for (let batch = 0; batch < 30; batch += 1) {
+    const res = await fetch(`${SITE.fb}/site_stats_history.json?orderBy="$key"&limitToFirst=80`);
+    if (!res.ok) return;
+    const data = (await res.json()) as Record<string, { t?: number }> | null;
+    if (!data) return;
+    const old = Object.entries(data).filter(([, row]) => Number(row?.t) > 0 && Number(row.t) < cutoff);
+    if (!old.length) return;
+    const removed = await Promise.all(
+      old.map(async ([id]) => {
+        const gone = await fetch(`${SITE.fb}/site_stats_history/${id}.json`, { method: "DELETE" });
+        return gone.ok;
+      }),
+    );
+    if (!removed.some(Boolean)) return;
+    if (old.length < 80) return;
+  }
 }
 
 export async function fetchReviews(): Promise<LiveReview[]> {

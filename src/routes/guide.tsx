@@ -90,7 +90,7 @@ function GuidePage() {
             ) : null}
           </div>
         )}
-        <SiteMascot bias="look" inset line="Die Befehle kann ich dir auch erklären." />
+        <SiteMascot home="guide" bias="look" inset line="Die Befehle kann ich dir auch erklären." />
         <div className="mt-16">
           <PlayerCommands />
         </div>
@@ -101,7 +101,7 @@ function GuidePage() {
 
 function Choice({ onPick }: { onPick: (track: "alpen" | "mc") => void }) {
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="stagger grid gap-4 md:grid-cols-2">
       <button type="button" className="card p-6 text-left" onClick={() => onPick("alpen")}>
         <h2 className="text-2xl font-semibold">Ja, ich kenne Minecraft</h2>
         <p className="mt-2 text-muted">Ich kenne die Grundlagen bereits.</p>

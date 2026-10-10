@@ -15,7 +15,8 @@ export type Act =
   | "surprise"
   | "stumble"
   | "hop"
-  | "walk";
+  | "walk"
+  | "mine";
 
 export type MascotMode = "auto" | "stand" | "idle" | "sit" | "sleep" | "wake" | "wave" | "interactive" | "custom";
 

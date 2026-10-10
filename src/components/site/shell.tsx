@@ -1,10 +1,29 @@
 import type { ReactNode } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { Menu, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { CautionTape, useSiteNotice } from "@/components/site/live";
+import { LockScreen } from "@/components/site/offline-run";
 import { MORE, NAV, SITE } from "@/lib/alpen/site";
 
 export function Shell({ children }: { children: ReactNode }) {
+  const notice = useSiteNotice();
+  const path = useRouterState({ select: (state) => state.location.pathname });
+  useEffect(() => {
+    const onClick = (event: MouseEvent) => {
+      const el = event.target instanceof Element ? event.target.closest("button, a, summary") : null;
+      if (!el) return;
+      navigator.vibrate?.(15);
+    };
+    document.addEventListener("click", onClick);
+    return () => document.removeEventListener("click", onClick);
+  }, []);
+  const locked = Boolean(
+    notice?.is_active && notice.lockdown && !path.startsWith("/team") && path !== "/ki-transparenz",
+  );
+  if (locked && notice) {
+    return <LockScreen notice={notice} />;
+  }
   return (
     <div className="relative min-h-screen bg-bg text-fg">
       <div className="aurora" aria-hidden="true" />
@@ -12,6 +31,7 @@ export function Shell({ children }: { children: ReactNode }) {
         <span /><span /><span /><span /><span /><span /><span /><span />
       </div>
       <div className="relative z-10">
+      <CautionTape notice={notice} />
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-gold focus:px-3 focus:py-2 focus:text-fg"
@@ -19,7 +39,7 @@ export function Shell({ children }: { children: ReactNode }) {
         Zum Inhalt springen
       </a>
       <Header />
-      <main id="main" className="page-enter">{children}</main>
+      <main id="main" key={path} className="page-enter">{children}</main>
       <Footer />
       </div>
     </div>
@@ -36,7 +56,7 @@ function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-line/80 bg-bg/90 backdrop-blur">
       <div className="shell flex h-16 items-center gap-4">
-        <Link to="/" className="flex items-center gap-3" onClick={close}>
+        <Link to="/" className="brand flex items-center gap-3" onClick={close}>
           <Mark />
           <span className="display text-lg text-fg">
             Alpen<span className="text-gold">SMP</span>
@@ -99,7 +119,7 @@ function Footer() {
             Alpen<span className="text-gold">SMP</span>
           </p>
           <p className="mt-3 max-w-sm text-sm text-muted">
-            Vanilla Survival · Java & Bedrock · Faire Community · Persönliche Serverleitung
+            Java {SITE.ip}. Bedrock {SITE.play}, Port {SITE.bedrockPort}.
           </p>
           <p className="mt-4 text-sm text-faint">Privater, nicht-kommerzieller Minecraft-Server.</p>
         </div>
@@ -119,19 +139,15 @@ function Footer() {
           <p className="text-sm font-semibold text-fg">Community</p>
           <ul className="mt-3 space-y-2 text-sm text-muted">
             <li>
-              <a href={SITE.discord} target="_blank" rel="noreferrer" className="hover:text-gold">
-                Discord
-              </a>
+              <DiscordLink>Discord</DiscordLink>
+            </li>
+            <li className="pt-2">
+              <TikTokLink />
             </li>
             <li>
-              <a href={SITE.tiktok} target="_blank" rel="noreferrer" className="hover:text-gold">
-                TikTok {SITE.tiktokHandle}
-              </a>
-            </li>
-            <li>
-              <a href={SITE.map} target="_blank" rel="noreferrer" className="hover:text-gold">
+              <Link to="/karte" className="hover:text-gold">
                 Live-Karte
-              </a>
+              </Link>
             </li>
             <li>
               <button type="button" className="hover:text-gold" onClick={() => window.dispatchEvent(new Event("alpen-open-ki"))}>
@@ -144,7 +160,9 @@ function Footer() {
       <div className="border-t border-line">
         <div className="shell flex flex-col gap-2 py-4 text-xs text-faint sm:flex-row sm:justify-between">
           <span>© 2026 AlpenSMP</span>
-          <span>Für die Community gebaut.</span>
+          <a href="/ki-transparenz" className="hover:text-gold">
+            KI-Transparenz
+          </a>
         </div>
       </div>
     </footer>
@@ -163,11 +181,61 @@ export function PageHero({
   return (
     <header className="relative overflow-hidden border-b border-line bg-bg-raised">
       <div className="glow-line" />
+      <span className="hero-mote" aria-hidden="true" />
+      <span className="hero-mote late" aria-hidden="true" />
       <div className="shell py-14 md:py-16">
         <p className="kicker">{kicker}</p>
         <h1 className="display mt-3 max-w-3xl text-4xl text-fg md:text-5xl">{title}</h1>
         <p className="mt-4 max-w-2xl text-lg text-muted">{lede}</p>
       </div>
     </header>
+  );
+}
+
+export function DiscordLink({ children = "Discord", className = "" }: { children?: ReactNode; className?: string }) {
+  return (
+    <a className={`btn-discord ${className}`} href={SITE.discord} target="_blank" rel="noreferrer">
+      <SocialBlobs />
+      <DiscordMark />
+      <span className="relative">{children}</span>
+    </a>
+  );
+}
+
+export function TikTokLink({ children, className = "" }: { children?: ReactNode; className?: string }) {
+  return (
+    <a className={`btn-tiktok ${className}`} href={SITE.tiktok} target="_blank" rel="noreferrer">
+      <SocialBlobs />
+      <TikTokMark className="relative size-5" />
+      <span className="relative">{children ?? `TikTok ${SITE.tiktokHandle}`}</span>
+    </a>
+  );
+}
+
+function SocialBlobs() {
+  return (
+    <>
+      <span className="blob btn-blob a" />
+      <span className="blob btn-blob b" />
+      <span className="blob btn-blob c" />
+    </>
+  );
+}
+
+export function DiscordMark() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true" fill="currentColor">
+      <path d="M19.3 5.2A17 17 0 0 0 15.1 4l-.4.8a15 15 0 0 1 3.7 1.4 16 16 0 0 0-13 0A12 12 0 0 1 9.2 4.8L8.8 4a17 17 0 0 0-4.2 1.2C2.4 8.4 1.8 11.5 2 14.6A17 17 0 0 0 7.2 17l.8-1.1a11 11 0 0 1-1.3-.6l.3-.2c2.6 1.2 5.4 1.2 8 0l.3.2c-.4.2-.9.5-1.3.6l.8 1.1a17 17 0 0 0 5.2-2.4c.4-3.6-.5-6.7-2-9.4ZM9.2 13.4c-.8 0-1.5-.8-1.5-1.7s.7-1.7 1.5-1.7 1.5.8 1.5 1.7-.7 1.7-1.5 1.7Zm5.6 0c-.8 0-1.5-.8-1.5-1.7s.7-1.7 1.5-1.7 1.5.8 1.5 1.7-.7 1.7-1.5 1.7Z" />
+    </svg>
+  );
+}
+
+export function TikTokMark({ className = "size-10" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+      <path fill="#25f4ee" d="M14.2 3.2c.5 2.3 1.8 3.9 4 4.5v2.4a6.6 6.6 0 0 1-4-1.3v6.4a5.6 5.6 0 1 1-5.6-5.6c.2 0 .5 0 .7.1v2.6a3 3 0 1 0 2.1 2.9V3.2h2.8Z" />
+      <path fill="#fe2c55" d="M15 3.6c.5 2.3 1.8 3.9 4 4.5v2.4a6.6 6.6 0 0 1-4-1.3v6.4a5.6 5.6 0 1 1-5.6-5.6c.2 0 .5 0 .7.1v2.6a3 3 0 1 0 2.1 2.9V3.6H15Z" />
+      <path fill="#fff" d="M14.5 3.3c.5 2.3 1.8 3.9 4 4.5v2.4a6.6 6.6 0 0 1-4-1.3v6.4a5.6 5.6 0 1 1-5.6-5.6c.2 0 .5 0 .7.1v2.6a3 3 0 1 0 2.1 2.9V3.3h2.8Z" />
+    </svg>
   );
 }

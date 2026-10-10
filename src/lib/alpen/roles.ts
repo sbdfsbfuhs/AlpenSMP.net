@@ -3,6 +3,9 @@ export type Role = (typeof ROLES)[number];
 
 export type Area =
   | "moderation"
+  | "moderationRead"
+  | "notes"
+  | "notesRead"
   | "help"
   | "helpAct"
   | "commandsRead"
@@ -15,16 +18,24 @@ export type Area =
   | "banGuideEdit"
   | "tasks"
   | "absence"
+  | "absenceAll"
   | "guide"
   | "website"
   | "lockdown"
   | "archive"
   | "roles"
   | "settings"
-  | "mascot";
+  | "mascot"
+  | "roster"
+  | "chat"
+  | "builderChat"
+  | "search";
 
 const ALL: Area[] = [
   "moderation",
+  "moderationRead",
+  "notes",
+  "notesRead",
   "help",
   "helpAct",
   "commandsRead",
@@ -37,6 +48,7 @@ const ALL: Area[] = [
   "banGuideEdit",
   "tasks",
   "absence",
+  "absenceAll",
   "guide",
   "website",
   "lockdown",
@@ -44,14 +56,65 @@ const ALL: Area[] = [
   "roles",
   "settings",
   "mascot",
+  "roster",
+  "chat",
+  "builderChat",
+  "search",
 ];
 
 const MAP: Record<Role, Area[]> = {
   owner: ALL,
-  admin: ALL.filter((area) => area !== "lockdown" && area !== "roles"),
-  helper: ["help", "tasks", "absence", "rulesRead", "commandsRead", "settings"],
-  supporter: ["help", "helpAct", "tasks", "absence", "rulesRead", "commandsRead", "community", "settings"],
-  builder: ["guide", "tasks", "absence", "settings"],
+  admin: [
+    "moderation",
+    "moderationRead",
+    "notes",
+    "notesRead",
+    "help",
+    "helpAct",
+    "community",
+    "rulesRead",
+    "tasks",
+    "absence",
+    "website",
+    "archive",
+    "settings",
+    "roster",
+    "chat",
+    "search",
+  ],
+  helper: [
+    "moderation",
+    "moderationRead",
+    "help",
+    "community",
+    "banGuide",
+    "tasks",
+    "absence",
+    "rulesRead",
+    "commandsRead",
+    "settings",
+    "roster",
+    "notesRead",
+    "chat",
+    "search",
+  ],
+  supporter: [
+    "moderationRead",
+    "notes",
+    "notesRead",
+    "help",
+    "helpAct",
+    "tasks",
+    "absence",
+    "rulesRead",
+    "commandsRead",
+    "community",
+    "settings",
+    "roster",
+    "chat",
+    "search",
+  ],
+  builder: ["guide", "tasks", "absence", "settings", "roster", "chat", "builderChat", "search"],
 };
 
 export function asRole(value: string | undefined): Role {

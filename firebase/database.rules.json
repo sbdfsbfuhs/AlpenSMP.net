@@ -1,0 +1,174 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "rulesPublic": {
+      ".read": true,
+      ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true"
+    },
+    "guideTopics": {
+      ".read": true,
+      ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true"
+    },
+    "playerCommands": {
+      ".read": true,
+      ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true"
+    },
+    "site_stats": {
+      ".read": true,
+      ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true"
+    },
+    "site_stats_history": {
+      ".read": true,
+      "$id": {
+        ".write": "(auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true) || (!data.exists() && newData.child('t').isNumber() && newData.child('n').isNumber() && newData.child('n').val() >= 0 && newData.child('n').val() <= 1000 && newData.child('online_count').val() == newData.child('n').val() && !newData.child('by').exists()) || (!newData.exists() && data.child('t').isNumber() && data.child('t').val() < now - 604800000)"
+      }
+    },
+    "total_players_ever": {
+      ".read": true,
+      ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true"
+    },
+    "mascotSettings": {
+      ".read": true,
+      ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true"
+    },
+    "site_status": {
+      "active": {
+        ".read": true,
+        ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true"
+      },
+      "log": {
+        ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
+        ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true"
+      }
+    },
+    "community_reviews": {
+      ".read": true,
+      "$id": {
+        ".write": "(auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true) || (!data.exists() && newData.child('status').val() == 'pending' && newData.child('name').isString() && newData.child('name').val().length <= 40 && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 2000)"
+      }
+    },
+    "community_images": {
+      ".read": true,
+      "$id": {
+        ".write": "(auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true) || (!data.exists() && newData.child('status').val() == 'pending' && newData.child('name').isString() && newData.child('imageUrl').isString() && newData.child('imageUrl').val().length <= 500)"
+      }
+    },
+    "helpRequests": {
+      ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
+      "$id": {
+        ".write": "(auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true) || (!data.exists() && newData.child('source').val() == 'website' && newData.child('msg').isString() && newData.child('msg').val().length > 0 && newData.child('msg').val().length <= 2000)"
+      }
+    },
+    "tickets": {
+      ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
+      "$code": {
+        ".read": true,
+        ".write": "(auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true) || (!data.exists() && newData.child('status').val() == 'offen' && newData.child('msg').isString() && newData.child('msg').val().length <= 2000)"
+      }
+    },
+    "staffByUid": {
+      ".read": "auth != null && root.child('staffByUid').child(auth.uid).exists()",
+      "$uid": {
+        ".read": "auth != null && (auth.uid == $uid || root.child('staffByUid').child(auth.uid).exists())",
+        ".write": "(auth != null && auth.uid == $uid && auth.token.email == 'passtu09@gmail.com' && newData.child('role').val() == 'owner') || (auth != null && (auth.token.email == 'passtu09@gmail.com' || root.child('staffByUid').child(auth.uid).child('role').val() == 'owner')) || (auth != null && auth.uid == $uid && root.child('staffOpen').child(newData.child('username').val()).child('open').val() == true && newData.child('role').val() == root.child('staffOpen').child(newData.child('username').val()).child('role').val())"
+      }
+    },
+    "staffUsers": {
+      ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
+      "$name": {
+        ".write": "(auth != null && (auth.token.email == 'passtu09@gmail.com' || (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' && root.child('staffByUid').child(auth.uid).child('disabled').val() != true))) || (auth != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && data.child('uid').val() == auth.uid && newData.child('role').val() == data.child('role').val() && newData.child('uid').val() == data.child('uid').val()) || (auth != null && root.child('staffOpen').child($name).child('open').val() == true && auth.token.email == $name + '@staff.alpensmp.net' && newData.child('uid').val() == auth.uid && newData.child('role').val() == data.child('role').val())"
+      }
+    },
+    "staffAuth": {
+      ".read": false,
+      ".write": false
+    },
+    "staffGate": {
+      "$name": {
+        ".read": true,
+        ".write": "auth != null && (auth.token.email == 'passtu09@gmail.com' || (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' && root.child('staffByUid').child(auth.uid).child('disabled').val() != true) || (root.child('staffOpen').child($name).child('open').val() == true && auth.token.email == $name + '@staff.alpensmp.net'))"
+      }
+    },
+    "staffOpen": {
+      "$name": {
+        ".read": true,
+        ".write": "auth != null && (auth.token.email == 'passtu09@gmail.com' || root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || auth.uid == root.child('staffUsers').child($name).child('uid').val())"
+      }
+    },
+    "staffLog": {
+      ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() == 'owner'",
+      "$id": {
+        ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && newData.child('by').isString() && newData.child('action').isString()"
+      }
+    },
+    "commands": {
+      ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
+      ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true"
+    },
+    "bans": {
+      ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
+      ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true"
+    },
+    "kicks": {
+      ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
+      ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true"
+    },
+    "warns": {
+      ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
+      ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true"
+    },
+    "notes": {
+      ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
+      ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true"
+    },
+    "tasks": {
+      ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
+      ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true"
+    },
+    "absences": {
+      ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
+      ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true"
+    },
+    "banGuide": {
+      ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
+      ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true"
+    },
+    "rulesStaff": {
+      ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
+      ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true"
+    },
+    "presence": {
+      ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
+      ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true"
+    },
+    "site_settings": {
+      ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
+      ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true"
+    },
+    "chats": {
+      "team": {
+        ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
+        "$id": {
+          ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && root.child('staffByUid').child(auth.uid).child('role').val() != null && ((!data.exists() && newData.child('by').isString() && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 800) || (!newData.exists() && root.child('staffByUid').child(auth.uid).child('role').val() == 'owner'))"
+        }
+      },
+      "pin": {
+        ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
+        "$id": {
+          ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && root.child('staffByUid').child(auth.uid).child('role').val() == 'owner'"
+        }
+      },
+      "builder": {
+        ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && (root.child('staffByUid').child(auth.uid).child('role').val() == 'builder' || root.child('staffByUid').child(auth.uid).child('role').val() == 'owner')",
+        "$id": {
+          ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && (root.child('staffByUid').child(auth.uid).child('role').val() == 'builder' || root.child('staffByUid').child(auth.uid).child('role').val() == 'owner') && ((!data.exists() && newData.child('by').isString() && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 800) || (!newData.exists() && root.child('staffByUid').child(auth.uid).child('role').val() == 'owner'))"
+        }
+      }
+    },
+    "site_copy": {
+      ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
+      ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true"
+    }
+  }
+}

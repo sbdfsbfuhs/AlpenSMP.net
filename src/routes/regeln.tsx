@@ -1,10 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { PageHero, Shell } from "@/components/site/shell";
+import { DiscordLink, PageHero, Shell } from "@/components/site/shell";
 import { SiteMascot } from "@/components/site/assistant";
 import { RULES, RULES_INTRO } from "@/lib/alpen/content";
 import { entries, fbGet } from "@/lib/alpen/staff";
-import { SITE } from "@/lib/alpen/site";
 
 export const Route = createFileRoute("/regeln")({
   head: () => ({
@@ -39,7 +38,7 @@ function RulesPage() {
         <span className="rounded-full border border-line px-3 py-1">Java & Bedrock</span>
         <span className="rounded-full border border-line px-3 py-1">Kein Pay-to-Win</span>
       </div>
-      <SiteMascot bias="sit" align="end" line="Unsicher bei einem Mod? Frag mich, bevor du joinest." />
+      <SiteMascot home="regeln" bias="sit" align="end" line="Unsicher bei einem Mod? Frag mich, bevor du joinest." />
       {extra.length ? (
         <div className="shell mb-8 space-y-2">
           {extra.map((rule) => (
@@ -111,11 +110,7 @@ function RulesPage() {
             </article>
           ))}
           <p className="text-sm text-faint">
-            Unklar? Frag AlpenKI unten links oder das Team auf{" "}
-            <a className="text-gold" href={SITE.discord} target="_blank" rel="noreferrer">
-              Discord
-            </a>
-            .
+            Unklar? Frag AlpenKI unten links oder das Team auf <DiscordLink className="mx-1 align-middle">Discord</DiscordLink>.
           </p>
         </div>
       </div>

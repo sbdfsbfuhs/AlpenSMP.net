@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { PageHero, Shell } from "@/components/site/shell";
+import { createPortal } from "react-dom";
+import { DiscordMark, PageHero, Shell, TikTokMark } from "@/components/site/shell";
 import { SiteMascot } from "@/components/site/assistant";
 import { ReviewForm } from "@/components/site/forms";
 import { REVIEWS, type Review } from "@/lib/alpen/content";
@@ -26,6 +27,15 @@ function CommunityPage() {
   const [active, setActive] = useState<Shot | null>(null);
 
   useEffect(() => {
+    if (!active) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setActive(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [active]);
+
+  useEffect(() => {
     fetchReviews()
       .then((rows) => {
         if (rows.length) setReviews(rows.map(({ name, rating, text }) => ({ name, rating, text })));
@@ -45,20 +55,34 @@ function CommunityPage() {
         title="Werde Teil davon."
         lede="Updates, Support und gemeinsame Projekte – auf Discord und TikTok. Stimmen und Shots kommen von Spielern, nicht aus der Stock-Kiste."
       />
-      <div className="shell grid gap-4 py-12 md:grid-cols-2">
-        <a className="card p-6 hover:border-gold/40" href={SITE.discord} target="_blank" rel="noreferrer">
-          <p className="kicker">Discord</p>
-          <h2 className="display mt-3 text-3xl">Beitreten</h2>
-          <p className="mt-2 text-sm text-muted">Mitglieder, Support und Updates. Zum Spielen nicht zwingend, aber empfohlen.</p>
+      <div className="shell stagger grid gap-4 py-12 md:grid-cols-2">
+        <a className="card-discord relative block p-6" href={SITE.discord} target="_blank" rel="noreferrer">
+          <span className="blob blob-a" />
+          <span className="blob blob-b" />
+          <span className="blob blob-c" />
+          <div className="relative">
+            <span className="inline-flex items-center gap-2 rounded-md bg-white/15 px-3 py-2 text-sm font-bold text-white">
+              <DiscordMark />
+              Discord
+            </span>
+            <h2 className="display mt-4 text-3xl">Beitreten</h2>
+            <p className="mt-2 max-w-sm text-sm text-white/80">Mitglieder, Support und Updates. Zum Spielen nicht zwingend, aber empfohlen.</p>
+          </div>
         </a>
-        <a className="card p-6 hover:border-gold/40" href={SITE.tiktok} target="_blank" rel="noreferrer">
-          <p className="kicker">TikTok</p>
-          <h2 className="display mt-3 text-3xl">{SITE.tiktokHandle}</h2>
-          <p className="mt-2 text-sm text-muted">Clips, Builds und Server-Momente.</p>
+        <a className="card-tiktok relative block p-6" href={SITE.tiktok} target="_blank" rel="noreferrer">
+          <span className="blob tiktok-a" />
+          <span className="blob tiktok-b" />
+          <span className="blob tiktok-c" />
+          <div className="relative">
+            <TikTokMark />
+            <p className="mt-4 text-sm font-semibold tracking-wide text-white/70">TikTok</p>
+            <h2 className="display mt-1 text-3xl">{SITE.tiktokHandle}</h2>
+            <p className="mt-2 text-sm text-white/75">Clips, Builds und Server-Momente.</p>
+          </div>
         </a>
       </div>
 
-      <SiteMascot bias="wave" line="Discord ist freiwillig. Zum Spielen reicht die IP." />
+      <SiteMascot home="community" bias="wave" line="Discord ist freiwillig. Zum Spielen reicht die IP." />
 
       <section className="border-y border-line bg-bg-raised py-14">
         <div className="shell">
@@ -75,7 +99,7 @@ function CommunityPage() {
                 <button
                   key={shot.imageUrl.slice(0, 48) + shot.ts}
                   type="button"
-                  className="card overflow-hidden text-left"
+                  className="card cursor-zoom-in overflow-hidden text-left"
                   onClick={() => setActive(shot)}
                 >
                   <img src={shot.imageUrl} alt={shot.caption || shot.name} className="aspect-square w-full object-cover" />
@@ -110,18 +134,29 @@ function CommunityPage() {
         <ReviewForm />
       </section>
 
-      {active ? (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-bg/80 p-4" role="dialog" aria-modal="true">
-          <button type="button" className="absolute inset-0" aria-label="Schließen" onClick={() => setActive(null)} />
-          <figure className="relative z-10 max-h-[90vh] max-w-3xl overflow-auto rounded-lg border border-line bg-surface">
-            <img src={active.imageUrl} alt={active.caption || active.name} className="max-h-[70vh] w-full object-contain" />
-            <figcaption className="px-4 py-3 text-sm text-muted">
-              {active.name}
-              {active.caption ? ` · ${active.caption}` : ""}
-            </figcaption>
-          </figure>
-        </div>
-      ) : null}
+      {active && typeof document !== "undefined"
+        ? createPortal(
+            <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/88 p-3 sm:p-6" role="dialog" aria-modal="true" aria-label="Bild groß">
+              <button type="button" className="absolute inset-0" aria-label="Schließen" onClick={() => setActive(null)} />
+              <button
+                type="button"
+                className="absolute top-4 right-4 z-10 grid size-11 place-items-center rounded-full bg-white text-black"
+                aria-label="Schließen"
+                onClick={() => setActive(null)}
+              >
+                ×
+              </button>
+              <figure className="relative z-10 max-h-[94vh] max-w-[96vw]">
+                <img src={active.imageUrl} alt={active.caption || active.name} className="max-h-[88vh] max-w-[96vw] rounded-lg object-contain" />
+                <figcaption className="mt-3 text-center text-sm text-white">
+                  {active.name}
+                  {active.caption ? ` · ${active.caption}` : ""}
+                </figcaption>
+              </figure>
+            </div>,
+            document.body,
+          )
+        : null}
     </Shell>
   );
 }
