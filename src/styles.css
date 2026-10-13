@@ -1220,6 +1220,8 @@
 .live { transform-box: fill-box; transform-origin: center bottom; animation: breathe 4.8s ease-in-out infinite; }
 .pupils { transform-box: fill-box; transform-origin: center; transition: transform 180ms ease; transform: translate(var(--lx), var(--ly)); }
 .lids { transform-box: fill-box; transform-origin: center; transform: scaleY(0); animation: blink 6.5s ease-in-out infinite; }
+.shine { animation: shine-hide 6.5s ease-in-out infinite; }
+.lid { opacity: 0; animation: blink-lid 6.5s ease-in-out infinite; }
 .scarf { transform-box: fill-box; transform-origin: center top; }
 .head { transform-box: fill-box; transform-origin: center bottom; }
 .ear-l, .ear-r { transform-box: fill-box; transform-origin: center bottom; }
@@ -1256,6 +1258,11 @@
 .scarf { transform-box: fill-box; transform-origin: 40% 10%; }
 .pose-sleep .lids,
 .pose-pet .lids { animation: none; transform: scaleY(1); }
+.pose-sleep .lid,
+.pose-pet .lid { animation: none; opacity: 1; }
+.pose-sleep .shine,
+.pose-pet .shine,
+.mood-tired .shine { animation: none; opacity: 0; }
 .pose-sleep .live { animation-duration: 7s; }
 .pose-look .head { animation: head-tilt 1.6s ease-in-out; }
 .pose-scratch .ear-l { animation: ear-wiggle 0.45s ease-in-out 3; }
@@ -1490,6 +1497,14 @@
   0%, 86%, 100% { transform: scaleY(0); }
   90%, 94% { transform: scaleY(1); }
 }
+@keyframes blink-lid {
+  0%, 84%, 100% { opacity: 0; }
+  89%, 95% { opacity: 1; }
+}
+@keyframes shine-hide {
+  0%, 84%, 100% { opacity: 1; }
+  88%, 96% { opacity: 0; }
+}
 @keyframes scarf {
   0%, 100% { transform: rotate(0deg); }
   50% { transform: rotate(6deg); }
@@ -1562,7 +1577,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .live, .lids, .scarf, .mascot-art, .head, .paw-r, .arm-r, .paw-tip, .ear-l, .tail, .zzz, .hearts, .thought {
+  .live, .lids, .lid, .shine, .scarf, .mascot-art, .head, .paw-r, .arm-r, .paw-tip, .ear-l, .tail, .zzz, .hearts, .thought {
     animation: none;
   }
 

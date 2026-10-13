@@ -5,6 +5,58 @@ type Gaze = { x: number; y: number };
 
 const SIT_LIKE = new Set<Act>(["stand", "walk", "hop", "mine", "bored", "stumble", "stretch", "up"]);
 
+const EYE_R = 13.6;
+
+function eyeTop(cy: number, r = EYE_R) {
+  return cy - r + r * 0.36;
+}
+
+function eyePath(cx: number, cy: number, r = EYE_R) {
+  const y = eyeTop(cy, r);
+  const dx = Math.sqrt(r * r - (y - cy) ** 2);
+  return `M${cx - dx} ${y}A${r} ${r} 0 1 0 ${cx + dx} ${y}Z`;
+}
+
+function Eye({ cx, cy, gaze }: { cx: number; cy: number; gaze: Gaze }) {
+  const clip = useId().replace(/:/g, "");
+  const d = eyePath(cx, cy);
+  const top = eyeTop(cy);
+  const lx = gaze.x * 2.2;
+  const ly = gaze.y * -1.8;
+  return (
+    <g className="eye">
+      <defs>
+        <clipPath id={clip}>
+          <path d={d} />
+        </clipPath>
+      </defs>
+      <path d={d} fill="#3d1f0a" />
+      <g clipPath={`url(#${clip})`}>
+        <g className="pupils" transform={`translate(${lx} ${ly})`}>
+          <circle cx={cx} cy={cy} r={EYE_R * 0.45} fill="#140c08" />
+          <circle className="shine" cx={cx + 3.5} cy={cy - 3.6} r={EYE_R * 0.18} fill="#fff" />
+          <circle className="shine" cx={cx - 2.6} cy={cy + 2.4} r={EYE_R * 0.08} fill="#fff" />
+        </g>
+      </g>
+      <g className="lashes" fill="none" stroke="#3a241c" strokeWidth="1.5" strokeLinecap="round">
+        <path d={`M${cx - 5.2} ${top}c-0.4-1.8-1.1-2.6-2-3`} />
+        <path d={`M${cx} ${top - 0.2}c0.05-2 0.1-3.1 0.35-3.6`} />
+        <path d={`M${cx + 5} ${top}c0.45-1.7 1.2-2.5 2.1-2.9`} />
+      </g>
+      <g className="lid">
+        <ellipse cx={cx} cy={cy} rx={EYE_R + 1.8} ry={EYE_R + 2.4} fill="#f6e2cc" />
+        <path
+          d={`M${cx - 12} ${cy + 1.2}q12 7.2 24 0`}
+          fill="none"
+          stroke="#3a241c"
+          strokeWidth="2.3"
+          strokeLinecap="round"
+        />
+      </g>
+    </g>
+  );
+}
+
 function moodOf(act: Act, pose: string) {
   if (pose === "sleep") return "normal";
   if (act === "yawn" || act === "wake") return "tired";
@@ -130,25 +182,15 @@ export function MascotView({
 
             <g className="face-normal">
               <g className="eyes">
-                <ellipse cx="58" cy="90" rx="11" ry="13" fill="#1a120f" />
-                <ellipse cx="94" cy="90" rx="11" ry="13" fill="#1a120f" />
-                <g className="pupils">
-                  <circle cx="61" cy="86" r="3.1" fill="#fff" />
-                  <circle cx="63.4" cy="89.2" r="1.35" fill="#fff" />
-                  <circle cx="97" cy="86" r="3.1" fill="#fff" />
-                  <circle cx="99.4" cy="89.2" r="1.35" fill="#fff" />
-                </g>
-                <g className="lids">
-                  <path className="lid lid-l" d="M46 90q12 16 24 0q-12 11-24 0" fill="#f0d2b4" />
-                  <path className="lid lid-r" d="M82 90q12 16 24 0q-12 11-24 0" fill="#f0d2b4" />
-                </g>
+                <Eye cx={58} cy={90} gaze={gaze} />
+                <Eye cx={94} cy={90} gaze={gaze} />
               </g>
               <path className="mouth mouth-normal" d="M66 112q10 9 20 0" fill="none" stroke="#3a241c" strokeWidth="2.2" strokeLinecap="round" />
             </g>
 
             <g className="face-happy">
-              <path d="M48 92q10-14 20 0" fill="none" stroke="#1a120f" strokeWidth="3" strokeLinecap="round" />
-              <path d="M84 92q10-14 20 0" fill="none" stroke="#1a120f" strokeWidth="3" strokeLinecap="round" />
+              <path d="M48 92q10-14 20 0" fill="none" stroke="#1a120f" strokeWidth="3.5" strokeLinecap="round" />
+              <path d="M84 92q10-14 20 0" fill="none" stroke="#1a120f" strokeWidth="3.5" strokeLinecap="round" />
               <path className="mouth mouth-happy" d="M64 110q12 12 24 0" fill="none" stroke="#3a241c" strokeWidth="2.3" strokeLinecap="round" />
             </g>
             <g className="face-tired">
