@@ -26,7 +26,7 @@ const PAGE_QUIPS: Record<string, string[]> = {
   community: ["Komm in den Discord.", "Discord ist freiwillig."],
   faq: ["Steht deine Frage nicht dabei? Ich kenn das Regelwerk."],
   kontakt: ["Kurze Frage? Ich antworte. Sonst das Ticket."],
-  prefix: ["Der Team-Prefix. Nicht dein Spielername."],
+  prefix: ["Erst /team create. Sonst geht der Prefix nicht.", "Der Team-Prefix. Nicht dein Spielername."],
   team: ["Öffentliche Fragen beantworte ich auf den anderen Seiten."],
 };
 

@@ -131,11 +131,46 @@ function remember(q: string) {
   else if (/\b(regel|cheat|mod|xray|claim)\b/.test(q)) lastTopic = "regeln";
   else if (/\b(discord|ticket)\b/.test(q)) lastTopic = "discord";
   else if (/\b(prefix|farbe|farbcode)\b/.test(q)) lastTopic = "prefix";
+  else if (/\bteam\b/.test(q)) lastTopic = "team";
   else if (/\b(voice|mikro)\b/.test(q)) lastTopic = "voice";
 }
 
 function cite(id: number, title: string) {
   return `Regel ${id} (${title})`;
+}
+
+function playerTeamAnswer(q: string): string | null {
+  const staffish = /admin|helper|supporter|builder|bewerb|owner|staff werden|ins team/.test(q);
+  const player =
+    /team create|team erstell|team anleg|team gründ|team gruend|team prefix|team home|team sethome|team warp|teamchat|team echest|team pvp|friendly fire|team ally|team enemy/.test(
+      q,
+    ) ||
+    (/\bteams?\b/.test(q) &&
+      /prefix|erstell|anleg|gründ|gruend|create|home|warp|echest|chat|pvp|ally|feind|invite|einlad|mitglied|endertruhe/.test(q));
+  if (!player || (staffish && !/prefix|create|erstell|home|warp|echest|pvp|ally/.test(q))) return null;
+
+  if (/prefix|farbe|farbcode/.test(q)) {
+    return "Der Team-Prefix ist nicht der Spielername. Er funktioniert nur, wenn schon ein Team mit /team create Name existiert. Sonst geht /team prefix nicht. Der Teamname hat 3 bis 10 Buchstaben, nur a bis z, ohne Farbcode. Gesperrt sind Gamers, Rise und Up. Danach: /team prefix und direkt Farbcode plus Buchstaben, ohne Leerzeichen. Beispiel: /team prefix &cAlpen. Farbcode und Text zusammen 3 bis 10 Zeichen. Im Tab steht der Prefix vor dem Spielernamen, nur dieser Text ist farbig. Im Chat folgt ein Leerzeichen.";
+  }
+  if (/home|sethome/.test(q)) {
+    return "Das Team-Home ist nicht dein persönliches /home. Erst /team create Name. Danach setzt der Owner /team sethome, und /team home bringt das Team hin. Der Teleport wartet 3 Sekunden und bricht ab, wenn du dich bewegst oder Schaden bekommst. Danach 120 Sekunden Pause. Ohne Team geht der Befehl nicht.";
+  }
+  if (/warp/.test(q)) {
+    return "Team-Warps gehen nur in einem Team. Anlegen mit /team setwarp Name, höchstens 3. Die Liste kommt mit /team warp. 3 Sekunden Wartezeit, Abbruch bei Bewegung oder Schaden, danach 120 Sekunden Pause. Ohne /team create geht das nicht.";
+  }
+  if (/echest|endertruhe|ender/.test(q)) {
+    return "Die gemeinsame Team-Endertruhe öffnest du mit /team echest. Drei Reihen. Ohne Team geht der Befehl nicht. Zuerst /team create Name.";
+  }
+  if (/pvp|friendly|freundschaft/.test(q)) {
+    return "In einem neuen Team ist Friendly Fire aus. Der Owner schaltet es mit /team pvp um. Das ist nicht die Server-Regel zum Töten. Ohne Team geht /team pvp nicht. Zuerst /team create Name.";
+  }
+  if (/ally|verbünd|feind|enemy/.test(q)) {
+    return "Verbündete: /team ally add Name, höchstens 4. Feinde: /team enemy add Name, höchstens 2. Ally-Chat: /ac Nachricht. Beides nur, wenn dein Team schon mit /team create existiert.";
+  }
+  if (/chat|\btc\b/.test(q)) {
+    return "Teamchat: /tc Nachricht, nur an dein Team. Ally-Chat: /ac Nachricht. Ohne Team geht beides nicht. Zuerst /team create Name.";
+  }
+  return "Ein Spieler-Team legst du mit /team create Name an. Der Name hat 3 bis 10 Buchstaben, nur a bis z, keine Leerzeichen und keinen Farbcode. Gamers, Rise und Up sind gesperrt. Das kostet nichts, höchstens 20 Mitglieder. Prefix, Team-Home, Warps, Endertruhe und Teamchat gehen erst danach. Ohne Team funktionieren diese Befehle nicht.";
 }
 
 export function answerQuestion(raw: string): string {
@@ -162,6 +197,8 @@ export function answerQuestion(raw: string): string {
   if (/sodium|freecam|optifine|iris|xaero|minimap/.test(q)) {
     return "Ja. OptiFine, Sodium, Iris, Freecam und Xaero’s Minimap sind laut Regel 3 ausdrücklich erlaubt. Mods, die dort nicht stehen, vorher beim Team nachfragen.";
   }
+  const teamAnswer = playerTeamAnswer(q);
+  if (teamAnswer) return teamAnswer;
   if (/töte|töten|toten|killen|umbringen|pvp/.test(q)) {
     return "Grundloses Töten aus Spass ist laut Regel 11 nicht erlaubt – ausser beide Seiten sind einverstanden.";
   }
@@ -200,10 +237,10 @@ export function answerQuestion(raw: string): string {
     return "Die Live-Karte ist gerade zu. Der Speicher auf dem Kartenserver ist voll. Schau ein anderes Mal wieder vorbei. Spielen geht trotzdem, die Welt selbst läuft.";
   }
   if (/prefix|teamfarbe|farbcode|namensfarbe/.test(q)) {
-    return "Das ist der Team-Prefix, nicht der Spielername. Chat öffnen: /team prefix und direkt Farbcode plus Teamname, ohne Leerzeichen. Beispiel: /team prefix &cAlpen. Farbcode und Teamname zusammen höchstens 10 Zeichen. Im Tab steht der Prefix vor dem Spielernamen, und nur dieser Text ist farbig. Alle Farben stehen auf der Prefix-Seite.";
+    return "Der Team-Prefix ist nicht der Spielername. Er funktioniert nur, wenn schon ein Team mit /team create Name existiert. Sonst geht /team prefix nicht. Der Teamname hat 3 bis 10 Buchstaben, nur a bis z, ohne Farbcode. Gesperrt sind Gamers, Rise und Up. Danach: /team prefix und direkt Farbcode plus Buchstaben, ohne Leerzeichen. Beispiel: /team prefix &cAlpen. Farbcode und Text zusammen 3 bis 10 Zeichen. Im Tab steht der Prefix vor dem Spielernamen, nur dieser Text ist farbig. Im Chat folgt ein Leerzeichen.";
   }
   if (/rtp|spawn|\/msg|call admin|befehl|command/.test(q)) {
-    return "Java (Taste T): /spawn, /sethome, /home, /homes, /tpa Spieler, /back, /rtp, /msg Spieler, /call admin. Bedrock (Chat-Taste): dieselben Befehle, aber Namen mit Punkt, zum Beispiel /tpa .Spieler.";
+    return "Java (Taste T): /spawn, /sethome, /home, /homes, /tpa Spieler, /back, /rtp, /msg Spieler, /call admin. Bedrock (Chat-Taste): dieselben Befehle, aber Namen mit Punkt, zum Beispiel /tpa .Spieler. Spieler-Team: zuerst /team create Name. Ohne Team gehen /team prefix, /team home, /team warp, /team echest und /tc nicht.";
   }
   if (/strafe|bann|ban|kick|verwarn/.test(q)) {
     return "Laut Regel 14 sind je nach Fall Verwarnung, Kick, temporärer oder permanenter Bann sowie weitere Massnahmen möglich. Nicht jeder Verstoss wird gleich bestraft.";
@@ -253,7 +290,7 @@ function knownFacts(q: string): string | null {
   const swiss = /swiss\s*red|swissred|\bswiss\b/.test(q);
   const owner = /owner|serverleitung|gründer|gruender/.test(q);
   const cmds =
-    "Java (Taste T): /spawn, /sethome, /home, /homes, /tpa Spieler, /back, /rtp, /msg Spieler, /call admin. Bedrock (Chat-Taste): dieselben Befehle, Namen mit Punkt, also /tpa .Spieler und /msg .Spieler.";
+    "Java (Taste T): /spawn, /sethome, /home, /homes, /tpa Spieler, /back, /rtp, /msg Spieler, /call admin. Bedrock (Chat-Taste): dieselben Befehle, Namen mit Punkt, also /tpa .Spieler und /msg .Spieler. Spieler-Team: zuerst /team create Name. Ohne Team gehen /team prefix, /team home und /tc nicht.";
 
   if (/passwort|password|\bseed\b|welt.?seed/.test(q)) {
     return `Passwort und Seed sind nicht öffentlich. Die Server-Adresse ist ${SITE.ip}.`;
@@ -426,7 +463,12 @@ export function replyTo(raw: string): { text: string; actions: KiAction[] } {
     actions.push({ label: "Server", href: "/server" });
   }
   if (/karte|\bmap\b|bluemap/.test(q)) actions.push({ label: "Karte", href: "/karte" });
-  if (/prefix|farbe|farbcode/.test(q)) actions.push({ label: "Prefix-Farben", href: "/prefix" });
+  if (/prefix|farbe|farbcode|team create|team erstell|team home|team warp/.test(q)) {
+    if (!actions.some((item) => item.href === "/prefix")) actions.push({ label: "Prefix-Farben", href: "/prefix" });
+    if (/team create|team erstell|team home|team warp|echest/.test(q) && !actions.some((item) => item.href === "/features")) {
+      actions.push({ label: "Team-Befehle", href: "/features" });
+    }
+  }
   if (/home|tpa|befehl|command|guide/.test(q)) actions.push({ label: "Guide", href: "/guide" });
   if (/faq|frage/.test(q)) actions.push({ label: "FAQ", href: "/faq" });
   return { text, actions };

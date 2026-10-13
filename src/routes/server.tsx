@@ -63,7 +63,8 @@ function ServerPage() {
           <article className="card p-6">
             <h2 className="text-xl font-semibold">Team-Prefix</h2>
             <p className="mt-3 text-muted">
-              Im Chat <code className="text-gold">/team prefix</code>, direkt danach der Farbcode und der Teamname. Nicht der Spielername. Farbcode und Team-Text zusammen höchstens 10 Zeichen, ohne Leerzeichen.
+              Zuerst ein Team mit <code className="text-gold">/team create Name</code>, 3 bis 10 Buchstaben. Ohne Team funktioniert <code className="text-gold">/team prefix</code> nicht.
+              Danach Farbcode und Teamname direkt hintereinander, zusammen höchstens 10 Zeichen, ohne Leerzeichen. Nicht der Spielername.
               Im Tab steht der Prefix vor dem Namen, der Text selbst ist farbig. Beispiel: <code className="text-gold">/team prefix &cAlpen</code>
             </p>
             <Link to="/prefix" className="btn-gold mt-5">

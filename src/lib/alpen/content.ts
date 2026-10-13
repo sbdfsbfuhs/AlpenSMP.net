@@ -206,6 +206,19 @@ export const FEATURES: Feature[] = [
     body: [
       "Setze mit /sethome einen Speicherpunkt und kehre jederzeit mit /home zurück.",
       "Praktisch für Base, Farm und Shop – ohne lange Wege. /homes zeigt deine gespeicherten Punkte.",
+      "Das persönliche Home ist nicht das Team-Home. /team home gibt es erst, nachdem ein Team mit /team create existiert.",
+    ],
+  },
+  {
+    id: "teams",
+    title: "Spieler-Teams",
+    summary: "Erst /team create. Ohne Team geht der Rest nicht.",
+    body: [
+      "Ein Team legst du mit /team create Name an. Der Name hat 3 bis 10 Buchstaben, nur a bis z, keine Leerzeichen und keinen Farbcode. Gamers, Rise und Up sind gesperrt. Erstellen kostet nichts. Höchstens 20 Mitglieder, und du bist nur in einem Team.",
+      "Ohne dieses Team funktionieren /team prefix, /team home, /team warp, /team echest, /tc und /team pvp nicht. /team list zeigt die Teams auch so.",
+      "Der Prefix kommt danach: /team prefix und direkt Farbcode plus Buchstaben, zusammen 3 bis 10 Zeichen. Beispiel: /team prefix &cAlpen. Im Tab steht er vor dem Namen. Im Chat folgt ein Leerzeichen.",
+      "Team-Home und Warps warten 3 Sekunden und brechen ab, wenn du dich bewegst oder Schaden bekommst. Danach 120 Sekunden Pause. Warps: höchstens 3. Die Endertruhe hat 3 Reihen.",
+      "Friendly Fire ist in neuen Teams aus, /team pvp schaltet es um. Verbündete höchstens 4, Feinde höchstens 2. Beim Joinen kann eine Team-Nachricht erscheinen, 5 bis 40 Zeichen. Mit Lunar Client siehst du Teammitglieder auf der Minimap. Java und Bedrock können im selben Team sein.",
     ],
   },
   {
@@ -261,6 +274,64 @@ export const BEDROCK_COMMANDS = [
   { cmd: "/rtp", text: "Zufälliger Teleport." },
   { cmd: "/msg .Spieler", text: "Private Nachricht an einen Bedrock-Namen mit Punkt." },
   { cmd: "/call admin", text: "Ruft das Team. Ebenfalls über die Chat-Taste." },
+];
+
+/** Spieler-Teams. Ohne /team create gehen die übrigen Team-Befehle nicht. */
+export const TEAM_BLOCKED = ["Gamers", "Rise", "Up"] as const;
+
+export const TEAM_COMMANDS = [
+  {
+    cmd: "/team create Name",
+    text: "Legt dein Team an. Danach erst gehen Prefix, Team-Home, Warps, Endertruhe und Teamchat. Vorher nicht.",
+  },
+  {
+    cmd: "/team invite Spieler",
+    text: "Lädt jemanden ein. Der andere nimmt mit /team join an. Nur aus einem bestehenden Team.",
+  },
+  {
+    cmd: "/team leave",
+    text: "Verlässt das Team. Der Owner löst es mit /team disband auf oder wirft mit /team kick Spieler jemanden raus.",
+  },
+  {
+    cmd: "/team prefix &cAlpen",
+    text: "Setzt den Prefix. Geht nicht, solange kein Team mit /team create existiert.",
+  },
+  {
+    cmd: "/team sethome",
+    text: "Setzt das Team-Home. Nicht dasselbe wie /sethome. 3 Sekunden Wartezeit, Abbruch bei Bewegung oder Schaden.",
+  },
+  {
+    cmd: "/team home",
+    text: "Teleport zum Team-Home. Danach 120 Sekunden Pause. Ohne Team geht der Befehl nicht.",
+  },
+  {
+    cmd: "/team setwarp Name",
+    text: "Setzt einen Team-Warp. Höchstens 3. Dieselbe Wartezeit wie beim Team-Home.",
+  },
+  {
+    cmd: "/team warp",
+    text: "Zeigt die Team-Warps. 3 Sekunden, Abbruch bei Bewegung oder Schaden, danach 120 Sekunden Pause.",
+  },
+  {
+    cmd: "/team echest",
+    text: "Gemeinsame Team-Endertruhe, 3 Reihen. Nur mit Team.",
+  },
+  {
+    cmd: "/tc Nachricht",
+    text: "Teamchat, nur an dein Team. Ally-Chat ist /ac Nachricht. Beides ohne Team tot.",
+  },
+  {
+    cmd: "/team ally add Name",
+    text: "Verbündet ein Team. Höchstens 4. Wegnehmen mit /team ally remove Name.",
+  },
+  {
+    cmd: "/team enemy add Name",
+    text: "Markiert ein Feind-Team. Höchstens 2. Wegnehmen mit /team enemy remove Name.",
+  },
+  {
+    cmd: "/team pvp",
+    text: "Schaltet Friendly Fire um. In einem neuen Team ist es aus. Ohne Team geht der Befehl nicht.",
+  },
 ];
 
 export const PILLARS = [
@@ -333,7 +404,11 @@ export const FAQ = [
   },
   {
     q: "Kann ich mit Freunden zusammenspielen?",
-    a: "Absolut. Gemeinsam bauen, erkunden und Projekte starten gehört zum Konzept von AlpenSMP.",
+    a: "Ja. Mit /team create Name gründest du ein Spieler-Team, 3 bis 10 Buchstaben. Prefix, Team-Home, Warps und Teamchat gehen erst danach. Ohne Team funktionieren diese Befehle nicht.",
+  },
+  {
+    q: "Warum geht /team prefix nicht?",
+    a: "Weil noch kein Team existiert. Zuerst /team create Name. Der Name hat 3 bis 10 Buchstaben, nur a bis z, keinen Farbcode. Danach /team prefix, zum Beispiel /team prefix &cAlpen. Ohne Team gehen auch Team-Home, Warps, die Endertruhe und /tc nicht.",
   },
   {
     q: "Wo ist die Live-Karte?",
@@ -397,7 +472,7 @@ export const GUIDE: GuideChapter[] = [
     keywords: "willkommen survival community",
     blocks: [
       "Deutschsprachiger Survival-Server, gemeinsame Welt, keine Pay-to-Win-Mechaniken.",
-      "Dazu Claims, optionaler Voice Chat, Homes, TPA, RTP und Todesgräber.",
+      "Dazu Claims, optionaler Voice Chat, Homes, TPA, RTP, Todesgräber und Spieler-Teams über /team create.",
     ],
   },
   {
@@ -435,14 +510,28 @@ export const GUIDE: GuideChapter[] = [
     ],
   },
   {
+    id: "alpen-teams",
+    track: "alpen",
+    title: "Spieler-Teams",
+    description: "Erst /team create. Prefix und der Rest gehen sonst nicht.",
+    keywords: "team create prefix home warp echest chat pvp ally",
+    blocks: [
+      "Team anlegen: /team create Name. 3 bis 10 Buchstaben, nur a bis z, kein Farbcode. Gamers, Rise und Up sind gesperrt. Kostenlos, höchstens 20 Mitglieder.",
+      "Ohne Team gehen /team prefix, /team sethome, /team home, /team setwarp, /team warp, /team echest, /tc, /ac und /team pvp nicht.",
+      "Prefix danach: /team prefix &cAlpen. Farbcode und Buchstaben zusammen 3 bis 10 Zeichen. Im Chat folgt ein Leerzeichen.",
+      "Team-Home und Warps: 3 Sekunden Wartezeit, Abbruch bei Bewegung oder Schaden, danach 120 Sekunden Pause. Höchstens 3 Warps. Friendly Fire ist in neuen Teams aus.",
+    ],
+  },
+  {
     id: "alpen-commands",
     track: "alpen",
     title: "Wichtige Befehle",
     description: "Java und Bedrock, jeweils zum Kopieren.",
-    keywords: "spawn home tpa back rtp msg admin java bedrock",
+    keywords: "spawn home tpa back rtp msg admin java bedrock team prefix",
     blocks: [
       "Java (Taste T): /spawn · /sethome · /home · /homes · /tpa Spieler · /back · /rtp · /msg Spieler · /call admin",
       "Bedrock (Chat-Taste): dieselben Befehle, Namen mit Punkt – /tpa .Spieler und /msg .Spieler.",
+      "Spieler-Team zuerst mit /team create Name. Ohne Team gehen /team prefix, /team home, /team warp, /team echest und /tc nicht.",
     ],
   },
 ];

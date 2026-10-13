@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHero, Shell } from "@/components/site/shell";
 import { SiteMascot } from "@/components/site/assistant";
-import { COMMANDS, FEATURES } from "@/lib/alpen/content";
+import { COMMANDS, FEATURES, TEAM_COMMANDS } from "@/lib/alpen/content";
 import { SITE } from "@/lib/alpen/site";
 
 export const Route = createFileRoute("/features")({
@@ -11,7 +11,7 @@ export const Route = createFileRoute("/features")({
       {
         name: "description",
         content:
-          "Claims mit GriefPrevention, Simple Voice Chat, Homes, TPA, /back, Todesgräber und Java-Bedrock-Crossplay auf AlpenSMP.",
+          "Claims mit GriefPrevention, Spieler-Teams über /team create, Simple Voice Chat, Homes, TPA, /back und Java-Bedrock-Crossplay auf AlpenSMP.",
       },
     ],
   }),
@@ -48,6 +48,18 @@ function FeaturesPage() {
           <ul className="mt-8 divide-y divide-line overflow-hidden rounded-lg border border-line">
             {COMMANDS.map((row) => (
               <li key={row.cmd} className="grid gap-1 bg-surface px-5 py-4 sm:grid-cols-[9rem_1fr] sm:items-center">
+                <code className="font-semibold text-gold">{row.cmd}</code>
+                <span className="text-sm text-muted">{row.text}</span>
+              </li>
+            ))}
+          </ul>
+          <h3 id="teams" className="mt-12 scroll-mt-24 text-2xl font-semibold">Team-Befehle</h3>
+          <p className="mt-3 max-w-2xl text-muted">
+            Zuerst <code className="text-gold">/team create Name</code>. Ohne dieses Team gehen Prefix, Team-Home, Warps, Endertruhe und Teamchat nicht.
+          </p>
+          <ul className="mt-6 divide-y divide-line overflow-hidden rounded-lg border border-line">
+            {TEAM_COMMANDS.map((row) => (
+              <li key={row.cmd} className="grid gap-1 bg-surface px-5 py-4 sm:grid-cols-[14rem_1fr] sm:items-center">
                 <code className="font-semibold text-gold">{row.cmd}</code>
                 <span className="text-sm text-muted">{row.text}</span>
               </li>
