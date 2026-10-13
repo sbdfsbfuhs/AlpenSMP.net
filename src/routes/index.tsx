@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Map, Mic, Shield, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { DiscordLink, Shell, TikTokLink } from "@/components/site/shell";
+import { ModrinthLink } from "@/components/site/guide/mods";
 import { SiteMascot } from "@/components/site/assistant";
 import { CopyIp, MotdNotice, PlayerChart, SiteBanner, StatStrip, StatusCard } from "@/components/site/live";
 import { FEATURES, PILLARS, REVIEWS } from "@/lib/alpen/content";
@@ -251,7 +252,7 @@ function Home() {
         </div>
       </section>
 
-      <section className="shell grid gap-4 pb-16 lg:grid-cols-3">
+      <section id="join" className="shell scroll-mt-24 grid gap-4 pb-16 lg:grid-cols-3">
         <article className="card overflow-hidden lg:col-span-2">
           <img src="/media/lichen.jpg" alt="Fichten und Flechten im Alpenwald" className="tone-red h-44 w-full object-cover" />
           <div className="grid gap-6 p-6 md:grid-cols-2">
@@ -292,7 +293,7 @@ function Home() {
             </div>
           </div>
         </article>
-        <article className="card flex flex-col justify-between p-6">
+        <article id="mods" className="card flex scroll-mt-24 flex-col justify-between p-6">
           <div>
             <div className="flex items-center gap-2 text-ice">
               <Mic className="size-4" />
@@ -304,16 +305,18 @@ function Home() {
             </p>
           </div>
           <div className="mt-6 flex flex-col gap-2">
+            <ModrinthLink href={SITE.modrinthApp}>Modrinth App</ModrinthLink>
+            <Link to="/guide" hash="mods" className="btn-ghost">
+              Mods & Voice
+            </Link>
             <Link to="/karte" className="btn-ghost">
               Karte gerade zu
             </Link>
             <DiscordLink>Discord beitreten</DiscordLink>
             <TikTokLink>TikTok</TikTokLink>
-            <Link to="/guide" className="btn-ghost">
-              Spieler-Guide
-            </Link>
           </div>
         </article>
+
       </section>
 
       <section className="border-t border-line bg-bg-raised py-16">

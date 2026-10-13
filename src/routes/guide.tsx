@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { PlayerCommands } from "@/components/site/commands";
 import { SiteMascot } from "@/components/site/assistant";
+import { ModsGuide } from "@/components/site/guide/mods";
 import { PageHero, Shell } from "@/components/site/shell";
 import { GUIDE, type GuideChapter } from "@/lib/alpen/content";
 import { entries, fbGet } from "@/lib/alpen/staff";
@@ -12,17 +13,28 @@ export const Route = createFileRoute("/guide")({
       { title: "Spieler-Guide · AlpenSMP" },
       {
         name: "description",
-        content: "Start auf AlpenSMP: Minecraft-Grundlagen, IP, Regeln, Voice Chat und die aktuellen Befehle.",
+        content: "Start auf AlpenSMP: Minecraft-Grundlagen, Mods, Simple Voice Chat und die aktuellen Befehle.",
       },
     ],
   }),
   component: GuidePage,
 });
 
+type Track = "mc" | "alpen" | "mods";
+
 function GuidePage() {
-  const [track, setTrack] = useState<"mc" | "alpen" | null>(null);
+  const [track, setTrack] = useState<Track | null>(null);
   const [query, setQuery] = useState("");
   const [topics, setTopics] = useState<{ title?: string; description?: string; category?: string; steps?: string; image?: string }[]>([]);
+
+  useEffect(() => {
+    if (window.location.hash === "#mods") setTrack("mods");
+  }, []);
+
+  useEffect(() => {
+    if (track !== "mods" || window.location.hash !== "#mods") return;
+    document.getElementById("mods")?.scrollIntoView();
+  }, [track]);
 
   useEffect(() => {
     fbGet<Record<string, { title?: string; description?: string; category?: string; steps?: string; image?: string }>>("guideTopics")
@@ -31,7 +43,7 @@ function GuidePage() {
   }, []);
 
   const chapters = useMemo(() => {
-    const pool = track ? GUIDE.filter((chapter) => chapter.track === track) : GUIDE;
+    const pool = track && track !== "mods" ? GUIDE.filter((chapter) => chapter.track === track) : GUIDE;
     const q = query.trim().toLowerCase();
     if (!q) return pool;
     return pool.filter((chapter) =>
@@ -44,9 +56,10 @@ function GuidePage() {
       <PageHero
         kicker="Spieler-Guide"
         title="Alles für den Start."
-        lede="Zwei Wege rein. Darunter die Befehle für Java und Bedrock, jeweils mit Kopieren."
+        lede="Drei Wege rein. Mods und Voice Chat haben einen eigenen Bereich. Darunter die Befehle zum Kopieren."
       />
-      <div className="shell py-12">
+      <div id="start" className="shell scroll-mt-24 py-12">
+        <GuideTabs track={track} onPick={setTrack} />
         {topics.length ? (
           <div className="mb-10 space-y-3">
             {topics.map((topic) => (
@@ -60,8 +73,17 @@ function GuidePage() {
             ))}
           </div>
         ) : null}
-        {track === null ? <Choice onPick={setTrack} /> : (
-          <div>
+        {track === null ? <Choice onPick={setTrack} /> : null}
+        {track === "mods" ? (
+          <div className="mt-8">
+            <button type="button" className="btn-ghost mb-6" onClick={() => setTrack(null)}>
+              Auswahl ändern
+            </button>
+            <ModsGuide />
+          </div>
+        ) : null}
+        {track === "mc" || track === "alpen" ? (
+          <div className="mt-8">
             <div className="flex flex-col gap-3 sm:flex-row">
               <input
                 className="field"
@@ -89,7 +111,7 @@ function GuidePage() {
               </button>
             ) : null}
           </div>
-        )}
+        ) : null}
         <SiteMascot home="guide" bias="look" inset line="Die Befehle kann ich dir auch erklären." />
         <div className="mt-16">
           <PlayerCommands />
@@ -99,9 +121,32 @@ function GuidePage() {
   );
 }
 
-function Choice({ onPick }: { onPick: (track: "alpen" | "mc") => void }) {
+function GuideTabs({ track, onPick }: { track: Track | null; onPick: (track: Track) => void }) {
+  const tabs: { id: Track; label: string }[] = [
+    { id: "alpen", label: "Kenne Minecraft" },
+    { id: "mc", label: "Neu bei Minecraft" },
+    { id: "mods", label: "Mods & Voice" },
+  ];
   return (
-    <div className="stagger grid gap-4 md:grid-cols-2">
+    <nav className="guide-tabs mb-8" aria-label="Guide">
+      {tabs.map((tab) => (
+        <button
+          key={tab.id}
+          type="button"
+          className={track === tab.id ? "btn-gold" : "btn-ghost"}
+          aria-current={track === tab.id ? "page" : undefined}
+          onClick={() => onPick(tab.id)}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </nav>
+  );
+}
+
+function Choice({ onPick }: { onPick: (track: Track) => void }) {
+  return (
+    <div className="stagger grid gap-4 md:grid-cols-3">
       <button type="button" className="card p-6 text-left" onClick={() => onPick("alpen")}>
         <h2 className="text-2xl font-semibold">Ja, ich kenne Minecraft</h2>
         <p className="mt-2 text-muted">Ich kenne die Grundlagen bereits.</p>
@@ -111,6 +156,11 @@ function Choice({ onPick }: { onPick: (track: "alpen" | "mc") => void }) {
         <h2 className="text-2xl font-semibold">Nein, ich bin neu bei Minecraft</h2>
         <p className="mt-2 text-muted">Zuerst die wichtigsten Grundlagen lernen.</p>
         <span className="btn-ghost mt-6">Minecraft lernen</span>
+      </button>
+      <button type="button" className="card p-6 text-left" onClick={() => onPick("mods")}>
+        <h2 className="text-2xl font-semibold">🔧 Mods & Voice Chat</h2>
+        <p className="mt-2 text-muted">Modrinth App, Voice Chat und die erlaubten Mods.</p>
+        <span className="btn-modrinth mt-6">Zur Anleitung</span>
       </button>
     </div>
   );

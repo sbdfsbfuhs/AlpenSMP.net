@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHero, Shell } from "@/components/site/shell";
+import { ModrinthLink } from "@/components/site/guide/mods";
 import { SiteMascot } from "@/components/site/assistant";
 import { COMMANDS, FEATURES, TEAM_COMMANDS } from "@/lib/alpen/content";
 import { SITE } from "@/lib/alpen/site";
@@ -66,12 +67,11 @@ function FeaturesPage() {
             ))}
           </ul>
           <div className="mt-8 flex flex-wrap gap-3">
-            <a className="btn-gold" href={SITE.voiceMod} target="_blank" rel="noreferrer">
-              Simple Voice Chat auf Modrinth
-            </a>
-            <a className="btn-ghost" href={SITE.modrinthApp} target="_blank" rel="noreferrer">
-              Modrinth App
-            </a>
+            <ModrinthLink href={SITE.voiceMod}>Simple Voice Chat auf Modrinth</ModrinthLink>
+            <ModrinthLink href={SITE.modrinthApp}>Modrinth App</ModrinthLink>
+            <Link to="/guide" hash="mods" className="btn-ghost">
+              Mods & Voice
+            </Link>
             <Link to="/prefix" className="btn-ghost">
               Team-Prefix setzen
             </Link>

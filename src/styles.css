@@ -1584,3 +1584,122 @@
   from { opacity: 0; transform: translateX(36px); }
   to { opacity: 1; transform: none; }
 }
+
+.btn-modrinth {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: var(--radius-md);
+  padding-inline: 1.15rem;
+  background: #1bd96a;
+  color: #06210f;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 180ms ease, background-color 180ms ease;
+}
+
+.btn-modrinth:hover {
+  background: #2ee87a;
+  transform: translateY(-1px);
+}
+
+.btn-modrinth:active {
+  transform: translateY(0);
+}
+
+.guide-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.guide-step {
+  overflow: hidden;
+  border-radius: 18px;
+}
+
+.guide-step-no {
+  position: absolute;
+  top: -0.15rem;
+  right: 0.85rem;
+  z-index: 0;
+  font-family: var(--font-display);
+  font-size: 4.75rem;
+  font-weight: 560;
+  line-height: 1;
+  color: #fff;
+  opacity: 0.14;
+  pointer-events: none;
+  user-select: none;
+}
+
+.guide-step-body {
+  position: relative;
+  z-index: 1;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip-note {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.28rem 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.chip-note.go {
+  background: color-mix(in oklab, #1bd96a 22%, transparent);
+  color: #d8ffe8;
+}
+
+.chip-note.warn {
+  background: color-mix(in oklab, #f5c451 24%, #2a1c08);
+  color: #ffe7a3;
+}
+
+.chip-note.load {
+  border: 1px solid var(--color-line);
+  color: var(--color-muted);
+}
+
+.guide-mod {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-top: 1px solid var(--color-line);
+  padding: 0.9rem 0;
+}
+
+@media (max-width: 640px) {
+  .guide-mod {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .guide-step .btn-modrinth,
+  .guide-step .btn-gold {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-modrinth,
+  .btn-modrinth:hover {
+    transform: none;
+  }
+}
