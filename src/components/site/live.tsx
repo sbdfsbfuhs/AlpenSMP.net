@@ -1,5 +1,5 @@
 import { Copy } from "lucide-react";
-import { CopyBurst, CopyTick, useCopyBurst } from "@/components/site/copy-burst";
+import { CopyTick, useCopyBurst } from "@/components/site/copy-burst";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { fetchDiscordCount, fetchHistory, fetchSiteStats, fetchStatus, pruneOldHistory, recordPlayerSample, type HistoryPoint, type ServerStatus } from "@/lib/alpen/live";
@@ -37,15 +37,16 @@ export function useServerStatus() {
 
 export function CopyIp({ value, label }: { value: string; label: string }) {
   const burst = useCopyBurst();
+  const port = /port/i.test(label);
   return (
     <button
       type="button"
+      data-copy-kind={port ? "port" : "ip"}
       className={`btn-ghost copy-slot relative w-full justify-between ${burst.copied ? "is-copied" : ""}`}
       onClick={(event) => void burst.copy(value, event)}
     >
-      <CopyBurst burst={burst.burst} />
       <span className="text-left">
-        <span className="block text-xs font-medium text-faint">{burst.copied ? "Kopiert!" : label}</span>
+        <span className="block text-xs font-medium text-faint">{burst.copied ? "✓ Kopiert" : label}</span>
         <span className="font-semibold tracking-wide text-fg">{value}</span>
       </span>
       {burst.copied ? <CopyTick /> : <Copy className="size-4 text-gold" />}

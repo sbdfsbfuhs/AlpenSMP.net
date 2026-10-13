@@ -827,6 +827,7 @@
   .copy-slot {
     position: relative;
     overflow: visible;
+    touch-action: manipulation;
   }
 
   .copy-btn {
@@ -845,7 +846,7 @@
 
   .copy-btn.is-copied,
   .copy-slot.is-copied {
-    animation: copy-press 900ms cubic-bezier(0.2, 1.45, 0.3, 1);
+    border-color: rgba(52, 211, 153, 0.55);
   }
 
   .copy-burst {
@@ -906,6 +907,34 @@
     stroke-dasharray: 22;
     stroke-dashoffset: 22;
     animation: tick-draw 420ms ease forwards 90ms;
+  }
+
+  .copy-confetti,
+  .copy-toast {
+    position: fixed;
+    z-index: 99999;
+    pointer-events: none;
+  }
+
+  .copy-toast {
+    background: linear-gradient(135deg, #1a2a1a, #0d1a0d);
+    border: 1px solid rgba(52, 211, 153, 0.6);
+    color: #34d399;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    box-shadow: 0 0 16px rgba(52, 211, 153, 0.35);
+    white-space: nowrap;
+  }
+
+  .copy-pulse {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    border: 2px solid #34d399;
+    border-radius: inherit;
+    pointer-events: none;
   }
 
   .guide-scene {
