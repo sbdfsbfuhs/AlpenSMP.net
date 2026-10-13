@@ -5,6 +5,7 @@ import { DiscordLink, Shell, TikTokLink } from "@/components/site/shell";
 import { ModrinthLink } from "@/components/site/guide/mods";
 import { SiteMascot } from "@/components/site/assistant";
 import { CopyIp, MotdNotice, PlayerChart, SiteBanner, StatStrip, StatusCard } from "@/components/site/live";
+import { BerlinClock } from "@/components/site/berlin-clock";
 import { FEATURES, PILLARS, REVIEWS } from "@/lib/alpen/content";
 import { SITE } from "@/lib/alpen/site";
 
@@ -141,9 +142,10 @@ function Home() {
           ))}
         </div>
         <div className="hero-read" />
-        <div className="shell relative z-[3] grid items-end gap-10 py-16 md:grid-cols-[1.3fr_0.7fr] md:py-24">
+        <div className="shell relative z-[3] hero-layout">
           <div>
             <p className="kicker">Deutschsprachiger Minecraft Survival Server</p>
+            <BerlinClock />
             <h1 className="display mt-4 text-5xl text-fg md:text-7xl">
               Alpen<span className="text-gold">SMP</span>
             </h1>
@@ -165,7 +167,9 @@ function Home() {
               <TikTokLink>TikTok</TikTokLink>
             </div>
           </div>
-          <StatusCard />
+          <div className="hero-status">
+            <StatusCard />
+          </div>
         </div>
       </section>
 

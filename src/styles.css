@@ -1703,3 +1703,182 @@
     transform: none;
   }
 }
+
+.hero-layout {
+  --nav-h: 0px;
+  --muted: var(--color-faint);
+  --text2: var(--color-muted);
+  position: relative;
+  display: grid;
+  align-items: end;
+  gap: 2.5rem;
+  padding-block: 4rem;
+}
+
+.berlin-clock {
+  width: max-content;
+  max-width: 260px;
+  padding: 14px 20px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(8, 10, 14, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+}
+
+.clock-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.clock-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.clock-toggle {
+  border: 0;
+  background: transparent;
+  color: var(--text2);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.clock-time {
+  display: flex;
+  align-items: baseline;
+  margin-top: 0.35rem;
+  perspective: 240px;
+}
+
+.clock-hm {
+  font-family: Outfit, Manrope, ui-sans-serif, sans-serif;
+  font-size: 2.4rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  background: linear-gradient(#fff, #e05c5c);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.clock-sec,
+.clock-sec-wrap {
+  font-family: Outfit, Manrope, ui-sans-serif, sans-serif;
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--text2);
+}
+
+.clock-sec {
+  display: inline-block;
+  transform-origin: center bottom;
+  animation: sec-flip 150ms ease;
+}
+
+.clock-date {
+  margin-top: 0.45rem;
+  color: var(--text2);
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
+.clock-foot {
+  margin-top: 0.55rem;
+}
+
+.clock-chip {
+  display: inline-flex;
+  border-radius: 999px;
+  background: rgba(199, 62, 62, 0.15);
+  color: #fca5a5;
+  padding: 0.18rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.clock-analog {
+  display: none;
+  width: 132px;
+  height: 132px;
+  margin: 0.45rem auto 0;
+}
+
+.hand {
+  transform-box: view-box;
+  transform-origin: 60px 60px;
+}
+
+.is-analog .clock-digital {
+  display: none;
+}
+
+.is-analog .clock-analog {
+  display: block;
+}
+
+@media (max-width: 899px) {
+  .berlin-clock {
+    position: relative;
+    z-index: auto;
+    margin: 1.25rem auto 0;
+  }
+}
+
+@media (min-width: 900px) {
+  .hero-layout {
+    grid-template-columns: 1.3fr 0.7fr;
+    padding-block: 6rem;
+  }
+
+  .berlin-clock {
+    position: absolute;
+    top: calc(var(--nav-h) + 24px);
+    right: 28px;
+    z-index: 11;
+  }
+
+  .hero-status {
+    margin-top: 8rem;
+  }
+}
+
+@keyframes sec-flip {
+  from { transform: rotateX(90deg); }
+  to { transform: rotateX(0deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clock-sec {
+    animation: none;
+  }
+}
+
+.mode-lite .clock-sec,
+.mode-lite .clock-sec-wrap,
+.mode-lite .clock-toggle,
+.mode-lite .clock-analog,
+.mode-lite .hand-s {
+  display: none;
+}
+
+.mode-lite .clock-digital {
+  display: flex;
+}
+
+.mode-lite .hand {
+  animation: none;
+}
