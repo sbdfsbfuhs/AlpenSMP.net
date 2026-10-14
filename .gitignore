@@ -8,3 +8,4 @@ screenshots
 attachments
 *.log
 .DS_Store
+.grok/project-brain.md
