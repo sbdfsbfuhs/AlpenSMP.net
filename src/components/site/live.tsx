@@ -98,6 +98,8 @@ export type SiteNotice = {
   color?: string;
   button_label?: string;
   button_href?: string;
+  type?: string;
+  status_type?: string;
 };
 
 export function useSiteNotice() {

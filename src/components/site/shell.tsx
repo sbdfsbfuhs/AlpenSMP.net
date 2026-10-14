@@ -3,12 +3,15 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CautionTape, useSiteNotice } from "@/components/site/live";
+import { LiveDock, LiveHero, ServerStatusBanner } from "@/components/site/broadcast";
 import { LockScreen } from "@/components/site/offline-run";
 import { MORE, NAV, SITE } from "@/lib/alpen/site";
 
 export function Shell({ children }: { children: ReactNode }) {
-  const notice = useSiteNotice();
   const path = useRouterState({ select: (state) => state.location.pathname });
+  const notice = useSiteNotice();
+  const typed = notice?.type || notice?.status_type;
+  const customBanner = Boolean(notice?.is_active && typed && typed !== "online" && !notice.lockdown);
   useEffect(() => {
     const onClick = (event: MouseEvent) => {
       const el = event.target instanceof Element ? event.target.closest("button, a, summary") : null;
@@ -31,7 +34,7 @@ export function Shell({ children }: { children: ReactNode }) {
         <span /><span /><span /><span /><span /><span /><span /><span />
       </div>
       <div className="relative z-10">
-      <CautionTape notice={notice} />
+      {customBanner ? null : <CautionTape notice={notice} />}
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-gold focus:px-3 focus:py-2 focus:text-fg"
@@ -39,6 +42,8 @@ export function Shell({ children }: { children: ReactNode }) {
         Zum Inhalt springen
       </a>
       <Header />
+      <ServerStatusBanner />
+      {path === "/" ? <LiveHero /> : <LiveDock />}
       <main id="main" key={path} className="page-enter">{children}</main>
       <Footer />
       </div>
@@ -62,7 +67,7 @@ function Header() {
             Alpen<span className="text-gold">SMP</span>
           </span>
         </Link>
-        <nav className="ml-auto hidden items-center gap-1 lg:flex" aria-label="Hauptnavigation">
+        <nav className="ml-auto hidden min-w-0 items-center gap-1 overflow-x-auto lg:flex" aria-label="Hauptnavigation">
           {NAV.map((item) => (
             <Link
               key={item.to}
@@ -129,7 +134,7 @@ function Footer() {
             {[...NAV, ...MORE].map((item) => (
               <li key={item.to}>
                 <Link to={item.to} className="hover:text-gold">
-                  {item.label}
+                  {"footer" in item && item.footer ? item.footer : item.label}
                 </Link>
               </li>
             ))}

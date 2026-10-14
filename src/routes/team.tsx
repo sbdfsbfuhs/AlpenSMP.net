@@ -4,6 +4,7 @@ import { CopyBurstButton } from "@/components/site/copy-burst";
 import { PageHero, Shell } from "@/components/site/shell";
 import { SiteMascot } from "@/components/site/assistant";
 import { AbsenceBoard, BanGuideEditor, GuideEditor, PlayerCommandEditor, RulesEditor, TasksBoard } from "@/components/site/staff-extra";
+import { LiveNotices, NewsEditor, StatusDesk, StreamDesk } from "@/components/site/staff-broadcast";
 import { can, roleLabel, ROLES, asRole, type Role } from "@/lib/alpen/roles";
 import {
   createStaffAccount,
@@ -44,10 +45,10 @@ export const Route = createFileRoute("/team")({
   component: StaffPage,
 });
 
-type Tab = "roster" | "moderation" | "help" | "community" | "tasks" | "absence" | "chat" | "commands" | "rules" | "ban" | "guide" | "settings" | "website" | "archive" | "users";
+type Tab = "roster" | "moderation" | "help" | "community" | "tasks" | "absence" | "chat" | "commands" | "rules" | "ban" | "guide" | "settings" | "website" | "archive" | "users" | "news" | "status" | "stream";
 type Filter = "active" | "expired" | "archived" | "all";
 
-const TABS: { id: Tab; label: string; area: "roster" | "moderation" | "help" | "community" | "tasks" | "absence" | "chat" | "commandsRead" | "rulesRead" | "banGuide" | "guide" | "settings" | "website" | "archive" | "roles" }[] = [
+const TABS: { id: Tab; label: string; area: "roster" | "moderation" | "help" | "community" | "tasks" | "absence" | "chat" | "commandsRead" | "rulesRead" | "banGuide" | "guide" | "settings" | "website" | "archive" | "roles" | "news" | "status" | "stream" }[] = [
   { id: "roster", label: "Team", area: "roster" },
   { id: "moderation", label: "Moderation", area: "moderation" },
   { id: "help", label: "Hilfe", area: "help" },
@@ -59,6 +60,9 @@ const TABS: { id: Tab; label: string; area: "roster" | "moderation" | "help" | "
   { id: "rules", label: "Regeln", area: "rulesRead" },
   { id: "ban", label: "Ban-Leitfaden", area: "banGuide" },
   { id: "guide", label: "Guide", area: "guide" },
+  { id: "news", label: "📋 News", area: "news" },
+  { id: "status", label: "🚦 Status", area: "status" },
+  { id: "stream", label: "📺 Mein Stream", area: "stream" },
   { id: "settings", label: "Einstellungen", area: "settings" },
   { id: "website", label: "Website", area: "website" },
   { id: "archive", label: "Archiv", area: "archive" },
@@ -305,7 +309,8 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
           <span className="text-xs text-faint">Nur für dich. Ändert nicht die echte Rolle.</span>
         </div>
       ) : null}
-      <PlayerSearch />
+      {real === "owner" || real === "admin" ? <LiveNotices note={note} /> : null}
+      {shown === "streamer" ? null : <PlayerSearch />}
       {real === "owner" ? <CheckInBanner /> : null}
       <div className="mt-5 flex gap-2 overflow-x-auto px-1 pb-2">
         {tabs.map((item) => {
@@ -348,6 +353,9 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
         {safeTab === "roster" ? <Roster owner={real === "owner"} /> : null}
         {safeTab === "chat" ? <StaffChat user={user} builder={can(shown, "builderChat") && can(real, "builderChat")} /> : null}
         {safeTab === "settings" ? <Settings user={user} note={note} /> : null}
+        {safeTab === "news" ? <NewsEditor user={user} note={note} /> : null}
+        {safeTab === "status" ? <StatusDesk user={user} note={note} /> : null}
+        {safeTab === "stream" ? <StreamDesk user={user} note={note} /> : null}
         {safeTab === "website" ? <Website user={user} note={note} /> : null}
         {safeTab === "archive" ? <Archive user={user} note={note} /> : null}
         {safeTab === "users" ? <Accounts note={note} actor={user} /> : null}
@@ -1342,12 +1350,14 @@ function Accounts({ note, actor }: { note: (text: string) => void; actor: StaffS
           <option value="helper">Helper</option>
           <option value="supporter">Supporter</option>
           <option value="builder">Builder</option>
+          <option value="streamer">Streamer</option>
           <option value="admin">Admin</option>
           <option value="owner">Owner</option>
         </select>
         {formError ? <p className="mt-3 text-sm text-ember">{formError}</p> : null}
         <button className="btn-gold mt-3" type="submit">Anlegen</button>
       </form>
+      <StreamerAccount note={note} actor={actor} />
       <ul className="space-y-3">
         {entries(users).map(([name, item]) => (
           <AccountCard
@@ -1375,6 +1385,47 @@ function Accounts({ note, actor }: { note: (text: string) => void; actor: StaffS
         ))}
       </ul>
     </div>
+  );
+}
+
+function StreamerAccount({ note, actor }: { note: (text: string) => void; actor: StaffSession }) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [notify, setNotify] = useState(true);
+  const [error, setError] = useState("");
+  if (actor.role !== "owner") return null;
+  return (
+    <form
+      className="card card-still p-5"
+      onSubmit={(event) => {
+        event.preventDefault();
+        setError("");
+        void createStaffAccount({ username, password, role: "streamer", createdBy: actor.username })
+          .then(async () => {
+            const name = username.trim().toLowerCase().replace(/\s+/g, "");
+            try {
+              await fbUpdate(`staffUsers/${name}`, { notifyLive: notify });
+            } catch {
+              /* Hinweis-Flag ist optional, der Account steht. */
+            }
+            setUsername("");
+            setPassword("");
+            note("Streamer-Account angelegt");
+          })
+          .catch((err) => setError(err instanceof Error ? err.message : "Anlegen fehlgeschlagen"));
+      }}
+    >
+      <h2 className="text-lg font-semibold">Streamer-Account anlegen</h2>
+      <p className="mt-2 text-sm text-muted">Die Rolle ist fest Streamer. Die Person sieht danach nur den Tab „Mein Stream“.</p>
+      <input className="field mt-3" placeholder="Name" value={username} onChange={(e) => setUsername(e.target.value)} />
+      <input className="field mt-2" type="text" placeholder="Startpasswort" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
+      <label className="mt-3 flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} />
+        Hinweis im Staff-Center, wenn der Stream live geht
+      </label>
+      {error ? <p className="mt-3 text-sm text-ember">{error}</p> : null}
+      <button className="btn-gold mt-3" type="submit">Account anlegen</button>
+    </form>
   );
 }
 
@@ -1425,6 +1476,7 @@ function AccountCard({
               <option value="helper">Helper</option>
               <option value="supporter">Supporter</option>
               <option value="builder">Builder</option>
+              <option value="streamer">Streamer</option>
               <option value="admin">Admin</option>
               <option value="owner">Owner</option>
             </select>

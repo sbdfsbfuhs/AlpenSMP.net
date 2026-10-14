@@ -1,4 +1,4 @@
-export const ROLES = ["owner", "admin", "helper", "supporter", "builder"] as const;
+export const ROLES = ["owner", "admin", "helper", "supporter", "builder", "streamer"] as const;
 export type Role = (typeof ROLES)[number];
 
 export type Area =
@@ -29,7 +29,10 @@ export type Area =
   | "roster"
   | "chat"
   | "builderChat"
-  | "search";
+  | "search"
+  | "news"
+  | "status"
+  | "stream";
 
 const ALL: Area[] = [
   "moderation",
@@ -60,6 +63,9 @@ const ALL: Area[] = [
   "chat",
   "builderChat",
   "search",
+  "news",
+  "status",
+  "stream",
 ];
 
 const MAP: Record<Role, Area[]> = {
@@ -81,6 +87,8 @@ const MAP: Record<Role, Area[]> = {
     "roster",
     "chat",
     "search",
+    "news",
+    "status",
   ],
   helper: [
     "moderation",
@@ -115,10 +123,18 @@ const MAP: Record<Role, Area[]> = {
     "search",
   ],
   builder: ["guide", "tasks", "absence", "settings", "roster", "chat", "builderChat", "search"],
+  streamer: ["stream"],
 };
 
 export function asRole(value: string | undefined): Role {
-  if (value === "owner" || value === "admin" || value === "helper" || value === "supporter" || value === "builder") {
+  if (
+    value === "owner" ||
+    value === "admin" ||
+    value === "helper" ||
+    value === "supporter" ||
+    value === "builder" ||
+    value === "streamer"
+  ) {
     return value;
   }
   return "helper";

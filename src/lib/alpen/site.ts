@@ -27,11 +27,12 @@ export const NAV = [
   { to: "/regeln", label: "Regeln" },
   { to: "/team", label: "Staff" },
   { to: "/karte", label: "Karte" },
+  { to: "/guide", label: "Guide" },
+  { to: "/changelog", label: "News", footer: "Changelog" },
   { to: "/community", label: "Community" },
 ] as const;
 
 export const MORE = [
-  { to: "/guide", label: "Guide" },
   { to: "/faq", label: "FAQ" },
   { to: "/kontakt", label: "Kontakt" },
 ] as const;
