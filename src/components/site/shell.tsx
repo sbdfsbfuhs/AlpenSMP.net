@@ -37,7 +37,7 @@ export function Shell({ children }: { children: ReactNode }) {
       {customBanner ? null : <CautionTape notice={notice} />}
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-gold focus:px-3 focus:py-2 focus:text-fg"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-brand focus:px-3 focus:py-2 focus:text-fg"
       >
         Zum Inhalt springen
       </a>
@@ -64,7 +64,7 @@ function Header() {
         <Link to="/" className="brand flex items-center gap-3" onClick={close}>
           <Mark />
           <span className="display text-lg text-fg">
-            Alpen<span className="text-gold">SMP</span>
+            Alpen<span className="text-brand">SMP</span>
           </span>
         </Link>
         <nav className="ml-auto hidden min-w-0 items-center gap-1 overflow-x-auto lg:flex" aria-label="Hauptnavigation">
@@ -79,7 +79,7 @@ function Header() {
             </Link>
           ))}
         </nav>
-        <Link to="/server" className="btn-gold hidden sm:inline-flex">
+        <Link to="/server" className="btn-brand hidden sm:inline-flex">
           Beitreten
         </Link>
         <button
@@ -105,7 +105,7 @@ function Header() {
                 {item.label}
               </Link>
             ))}
-            <Link to="/server" className="btn-gold mt-2" onClick={close}>
+            <Link to="/server" className="btn-brand mt-2" onClick={close}>
               Beitreten
             </Link>
           </div>
@@ -121,7 +121,7 @@ function Footer() {
       <div className="shell grid gap-10 py-12 md:grid-cols-4">
         <div className="md:col-span-2">
           <p className="display text-2xl">
-            Alpen<span className="text-gold">SMP</span>
+            Alpen<span className="text-brand">SMP</span>
           </p>
           <p className="mt-3 max-w-sm text-sm text-muted">
             Java {SITE.ip}. Bedrock {SITE.play}, Port {SITE.bedrockPort}.
@@ -133,7 +133,7 @@ function Footer() {
           <ul className="mt-3 space-y-2 text-sm text-muted">
             {[...NAV, ...MORE].map((item) => (
               <li key={item.to}>
-                <Link to={item.to} className="hover:text-gold">
+                <Link to={item.to} className="hover:text-brand">
                   {"footer" in item && item.footer ? item.footer : item.label}
                 </Link>
               </li>
@@ -150,12 +150,12 @@ function Footer() {
               <TikTokLink />
             </li>
             <li>
-              <Link to="/karte" className="hover:text-gold">
+              <Link to="/karte" className="hover:text-brand">
                 Live-Karte
               </Link>
             </li>
             <li>
-              <button type="button" className="hover:text-gold" onClick={() => window.dispatchEvent(new Event("alpen-open-ki"))}>
+              <button type="button" className="hover:text-brand" onClick={() => window.dispatchEvent(new Event("alpen-open-ki"))}>
                 AlpenKI
               </button>
             </li>
@@ -165,7 +165,7 @@ function Footer() {
       <div className="border-t border-line">
         <div className="shell flex flex-col gap-2 py-4 text-xs text-faint sm:flex-row sm:justify-between">
           <span>© 2026 AlpenSMP</span>
-          <a href="/ki-transparenz" className="hover:text-gold">
+          <a href="/ki-transparenz" className="hover:text-brand">
             KI-Transparenz
           </a>
         </div>

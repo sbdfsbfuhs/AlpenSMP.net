@@ -1,4 +1,4 @@
-import { useId, type CSSProperties } from "react";
+import { useId } from "react";
 import type { Act } from "@/lib/alpen/mascot";
 
 type Gaze = { x: number; y: number };
@@ -83,10 +83,11 @@ export function MascotView({
   const fur = `fur-${raw}`;
   const belly = `belly-${raw}`;
   const scarf = `scarf-${raw}`;
+  const waving = pose === "wave";
   return (
     <span
-      className={`mascot-figure pose-${pose} mood-${mood} ${cling ? "is-cling" : ""} ${preview ? "is-preview" : ""}`}
-      style={{ "--lx": `${gaze.x * 2.2}px`, "--ly": `${gaze.y * -1.8}px` } as CSSProperties}
+      className={`mascot-figure pose-${pose} mood-${mood} ${waving ? "mascot-waving" : ""} ${cling ? "is-cling" : ""} ${preview ? "is-preview" : ""}`}
+      data-state={waving ? "waving" : pose}
     >
       <svg className="mascot-art" viewBox="0 0 160 180" aria-hidden="true">
         <defs>
@@ -143,12 +144,12 @@ export function MascotView({
           </g>
 
           <g className="arm-r">
-            <path d="M98 122c10 6 16 18 14 32" fill="none" stroke="#3a241c" strokeWidth="15" strokeLinecap="round" />
-            <path d="M98 122c10 6 16 18 14 32" fill="none" stroke="#f6e3cf" strokeWidth="11" strokeLinecap="round" />
+            <path d="M100 114c16 14 22 32 16 48" fill="none" stroke="#3a241c" strokeWidth="15" strokeLinecap="round" />
+            <path d="M100 114c16 14 22 32 16 48" fill="none" stroke="#f6e3cf" strokeWidth="11" strokeLinecap="round" />
             <g className="paw-r">
               <g className="paw-tip">
-                <ellipse cx="114" cy="156" rx="13" ry="11" fill="#fffaf4" stroke="#3a241c" strokeWidth="2.2" />
-                <path d="M107 154v6M114 152v7M121 154v6" fill="none" stroke="#e4c2a4" strokeWidth="1.3" strokeLinecap="round" />
+                <ellipse cx="116" cy="164" rx="13" ry="11" fill="#fffaf4" stroke="#3a241c" strokeWidth="2.2" />
+                <path d="M109 162v6M116 160v7M123 162v6" fill="none" stroke="#e4c2a4" strokeWidth="1.3" strokeLinecap="round" />
               </g>
             </g>
           </g>

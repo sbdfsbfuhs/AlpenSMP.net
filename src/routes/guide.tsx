@@ -106,7 +106,7 @@ function GuidePage() {
               {!chapters.length ? <p className="text-muted">Nichts dazu gefunden. Versuch ein anderes Wort.</p> : null}
             </div>
             {track === "mc" ? (
-              <button type="button" className="btn-gold mt-8" onClick={() => setTrack("alpen")}>
+              <button type="button" className="btn-brand mt-8" onClick={() => setTrack("alpen")}>
                 Weiter zu AlpenSMP
               </button>
             ) : null}
@@ -133,7 +133,7 @@ function GuideTabs({ track, onPick }: { track: Track | null; onPick: (track: Tra
         <button
           key={tab.id}
           type="button"
-          className={track === tab.id ? "btn-gold" : "btn-ghost"}
+          className={track === tab.id ? "btn-brand" : "btn-ghost"}
           aria-current={track === tab.id ? "page" : undefined}
           onClick={() => onPick(tab.id)}
         >
@@ -150,7 +150,7 @@ function Choice({ onPick }: { onPick: (track: Track) => void }) {
       <button type="button" className="card p-6 text-left" onClick={() => onPick("alpen")}>
         <h2 className="text-2xl font-semibold">Ja, ich kenne Minecraft</h2>
         <p className="mt-2 text-muted">Ich kenne die Grundlagen bereits.</p>
-        <span className="btn-gold mt-6">AlpenSMP entdecken</span>
+        <span className="btn-brand mt-6">AlpenSMP entdecken</span>
       </button>
       <button type="button" className="card p-6 text-left" onClick={() => onPick("mc")}>
         <h2 className="text-2xl font-semibold">Nein, ich bin neu bei Minecraft</h2>

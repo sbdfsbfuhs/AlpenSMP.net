@@ -92,7 +92,7 @@ export function LiveHero() {
           {live.title ? <p className="mt-1 text-sm text-muted">„{live.title}"</p> : null}
           <p className="mt-1 text-xs text-faint">{PLATFORMS[live.platform || "other"] || live.platform}{left ? ` · ${left}` : ""}</p>
         </div>
-        <a className="btn-gold" href={live.url} target="_blank" rel="noopener noreferrer">
+        <a className="btn-brand" href={live.url} target="_blank" rel="noopener noreferrer">
           ▶ Stream ansehen
         </a>
       </div>
@@ -128,7 +128,7 @@ export function LiveDock() {
         <p className="truncate text-sm font-semibold">{live.streamer_name || "Live"} streamt</p>
         {live.title ? <p className="truncate text-xs text-muted">{live.title}</p> : null}
       </div>
-      <a className="btn-gold shrink-0 px-3" href={live.url} target="_blank" rel="noopener noreferrer">
+      <a className="btn-brand shrink-0 px-3" href={live.url} target="_blank" rel="noopener noreferrer">
         Ansehen
       </a>
       <button

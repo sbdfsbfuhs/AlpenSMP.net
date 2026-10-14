@@ -31,7 +31,7 @@ function FeaturesPage() {
         {FEATURES.map((feature) => (
           <article id={feature.id} key={feature.id} className="card scroll-mt-24 p-6">
             <h2 className="text-xl font-semibold">{feature.title}</h2>
-            <p className="mt-1 text-sm text-gold">{feature.summary}</p>
+            <p className="mt-1 text-sm text-brand">{feature.summary}</p>
             <div className="mt-4 space-y-3 text-sm text-muted">
               {feature.body.map((paragraph) => (
                 <p key={paragraph}>{paragraph}</p>
@@ -49,19 +49,19 @@ function FeaturesPage() {
           <ul className="mt-8 divide-y divide-line overflow-hidden rounded-lg border border-line">
             {COMMANDS.map((row) => (
               <li key={row.cmd} className="grid gap-1 bg-surface px-5 py-4 sm:grid-cols-[9rem_1fr] sm:items-center">
-                <code className="font-semibold text-gold">{row.cmd}</code>
+                <code className="font-semibold text-brand">{row.cmd}</code>
                 <span className="text-sm text-muted">{row.text}</span>
               </li>
             ))}
           </ul>
           <h3 id="teams" className="mt-12 scroll-mt-24 text-2xl font-semibold">Team-Befehle</h3>
           <p className="mt-3 max-w-2xl text-muted">
-            Zuerst <code className="text-gold">/team create Name</code>. Ohne dieses Team gehen Prefix, Team-Home, Warps, Endertruhe und Teamchat nicht.
+            Zuerst <code className="text-brand">/team create Name</code>. Ohne dieses Team gehen Prefix, Team-Home, Warps, Endertruhe und Teamchat nicht.
           </p>
           <ul className="mt-6 divide-y divide-line overflow-hidden rounded-lg border border-line">
             {TEAM_COMMANDS.map((row) => (
               <li key={row.cmd} className="grid gap-1 bg-surface px-5 py-4 sm:grid-cols-[14rem_1fr] sm:items-center">
-                <code className="font-semibold text-gold">{row.cmd}</code>
+                <code className="font-semibold text-brand">{row.cmd}</code>
                 <span className="text-sm text-muted">{row.text}</span>
               </li>
             ))}

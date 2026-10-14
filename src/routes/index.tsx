@@ -18,19 +18,22 @@ function useHeroParallax() {
   useEffect(() => {
     const el = ref.current;
     if (!el || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const mobile = window.matchMedia("(max-width: 760px)");
     let frame = 0;
     const onScroll = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
-        const y = Math.min(window.scrollY, 520) * 0.16;
+        const y = mobile.matches ? 0 : Math.min(window.scrollY, 520) * 0.25;
         el.style.setProperty("--parallax", `${y}px`);
       });
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
+    mobile.addEventListener("change", onScroll);
     return () => {
       cancelAnimationFrame(frame);
       window.removeEventListener("scroll", onScroll);
+      mobile.removeEventListener("change", onScroll);
     };
   }, []);
   return ref;
@@ -121,20 +124,20 @@ function Home() {
             alt="Abendlicht über einem Alpenkamm und Fichtenwald"
             className="hero-drift tone-red absolute inset-0 h-full w-full object-cover opacity-55"
           />
+          <div className="sky-wash" />
+          {sky === "night" ? (
+            <div className="sky-night" aria-hidden="true">
+              <span className="sky-moon" />
+              <span className="sky-stars">
+                {Array.from({ length: 16 }, (_, i) => (
+                  <i key={i} className="sky-star" />
+                ))}
+              </span>
+            </div>
+          ) : sky ? (
+            <span className="sky-sun" aria-hidden="true" />
+          ) : null}
         </div>
-        <div className="sky-wash" />
-        {sky === "night" ? (
-          <div className="sky-night" aria-hidden="true">
-            <span className="sky-moon" />
-            <span className="sky-stars">
-              {Array.from({ length: 16 }, (_, i) => (
-                <i key={i} className="sky-star" />
-              ))}
-            </span>
-          </div>
-        ) : sky ? (
-          <span className="sky-sun" aria-hidden="true" />
-        ) : null}
         <div className="torch-layer" aria-hidden="true">
           <span className="torch-shade" />
           {Array.from({ length: 12 }, (_, i) => (
@@ -147,7 +150,7 @@ function Home() {
             <p className="kicker">Deutschsprachiger Minecraft Survival Server</p>
             <BerlinClock />
             <h1 className="display mt-4 text-5xl text-fg md:text-7xl">
-              Alpen<span className="text-gold">SMP</span>
+              Alpen<span className="text-brand">SMP</span>
             </h1>
             <p className="display mt-5 max-w-xl text-2xl text-fg italic md:text-3xl">
               Vanilla Survival. Faire Community. Persönliche Serverleitung.
@@ -157,7 +160,7 @@ function Home() {
               keine überladenen Plugins.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link to="/server" className="btn-gold">
+              <Link to="/server" className="btn-brand">
                 Jetzt spielen
               </Link>
               <Link to="/regeln" className="btn-ghost">
@@ -186,7 +189,7 @@ function Home() {
               ["Staff", "/team"],
             ] as const
           ).map(([label, to]) => (
-            <Link key={to} to={to} className="chip rounded-md border border-line bg-bg px-3 py-3 text-center text-sm font-semibold hover:border-gold hover:text-gold">
+            <Link key={to} to={to} className="chip rounded-md border border-line bg-bg px-3 py-3 text-center text-sm font-semibold hover:border-brand hover:text-brand">
               {label}
             </Link>
           ))}
@@ -234,8 +237,8 @@ function Home() {
           </div>
           <div className="stagger mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {FEATURES.map((feature) => (
-              <Link key={feature.id} to="/features" hash={feature.id} className="card p-4 hover:border-gold/50">
-                <Sparkles className="hop-icon size-4 text-gold" />
+              <Link key={feature.id} to="/features" hash={feature.id} className="card p-4 hover:border-brand/50">
+                <Sparkles className="hop-icon size-4 text-brand" />
                 <h3 className="mt-2 font-semibold">{feature.title}</h3>
                 <p className="mt-2 text-sm text-muted">{feature.summary}</p>
               </Link>
@@ -261,7 +264,7 @@ function Home() {
           <img src="/media/lichen.jpg" alt="Fichten und Flechten im Alpenwald" className="tone-red h-44 w-full object-cover" />
           <div className="grid gap-6 p-6 md:grid-cols-2">
             <div>
-              <div className="flex items-center gap-2 text-gold">
+              <div className="flex items-center gap-2 text-brand">
                 <Shield className="size-4" />
                 <h3 className="font-semibold text-fg">Java Edition</h3>
               </div>
@@ -279,7 +282,7 @@ function Home() {
               </div>
             </div>
             <div>
-              <div className="flex items-center gap-2 text-gold">
+              <div className="flex items-center gap-2 text-brand">
                 <Map className="size-4" />
                 <h3 className="font-semibold text-fg">Bedrock Edition</h3>
               </div>
@@ -320,7 +323,6 @@ function Home() {
             <TikTokLink>TikTok</TikTokLink>
           </div>
         </article>
-
       </section>
 
       <section className="border-t border-line bg-bg-raised py-16">
@@ -337,7 +339,7 @@ function Home() {
           <div className="mt-8 grid gap-4 md:grid-cols-3">
             {REVIEWS.slice(0, 3).map((review) => (
               <blockquote key={review.name + review.text.slice(0, 12)} className="card p-5">
-                <p className="text-gold">{"★".repeat(review.rating)}</p>
+                <p className="text-star">{"★".repeat(review.rating)}</p>
                 <p className="mt-3 text-sm whitespace-pre-line text-fg">{review.text}</p>
                 <footer className="mt-4 text-sm text-faint">{review.name}</footer>
               </blockquote>

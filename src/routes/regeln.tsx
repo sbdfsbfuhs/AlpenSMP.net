@@ -66,7 +66,7 @@ function RulesPage() {
           {RULES.map((rule) => (
             <article id={`regel-${rule.id}`} key={rule.id} className="card scroll-mt-24 p-6">
               <div className="flex items-baseline gap-3">
-                <span className="display text-2xl text-gold">{String(rule.id).padStart(2, "0")}</span>
+                <span className="display text-2xl text-brand">{String(rule.id).padStart(2, "0")}</span>
                 <h2 className="text-xl font-semibold">{rule.title}</h2>
                 {rule.highlight ? <span className="text-xs font-semibold text-ice">Wichtig</span> : null}
               </div>

@@ -49,7 +49,7 @@ export function NewsEditor({ user, note }: { user: StaffSession; note: (text: st
           <input type="checkbox" checked={published} onChange={(e) => setPublished(e.target.checked)} />
           Öffentlich sichtbar
         </label>
-        <button className="btn-gold mt-4" type="submit">Speichern</button>
+        <button className="btn-brand mt-4" type="submit">Speichern</button>
       </form>
       <ul className="space-y-2">
         {rows.map(([id, item]) => (
@@ -154,7 +154,7 @@ export function StatusDesk({ user, note }: { user: StaffSession; note: (text: st
           Gilt bis, optional
           <input className="field mt-1" type="datetime-local" value={until} onChange={(e) => setUntil(e.target.value)} />
         </label>
-        <button className="btn-gold mt-4" type="submit">Status setzen</button>
+        <button className="btn-brand mt-4" type="submit">Status setzen</button>
       </form>
       <ul className="space-y-2">
         {recent.map((item, index) => (
@@ -235,7 +235,7 @@ export function StreamDesk({ user, note }: { user: StaffSession; note: (text: st
   return (
     <div className="space-y-4">
       {live?.is_live ? (
-        <p className="rounded-md border border-gold/40 bg-gold/10 px-4 py-3 text-sm">
+        <p className="rounded-md border border-brand/40 bg-brand/10 px-4 py-3 text-sm">
           Live: {live.streamer_name} · {live.title || live.platform}
           {mine ? (
             <button type="button" className="btn-ghost ml-3" onClick={() => void fbSet("live_streams/active", { ...live, is_live: false, uid: live.uid }).then(() => note("Stream beendet"))}>
@@ -268,15 +268,15 @@ export function StreamDesk({ user, note }: { user: StaffSession; note: (text: st
           <input className="field mt-1" placeholder="https://" value={url} onChange={(e) => setUrl(e.target.value)} />
         </label>
         <div className="mt-3 flex flex-wrap gap-2">
-          <button type="button" className={when === "now" ? "btn-gold" : "btn-ghost"} onClick={() => setWhen("now")}>Jetzt live</button>
-          <button type="button" className={when === "later" ? "btn-gold" : "btn-ghost"} onClick={() => setWhen("later")}>Zeitpunkt wählen</button>
+          <button type="button" className={when === "now" ? "btn-brand" : "btn-ghost"} onClick={() => setWhen("now")}>Jetzt live</button>
+          <button type="button" className={when === "later" ? "btn-brand" : "btn-ghost"} onClick={() => setWhen("later")}>Zeitpunkt wählen</button>
         </div>
         {when === "later" ? <input className="field mt-2" type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} /> : null}
         <label className="mt-3 block text-sm">
           Ende, optional
           <input className="field mt-1" type="datetime-local" value={end} onChange={(e) => setEnd(e.target.value)} />
         </label>
-        <button className="btn-gold mt-4" type="submit">Live gehen</button>
+        <button className="btn-brand mt-4" type="submit">Live gehen</button>
       </form>
     </div>
   );

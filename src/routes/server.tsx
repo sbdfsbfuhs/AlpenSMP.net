@@ -63,11 +63,11 @@ function ServerPage() {
           <article className="card p-6">
             <h2 className="text-xl font-semibold">Team-Prefix</h2>
             <p className="mt-3 text-muted">
-              Zuerst ein Team mit <code className="text-gold">/team create Name</code>, 3 bis 10 Buchstaben. Ohne Team funktioniert <code className="text-gold">/team prefix</code> nicht.
+              Zuerst ein Team mit <code className="text-brand">/team create Name</code>, 3 bis 10 Buchstaben. Ohne Team funktioniert <code className="text-brand">/team prefix</code> nicht.
               Danach Farbcode und Teamname direkt hintereinander, zusammen höchstens 10 Zeichen, ohne Leerzeichen. Nicht der Spielername.
-              Im Tab steht der Prefix vor dem Namen, der Text selbst ist farbig. Beispiel: <code className="text-gold">/team prefix &cAlpen</code>
+              Im Tab steht der Prefix vor dem Namen, der Text selbst ist farbig. Beispiel: <code className="text-brand">/team prefix &cAlpen</code>
             </p>
-            <Link to="/prefix" className="btn-gold mt-5">
+            <Link to="/prefix" className="btn-brand mt-5">
               Farben und Befehl
             </Link>
           </article>
@@ -82,7 +82,7 @@ function ServerPage() {
               und nicht-kommerziell.
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
-              <Link to="/guide" className="btn-gold">
+              <Link to="/guide" className="btn-brand">
                 Spieler-Guide
               </Link>
               <Link to="/features" className="btn-ghost">

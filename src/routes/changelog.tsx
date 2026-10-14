@@ -42,7 +42,7 @@ function ChangelogPage() {
             <button
               key={item}
               type="button"
-              className={item === cat ? "btn-gold shrink-0" : "btn-ghost shrink-0"}
+              className={item === cat ? "btn-brand shrink-0" : "btn-ghost shrink-0"}
               onClick={() => {
                 setCat(item);
                 setShown(10);

@@ -34,6 +34,11 @@ function quipsFor(home: string) {
   return PAGE_QUIPS[home] ?? PAGE_QUIPS.index ?? [];
 }
 
+function waveHold() {
+  if (typeof window === "undefined") return 1300;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 1700 : 1300;
+}
+
 // Art. 50 Abs. 1 AI Act kann einen Hinweis verlangen, wenn ein KI-System direkt mit Personen spricht.
 // AlpenKI ist eine feste Antworttabelle, kein Sprachmodell. Der Hinweis steht trotzdem sofort im Chat,
 // damit niemand eine menschliche Antwort erwartet. Siehe /ki-transparenz.
@@ -103,7 +108,13 @@ export function SiteMascot({
   const [act, setAct] = useState<Act>("sit");
   const [chat, setChat] = useState(false);
   const [closing, setClosing] = useState(false);
-  const [box, setBox] = useState<{ left: number; bottom: number; width: number } | null>(null);
+  const [box, setBox] = useState<{
+    left: number;
+    width: number;
+    top?: number;
+    bottom?: number;
+    maxHeight: number;
+  } | null>(null);
   const [text, setText] = useState("");
   const [msgs, setMsgs] = useState<Msg[]>([{ role: "bot", text: STARTER }]);
   const [gaze, setGaze] = useState({ x: 0, y: 0 });
@@ -188,7 +199,7 @@ export function SiteMascot({
     if (window.sessionStorage.getItem("alpen-waved") === "1") return;
     window.sessionStorage.setItem("alpen-waved", "1");
     setAct("wave");
-    const id = window.setTimeout(() => setAct((current) => (current === "wave" ? "sit" : current)), 2000);
+    const id = window.setTimeout(() => setAct((current) => (current === "wave" ? "sit" : current)), waveHold());
     return () => window.clearTimeout(id);
   }, []);
 
@@ -231,7 +242,7 @@ export function SiteMascot({
           const idleFor = Date.now() - lastTouch.current;
           if (fine && idleFor > 40000 && idleFor < 80000 && current === "sit") {
             setAct("wave");
-            window.setTimeout(() => setAct((value) => (value === "wave" ? "sit" : value)), 2000);
+            window.setTimeout(() => setAct((value) => (value === "wave" ? "sit" : value)), waveHold());
           } else if (idleFor > (fine ? 80000 : 70000) && current !== "sleep" && current !== "wave") setAct("sleep");
           else if (current === "sit" && (fine || Math.random() < 0.35)) {
             const extra = (["look", "scratch", "scarf"] as Act[])[Math.floor(Math.random() * 3)] ?? "look";
@@ -297,11 +308,29 @@ export function SiteMascot({
   function place() {
     const node = spot.current;
     if (!node) return;
+    const margin = 8;
     const rect = node.getBoundingClientRect();
-    const width = Math.min(420, window.innerWidth - 24);
-    let left = rect.left + rect.width / 2 - width / 2;
-    left = Math.max(12, Math.min(left, window.innerWidth - width - 12));
-    setBox({ left, bottom: Math.max(12, window.innerHeight - rect.top + 12), width });
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const narrow = vw <= 760 || !window.matchMedia("(pointer: fine)").matches;
+    const width = Math.min(420, vw - margin * 2);
+    const left = Math.max(margin, Math.min(rect.left + rect.width / 2 - width / 2, vw - width - margin));
+    if (narrow) {
+      setBox({
+        left: margin,
+        width: Math.max(160, vw - margin * 2),
+        bottom: margin,
+        maxHeight: Math.max(160, vh - margin * 2),
+      });
+      return;
+    }
+    if (rect.top < vh / 2) {
+      const top = Math.max(margin, Math.min(rect.bottom + margin, vh - margin - 96));
+      setBox({ left, width, top, maxHeight: Math.max(96, vh - top - margin) });
+      return;
+    }
+    const bottom = Math.max(margin, Math.min(vh - rect.top + margin, vh - margin - 96));
+    setBox({ left, width, bottom, maxHeight: Math.max(96, vh - bottom - margin) });
   }
 
   function openChat() {
@@ -312,7 +341,7 @@ export function SiteMascot({
     if (actRef.current === "sleep") setAct("sit");
     else {
       setAct("wave");
-      window.setTimeout(() => setAct((current) => (current === "wave" ? "sit" : current)), 2000);
+      window.setTimeout(() => setAct((current) => (current === "wave" ? "sit" : current)), waveHold());
     }
     place();
   }
@@ -361,6 +390,7 @@ export function SiteMascot({
         x: Math.min(window.innerWidth - 28, Math.max(-width + 36, x)),
         y: Math.min(window.innerHeight - 24, Math.max(-8, y)),
       });
+      if (chatRef.current) requestAnimationFrame(() => place());
     };
     const up = () => {
       window.removeEventListener("pointermove", move);
@@ -403,6 +433,10 @@ export function SiteMascot({
   useEffect(() => {
     if (!chat) return;
     place();
+  }, [chat, spotPos]);
+
+  useEffect(() => {
+    if (!chat) return;
     const onMove = () => place();
     window.addEventListener("scroll", onMove, true);
     window.addEventListener("resize", onMove);
@@ -449,7 +483,11 @@ export function SiteMascot({
         Ausblenden
       </button>
       {quip && !chat && !away ? (
-        <button type="button" className="mascot-quip" onClick={() => setQuip(null)}>
+        <button
+          type="button"
+          className={`mascot-quip ${(spotPos?.y ?? 10_000) < (typeof window === "undefined" ? 800 : window.innerHeight) / 2 ? "is-below" : ""}`}
+          onClick={() => setQuip(null)}
+        >
           {quip}
         </button>
       ) : null}
@@ -487,8 +525,14 @@ export function SiteMascot({
       {chat && box && typeof document !== "undefined"
         ? createPortal(
             <section
-              className={`thought ${closing ? "is-closing" : ""}`}
-              style={{ left: box.left, bottom: box.bottom, width: box.width }}
+              className={`thought ${closing ? "is-closing" : ""} ${box.top != null ? "is-below" : ""}`}
+              style={{
+                left: box.left,
+                width: box.width,
+                maxHeight: box.maxHeight,
+                top: box.top,
+                bottom: box.top == null ? box.bottom : undefined,
+              }}
               role="dialog"
               aria-label="AlpenKI, automatischer Assistent, kein Mensch"
             >
@@ -529,7 +573,7 @@ export function SiteMascot({
                 }}
               >
                 <input className="field" value={text} maxLength={200} placeholder="Frag mich oder sag: setz dich" aria-label="Nachricht eingeben" onChange={(e) => setText(e.target.value)} />
-                <button type="submit" className="grid size-11 shrink-0 place-items-center rounded-md bg-gold text-fg" aria-label="Senden">
+                <button type="submit" className="grid size-11 shrink-0 place-items-center rounded-md bg-brand text-fg" aria-label="Senden">
                   <Send className="size-4" />
                 </button>
               </form>

@@ -130,7 +130,7 @@ function StaffPage() {
         ) : user ? (
           <Desk user={user} onLogout={logout} note={note} />
         ) : null}
-        {toast ? <p className="panel-in fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-md bg-gold px-4 py-2 text-sm text-fg">{toast}</p> : null}
+        {toast ? <p className="panel-in fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-md bg-brand px-4 py-2 text-sm text-fg">{toast}</p> : null}
       </div>
     </Shell>
   );
@@ -171,7 +171,7 @@ function Login({ onIn }: { onIn: (user: StaffSession) => void }) {
         <input className="field mt-1" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
       </label>
       {error ? <p className="mt-3 text-sm text-ember">{error}</p> : null}
-      <button className="btn-gold mt-5 w-full" type="submit" disabled={busy}>
+      <button className="btn-brand mt-5 w-full" type="submit" disabled={busy}>
         {busy ? "Prüfe…" : "Rein"}
       </button>
     </form>
@@ -202,7 +202,7 @@ function ForcePassword({ user, onDone, note }: { user: StaffSession; onDone: (us
       <h2 className="text-xl font-semibold">Neues Passwort</h2>
       <input className="field mt-4" type="password" value={a} onChange={(e) => setA(e.target.value)} placeholder="Neues Passwort" />
       <input className="field mt-3" type="password" value={b} onChange={(e) => setB(e.target.value)} placeholder="Wiederholen" />
-      <button className="btn-gold mt-4" type="submit">Speichern</button>
+      <button className="btn-brand mt-4" type="submit">Speichern</button>
     </form>
   );
 }
@@ -302,7 +302,7 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <span className="text-sm text-muted">Ansicht als</span>
           {ROLES.map((role) => (
-            <button key={role} type="button" className={shown === role ? "btn-gold px-3" : "btn-ghost px-3"} onClick={() => setView(role)}>
+            <button key={role} type="button" className={shown === role ? "btn-brand px-3" : "btn-ghost px-3"} onClick={() => setView(role)}>
               {roleLabel(role)}
             </button>
           ))}
@@ -319,7 +319,7 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
             <button
               key={item.id}
               type="button"
-              className={item.id === safeTab ? "btn-gold shrink-0" : "btn-ghost shrink-0"}
+              className={item.id === safeTab ? "btn-brand shrink-0" : "btn-ghost shrink-0"}
               onClick={() => setTab(item.id)}
             >
               {item.label}
@@ -515,7 +515,7 @@ function ModForm({
           ))}
         </ul>
       ) : null}
-      <button className="btn-gold mt-4" type="submit">Eintragen</button>
+      <button className="btn-brand mt-4" type="submit">Eintragen</button>
     </form>
   );
 }
@@ -540,7 +540,7 @@ function NoteForm({ user, note }: { user: StaffSession; note: (text: string) => 
       <h2 className="text-lg font-semibold">Team-Notiz</h2>
       <input className="field mt-3" placeholder="Spieler" value={name} onChange={(e) => setName(e.target.value)} />
       <textarea className="field mt-2 min-h-24" placeholder="Notiz" value={text} onChange={(e) => setText(e.target.value)} />
-      <button className="btn-gold mt-4" type="submit">Notiz speichern</button>
+      <button className="btn-brand mt-4" type="submit">Notiz speichern</button>
     </form>
   );
 }
@@ -586,7 +586,7 @@ function List({
         {!notes ? (
           <div className="flex flex-wrap gap-1">
             {(["active", "expired", "archived", "all"] as Filter[]).map((item) => (
-              <button key={item} type="button" className={item === filter ? "btn-gold px-3" : "btn-ghost px-3"} onClick={() => setFilter(item)}>
+              <button key={item} type="button" className={item === filter ? "btn-brand px-3" : "btn-ghost px-3"} onClick={() => setFilter(item)}>
                 {item === "active" ? "Aktiv" : item === "expired" ? "Abgelaufen" : item === "archived" ? "Archiv" : "Alle"}
               </button>
             ))}
@@ -606,12 +606,12 @@ function List({
             <p className="text-xs text-faint">
               {timed && !waiting ? formatRemaining(item.endsAt) : ""} {item.duration ? `· ${item.duration}` : ""} · {item.by} · {formatWhen(item.ts)}
             </p>
-            {proof ? <a className="mt-1 inline-block text-xs text-gold" href={proof} target="_blank" rel="noreferrer">Beweis</a> : null}
+            {proof ? <a className="mt-1 inline-block text-xs text-brand" href={proof} target="_blank" rel="noreferrer">Beweis</a> : null}
             {waiting ? <p className="text-xs font-semibold text-amber-300">Wartet auf eine zweite Person. Noch nicht gültig.</p> : null}
             {perm && !waiting ? <p className="text-xs font-semibold text-red-300">{permLeft(item.confirmedAt || item.ts)}</p> : null}
             <div className="mt-2 flex flex-wrap gap-2">
               {waiting && write && item.by !== user.username ? (
-                <button type="button" className="btn-gold px-3" onClick={() => void fbUpdate(`${path}/${key}`, { pending: false, confirmedBy: user.username, confirmedAt: Date.now(), updatedAt: Date.now() }).then(() => note("Ban gilt jetzt"))}>
+                <button type="button" className="btn-brand px-3" onClick={() => void fbUpdate(`${path}/${key}`, { pending: false, confirmedBy: user.username, confirmedAt: Date.now(), updatedAt: Date.now() }).then(() => note("Ban gilt jetzt"))}>
                   Bestätigen
                 </button>
               ) : null}
@@ -701,7 +701,7 @@ function ReplyBox({ id, user, ticket, note }: { id: string; user: StaffSession; 
       }}
     >
       <input className="field" value={text} onChange={(e) => setText(e.target.value)} placeholder="Antwort" />
-      <button className="btn-gold" type="submit">Senden</button>
+      <button className="btn-brand" type="submit">Senden</button>
     </form>
   );
 }
@@ -736,14 +736,14 @@ function Commands({ user, note }: { user: StaffSession; note: (text: string) => 
           <input className="field mt-3" placeholder="/befehl" value={name} onChange={(e) => setName(e.target.value)} />
           <input className="field mt-2" placeholder="Was macht er?" value={desc} onChange={(e) => setDesc(e.target.value)} />
           <input className="field mt-2" placeholder="Kategorie, z. B. Claims" value={category} onChange={(e) => setCategory(e.target.value)} />
-          <button className="btn-gold mt-4" type="submit">{editKey ? "Änderungen speichern" : "Speichern"}</button>
+          <button className="btn-brand mt-4" type="submit">{editKey ? "Änderungen speichern" : "Speichern"}</button>
         </form>
       ) : null}
       <ul className="space-y-2">
         {rows.map(([key, item]) => (
           <li key={key} className="cmd-in card card-still flex flex-wrap items-center justify-between gap-3 p-4">
             <div>
-              <p className="font-semibold text-gold">{item.name}</p>
+              <p className="font-semibold text-brand">{item.name}</p>
               <p className="text-sm text-muted">{item.desc}</p>
               <p className="text-xs text-faint">{item.category || "Allgemein"} · {item.by} · {formatWhen(item.ts)}</p>
             </div>
@@ -773,7 +773,7 @@ function Community({ user, note }: { user: StaffSession; note: (text: string) =>
     <div className="space-y-8">
       <div className="flex gap-2">
         {["open", "approved", "rejected", "all"].map((item) => (
-          <button key={item} type="button" className={item === filter ? "btn-gold" : "btn-ghost"} onClick={() => setFilter(item)}>
+          <button key={item} type="button" className={item === filter ? "btn-brand" : "btn-ghost"} onClick={() => setFilter(item)}>
             {item === "open" ? "Offen" : item === "approved" ? "Frei" : item === "rejected" ? "Abgelehnt" : "Alle"}
           </button>
         ))}
@@ -819,7 +819,7 @@ function Queue({
             {item.imageUrl ? <img src={item.imageUrl} alt="" className="mt-3 max-h-40 rounded-md object-cover" /> : null}
             <p className="mt-2 text-xs text-faint">{item.status || "offen"} · {formatWhen(item.ts)}</p>
             <div className="mt-3 flex gap-2">
-              <button type="button" className="btn-gold" onClick={() => void fbUpdate(`${path}/${key}`, { status: "approved", moderatedBy: user.username, moderatedAt: Date.now(), updatedAt: Date.now() }).then(() => note("Freigegeben"))}>Frei</button>
+              <button type="button" className="btn-brand" onClick={() => void fbUpdate(`${path}/${key}`, { status: "approved", moderatedBy: user.username, moderatedAt: Date.now(), updatedAt: Date.now() }).then(() => note("Freigegeben"))}>Frei</button>
               <button type="button" className="btn-ghost" onClick={() => void fbUpdate(`${path}/${key}`, { status: "rejected", moderatedBy: user.username, moderatedAt: Date.now(), updatedAt: Date.now() }).then(() => note("Abgelehnt"))}>Ablehnen</button>
             </div>
           </article>
@@ -855,7 +855,7 @@ function Settings({ user, note }: { user: StaffSession; note: (text: string) => 
       <input className="field mt-3" type="password" placeholder="Altes Passwort" value={oldPw} onChange={(e) => setOld(e.target.value)} />
       <input className="field mt-2" type="password" placeholder="Neu" value={a} onChange={(e) => setA(e.target.value)} />
       <input className="field mt-2" type="password" placeholder="Wiederholen" value={b} onChange={(e) => setB(e.target.value)} />
-      <button className="btn-gold mt-4" type="submit">Speichern</button>
+      <button className="btn-brand mt-4" type="submit">Speichern</button>
     </form>
   );
 }
@@ -907,7 +907,7 @@ function Website({ user, note }: { user: StaffSession; note: (text: string) => v
         <h2 className="text-lg font-semibold">Spieler insgesamt</h2>
         <input className="field mt-3" value={total} onChange={(e) => setTotal(e.target.value)} />
         <div className="mt-3 flex flex-wrap gap-2">
-          <button className="btn-gold" type="submit">Speichern</button>
+          <button className="btn-brand" type="submit">Speichern</button>
           <button className="btn-ghost" type="button" onClick={() => void saveTotal(Number(total || 0) + 1)}>+1</button>
           <button className="btn-ghost" type="button" onClick={() => void saveTotal(Number(total || 0) + 5)}>+5</button>
         </div>
@@ -951,7 +951,7 @@ function Website({ user, note }: { user: StaffSession; note: (text: string) => v
         <input className="field mt-2" placeholder="Knopf-Text, optional" value={buttonLabel} onChange={(e) => setButtonLabel(e.target.value)} />
         <input className="field mt-2" placeholder="Knopf-Link, z. B. Discord" value={buttonHref} onChange={(e) => setButtonHref(e.target.value)} />
         <div className="mt-3 flex flex-wrap gap-2">
-          <button className="btn-gold" type="submit">Banner setzen</button>
+          <button className="btn-brand" type="submit">Banner setzen</button>
           <button
             className="btn-ghost"
             type="button"
@@ -994,7 +994,7 @@ function Website({ user, note }: { user: StaffSession; note: (text: string) => v
           <input className="field mt-3" placeholder="Titel" value={lockTitle} onChange={(e) => setLockTitle(e.target.value)} />
           <textarea className="field mt-2 min-h-20" placeholder="Text für Besucher" value={lockMessage} onChange={(e) => setLockMessage(e.target.value)} />
           <div className="mt-3 flex flex-wrap gap-2">
-            <button className="btn-gold" type="submit">Website aus</button>
+            <button className="btn-brand" type="submit">Website aus</button>
             <button
               className="btn-ghost"
               type="button"
@@ -1024,7 +1024,7 @@ function Website({ user, note }: { user: StaffSession; note: (text: string) => v
         <input className="field mt-3" placeholder="Java: alpensmp.net" value={ip} onChange={(e) => setIp(e.target.value)} />
         <input className="field mt-2" placeholder="Bedrock-Port: 19132" value={port} onChange={(e) => setPort(e.target.value)} />
         <input className="field mt-2" placeholder="Version" value={version} onChange={(e) => setVersion(e.target.value)} />
-        <button className="btn-gold mt-3" type="submit">Speichern</button>
+        <button className="btn-brand mt-3" type="submit">Speichern</button>
       </form>
     </div>
   );
@@ -1095,7 +1095,7 @@ function PlayerSearch() {
               {rows.map((row, index) => (
                 <li key={`${row.kind}-${index}`} className={row.perm ? "text-sm text-red-200" : "text-sm text-muted"}>
                   <span className="font-semibold text-fg">{row.kind}.</span> {row.detail} · {formatWhen(row.ts)}
-                  {row.proof && /^https?:\/\//i.test(row.proof) ? <a className="ml-2 text-gold" href={row.proof} target="_blank" rel="noreferrer">Beweis</a> : null}
+                  {row.proof && /^https?:\/\//i.test(row.proof) ? <a className="ml-2 text-brand" href={row.proof} target="_blank" rel="noreferrer">Beweis</a> : null}
                 </li>
               ))}
             </ul>
@@ -1146,7 +1146,7 @@ function ChatRoom({ path, title, user }: { path: string; title: string; user: St
     <section className="card card-still p-4">
       <h2 className="text-lg font-semibold">{title}</h2>
       {path === "chats/team" && pinned?.text ? (
-        <p className="mt-3 rounded-md border border-gold bg-gold/10 px-3 py-2 text-sm">
+        <p className="mt-3 rounded-md border border-brand bg-brand/10 px-3 py-2 text-sm">
           {pinned.text}
           {user.role === "owner" ? (
             <button type="button" className="btn-ghost ml-2 px-3" onClick={() => void fbRemove("chats/pin/current")}>Weg</button>
@@ -1188,7 +1188,7 @@ function ChatRoom({ path, title, user }: { path: string; title: string; user: St
         }}
       >
         <input className="field" placeholder="Nachricht" value={text} onChange={(e) => setText(e.target.value)} />
-        <button className="btn-gold" type="submit">Senden</button>
+        <button className="btn-brand" type="submit">Senden</button>
       </form>
     </section>
   );
@@ -1355,7 +1355,7 @@ function Accounts({ note, actor }: { note: (text: string) => void; actor: StaffS
           <option value="owner">Owner</option>
         </select>
         {formError ? <p className="mt-3 text-sm text-ember">{formError}</p> : null}
-        <button className="btn-gold mt-3" type="submit">Anlegen</button>
+        <button className="btn-brand mt-3" type="submit">Anlegen</button>
       </form>
       <StreamerAccount note={note} actor={actor} />
       <ul className="space-y-3">
@@ -1424,7 +1424,7 @@ function StreamerAccount({ note, actor }: { note: (text: string) => void; actor:
         Hinweis im Staff-Center, wenn der Stream live geht
       </label>
       {error ? <p className="mt-3 text-sm text-ember">{error}</p> : null}
-      <button className="btn-gold mt-3" type="submit">Account anlegen</button>
+      <button className="btn-brand mt-3" type="submit">Account anlegen</button>
     </form>
   );
 }
@@ -1492,7 +1492,7 @@ function AccountCard({
             <button type="button" className="btn-ghost" onClick={() => setShowPw((value) => !value)}>{showPw ? "Verbergen" : "Ansehen"}</button>
             <button
               type="button"
-              className="btn-gold"
+              className="btn-brand"
               onClick={() =>
                 void resetStaffPassword(name, password, actor.username)
                   .then(() => {

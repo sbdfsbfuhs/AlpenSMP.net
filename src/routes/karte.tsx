@@ -41,7 +41,7 @@ function MapPage() {
                 <p className="kicker">Neu</p>
                 <h2 className="display mt-3 text-4xl">AlpenSMP Live-Karte</h2>
                 <p className="mt-3 text-muted">BlueMap – Hauptworld (Overworld).</p>
-                <a className="btn-gold mt-6" href={SITE.map} target="_blank" rel="noreferrer">
+                <a className="btn-brand mt-6" href={SITE.map} target="_blank" rel="noreferrer">
                   Live-Karte öffnen
                 </a>
               </div>
@@ -55,7 +55,7 @@ function MapPage() {
                 <p className="mt-4 text-muted">
                   Die Live-Karte braucht Platz, und der ist gerade alle. Schau ein anderes Mal wieder vorbei. Sobald wieder Speicher frei ist, liegt die Hauptworld hier.
                 </p>
-                <Link to="/server" className="btn-gold mt-6">
+                <Link to="/server" className="btn-brand mt-6">
                   Spielen geht trotzdem
                 </Link>
               </div>

@@ -277,7 +277,7 @@ function OfflineRun() {
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <button
           type="button"
-          className="btn-gold"
+          className="btn-brand"
           onClick={() => {
             setScore(0);
             setOver(false);
@@ -322,7 +322,7 @@ export function LockScreen({ notice }: { notice: SiteNotice }) {
           </div>
         </div>
         {notice.button_label ? (
-          <a className="btn-gold mt-6 inline-flex" href={notice.button_href || SITE.discord}>
+          <a className="btn-brand mt-6 inline-flex" href={notice.button_href || SITE.discord}>
             {notice.button_label}
           </a>
         ) : null}

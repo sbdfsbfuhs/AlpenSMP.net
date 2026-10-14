@@ -69,11 +69,12 @@ export function ReviewForm() {
             <button
               key={n}
               type="button"
-              className={n === rating ? "btn-gold px-3" : "btn-ghost px-3"}
+              className={n === rating ? "btn-brand px-3" : "btn-ghost px-3"}
               onClick={() => setRating(n)}
               aria-pressed={n === rating}
             >
-              {n}★
+              {n}
+              <span className="text-star">★</span>
             </button>
           ))}
         </div>
@@ -89,7 +90,7 @@ export function ReviewForm() {
           <button
             key={value}
             type="button"
-            className={kind === value ? "btn-gold px-3" : "btn-ghost px-3"}
+            className={kind === value ? "btn-brand px-3" : "btn-ghost px-3"}
             onClick={() => setKind(value)}
           >
             {label}
@@ -112,7 +113,7 @@ export function ReviewForm() {
         Text
         <textarea className="field mt-1 min-h-28" value={text} maxLength={800} required onChange={(e) => setText(e.target.value)} />
       </label>
-      <button className="btn-gold" type="submit" disabled={busy}>
+      <button className="btn-brand" type="submit" disabled={busy}>
         Absenden zur Freigabe
       </button>
       <p className="text-sm text-muted">{note || "Wird nicht sofort öffentlich. Maximal 1 Beitrag pro Minute."}</p>
@@ -181,7 +182,7 @@ export function TicketForm() {
         <input className="field" placeholder="Thema (z. B. Join-Problem)" value={topic} maxLength={80} onChange={(e) => setTopic(e.target.value)} />
         <textarea className="field min-h-32" placeholder="Was ist passiert?" value={msg} maxLength={800} required onChange={(e) => setMsg(e.target.value)} />
         <input className="hidden" tabIndex={-1} autoComplete="off" value={company} onChange={(e) => setCompany(e.target.value)} aria-hidden="true" />
-        <button className="btn-gold" disabled={busy} type="submit">
+        <button className="btn-brand" disabled={busy} type="submit">
           Ticket senden
         </button>
         {note ? <p className="text-sm text-ice">{note}</p> : null}
@@ -214,7 +215,7 @@ export function TicketForm() {
             {found.replies.length ? (
               found.replies.map((reply, i) => (
                 <p key={i} className="rounded-md bg-bg px-3 py-2">
-                  <span className="font-medium text-gold">{reply.by}: </span>
+                  <span className="font-medium text-brand">{reply.by}: </span>
                   {reply.text}
                 </p>
               ))

@@ -30,10 +30,10 @@ export function PlayerCommands() {
           <h2 className="display mt-2 text-3xl">Befehle</h2>
         </div>
         <div className="edition-switch">
-          <button type="button" className={edition === "java" ? "btn-gold" : "btn-ghost"} onClick={() => setEdition("java")}>
+          <button type="button" className={edition === "java" ? "btn-brand" : "btn-ghost"} onClick={() => setEdition("java")}>
             Java
           </button>
-          <button type="button" className={edition === "bedrock" ? "btn-gold" : "btn-ghost"} onClick={() => setEdition("bedrock")}>
+          <button type="button" className={edition === "bedrock" ? "btn-brand" : "btn-ghost"} onClick={() => setEdition("bedrock")}>
             Bedrock
           </button>
         </div>
@@ -56,7 +56,7 @@ function CommandRow({ cmd, text }: { cmd: string; text: string }) {
   return (
     <li className="card card-still flex items-center gap-3 p-4">
       <div className="min-w-0 flex-1">
-        <code className="font-semibold text-gold">{cmd}</code>
+        <code className="font-semibold text-brand">{cmd}</code>
         <p className="mt-1 text-sm text-muted">{text}</p>
       </div>
       <CopyBurstButton value={cmd} ariaLabel={`${cmd} kopieren`}>

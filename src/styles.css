@@ -26,8 +26,9 @@
   --color-fg: #fff6f6;
   --color-muted: #d2b0b4;
   --color-faint: #8d666c;
-  --color-gold: #e1062c;
-  --color-gold-deep: #9b0c1e;
+  --color-brand: #e1062c;
+  --color-brand-deep: #9b0c1e;
+  --color-star: #f59e0b;
   --color-ice: #ffc1c7;
   --color-ember: #ff6b4a;
   --color-line: #3d1a20;
@@ -57,12 +58,12 @@
   }
 
   ::selection {
-    background: color-mix(in oklab, var(--color-gold) 70%, white);
+    background: color-mix(in oklab, var(--color-brand) 70%, white);
     color: var(--color-bg);
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-gold);
+    outline: 2px solid var(--color-brand);
     outline-offset: 3px;
   }
 
@@ -114,12 +115,12 @@
 
   .card:hover {
     transform: translateY(-4px);
-    border-color: color-mix(in oklab, var(--color-gold) 55%, var(--color-line));
-    box-shadow: 0 18px 40px color-mix(in oklab, var(--color-gold) 22%, transparent);
+    border-color: color-mix(in oklab, var(--color-brand) 55%, var(--color-line));
+    box-shadow: 0 18px 40px color-mix(in oklab, var(--color-brand) 22%, transparent);
   }
 
   .btn,
-  .btn-gold,
+  .btn-brand,
   .btn-ice,
   .btn-ghost,
   .btn-discord {
@@ -135,7 +136,7 @@
     transition: transform 180ms ease, background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
   }
 
-  .btn-gold svg,
+  .btn-brand svg,
   .btn-ghost svg,
   .btn-ice svg,
   .btn-discord svg,
@@ -143,7 +144,7 @@
     transition: transform 180ms ease;
   }
 
-  .btn-gold:hover svg,
+  .btn-brand:hover svg,
   .btn-ghost:hover svg,
   .btn-ice:hover svg,
   .btn-discord:hover svg,
@@ -151,7 +152,7 @@
     transform: translateX(2px);
   }
 
-  .btn-gold:active,
+  .btn-brand:active,
   .btn-ghost:active,
   .btn-ice:active,
   .btn-discord:active,
@@ -195,15 +196,15 @@
     color: #fff;
   }
 
-  .btn-gold {
+  .btn-brand {
     position: relative;
     overflow: hidden;
-    background: linear-gradient(180deg, #ff3b52, var(--color-gold) 46%, var(--color-gold-deep));
+    background: linear-gradient(180deg, #ff3b52, var(--color-brand) 46%, var(--color-brand-deep));
     color: #fff8f7;
-    box-shadow: 0 8px 18px color-mix(in oklab, var(--color-gold) 22%, transparent);
+    box-shadow: 0 8px 18px color-mix(in oklab, var(--color-brand) 22%, transparent);
   }
 
-  .btn-gold::after {
+  .btn-brand::after {
     content: "";
     position: absolute;
     inset: 0;
@@ -213,9 +214,9 @@
     pointer-events: none;
   }
 
-  .btn-gold:hover {
+  .btn-brand:hover {
     transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 14px 28px color-mix(in oklab, var(--color-gold) 48%, transparent);
+    box-shadow: 0 14px 28px color-mix(in oklab, var(--color-brand) 48%, transparent);
   }
 
   .btn-discord,
@@ -375,7 +376,7 @@
 
   .btn-ice:hover {
     transform: translateY(-2px) scale(1.02);
-    background: color-mix(in oklab, var(--color-gold) 18%, transparent);
+    background: color-mix(in oklab, var(--color-brand) 18%, transparent);
   }
 
   .btn-ghost {
@@ -386,9 +387,9 @@
 
   .btn-ghost:hover {
     transform: translateY(-2px) scale(1.02);
-    border-color: var(--color-gold);
+    border-color: var(--color-brand);
     color: var(--color-ice);
-    box-shadow: 0 10px 22px color-mix(in oklab, var(--color-gold) 16%, transparent);
+    box-shadow: 0 10px 22px color-mix(in oklab, var(--color-brand) 16%, transparent);
   }
 
   .field {
@@ -403,8 +404,8 @@
   }
 
   .field:focus {
-    border-color: var(--color-gold);
-    box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-gold) 28%, transparent);
+    border-color: var(--color-brand);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-brand) 28%, transparent);
   }
 
   .field::placeholder {
@@ -437,7 +438,7 @@
     width: 6px;
     height: 6px;
     border-radius: 999px;
-    background: var(--color-gold);
+    background: var(--color-brand);
     opacity: 0.55;
     animation: mote 7s ease-in-out infinite;
     pointer-events: none;
@@ -603,8 +604,8 @@
     position: absolute;
     inset: 0;
     background:
-      linear-gradient(180deg, color-mix(in oklab, var(--color-gold) 28%, transparent), transparent 32%, var(--color-bg)),
-      linear-gradient(90deg, color-mix(in oklab, var(--color-gold) 35%, transparent), transparent 55%);
+      linear-gradient(180deg, color-mix(in oklab, var(--color-brand) 28%, transparent), transparent 32%, var(--color-bg)),
+      linear-gradient(90deg, color-mix(in oklab, var(--color-brand) 35%, transparent), transparent 55%);
   }
 
   .pulse-dot,
@@ -612,8 +613,8 @@
     width: 0.55rem;
     height: 0.55rem;
     border-radius: 999px;
-    background: var(--color-gold);
-    box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-gold) 70%, transparent);
+    background: var(--color-brand);
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-brand) 70%, transparent);
     animation: pulse 1.6s ease-out infinite;
   }
 
@@ -637,7 +638,7 @@
     width: 4px;
     height: 4px;
     border-radius: 999px;
-    background: var(--color-gold);
+    background: var(--color-brand);
     opacity: 0.45;
     animation: ember 16s linear infinite;
   }
@@ -667,7 +668,7 @@
   .glow-line {
     height: 2px;
     width: 100%;
-    background: linear-gradient(90deg, transparent, var(--color-gold), var(--color-ice), transparent);
+    background: linear-gradient(90deg, transparent, var(--color-brand), var(--color-ice), transparent);
     background-size: 200% 100%;
     animation: sheen 3.5s linear infinite;
   }
@@ -686,7 +687,7 @@
     inset: -20%;
     z-index: 0;
     background:
-      radial-gradient(circle at 18% 16%, color-mix(in oklab, var(--color-gold) 16%, transparent), transparent 32%),
+      radial-gradient(circle at 18% 16%, color-mix(in oklab, var(--color-brand) 16%, transparent), transparent 32%),
       radial-gradient(circle at 82% 8%, color-mix(in oklab, var(--color-ember) 12%, transparent), transparent 28%);
     animation: drift 22s ease-in-out infinite alternate;
   }
@@ -764,7 +765,7 @@
 
   .brand:hover img {
     transform: scale(1.05) rotate(-4deg);
-    filter: drop-shadow(0 0 8px color-mix(in oklab, var(--color-gold) 70%, transparent));
+    filter: drop-shadow(0 0 8px color-mix(in oklab, var(--color-brand) 70%, transparent));
   }
 
   .chip {
@@ -773,7 +774,7 @@
 
   .chip:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 20px color-mix(in oklab, var(--color-gold) 16%, transparent);
+    box-shadow: 0 10px 20px color-mix(in oklab, var(--color-brand) 16%, transparent);
   }
 
   .stat-pulse {
@@ -785,7 +786,7 @@
   }
 
   .faq-row:hover {
-    background: color-mix(in oklab, var(--color-gold) 8%, var(--color-surface));
+    background: color-mix(in oklab, var(--color-brand) 8%, var(--color-surface));
   }
 
   .faq-mark {
@@ -812,7 +813,7 @@
     right: 0.75rem;
     bottom: 0.25rem;
     height: 2px;
-    background: var(--color-gold);
+    background: var(--color-brand);
     transform: scaleX(0);
     transform-origin: left;
     transition: transform 220ms ease;
@@ -882,14 +883,14 @@
     width: 10px;
     height: 10px;
     border-radius: 999px;
-    background: radial-gradient(circle, #fff 0%, var(--color-gold) 42%, transparent 70%);
+    background: radial-gradient(circle, #fff 0%, var(--color-brand) 42%, transparent 70%);
     animation: copy-flash 180ms ease-out both;
   }
 
   .copy-ring {
     width: 10px;
     height: 10px;
-    border: 2px solid var(--color-gold);
+    border: 2px solid var(--color-brand);
     border-radius: 999px;
     animation: copy-ring 700ms ease-out both;
   }
@@ -998,7 +999,7 @@
     position: absolute;
     inset: -8px;
     border-radius: 999px;
-    border: 2px solid var(--color-gold);
+    border: 2px solid var(--color-brand);
     opacity: 0;
     animation: wave-ring 12s linear infinite;
     pointer-events: none;
@@ -1046,7 +1047,7 @@
 
 @keyframes stat-glow {
   0% { text-shadow: 0 0 0 transparent; }
-  40% { color: var(--color-ice); text-shadow: 0 0 16px color-mix(in oklab, var(--color-gold) 80%, transparent); }
+  40% { color: var(--color-ice); text-shadow: 0 0 16px color-mix(in oklab, var(--color-brand) 80%, transparent); }
   100% { text-shadow: none; }
 }
 
@@ -1056,7 +1057,7 @@
 }
 
 @keyframes pulse {
-  0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-gold) 65%, transparent); }
+  0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-brand) 65%, transparent); }
   100% { box-shadow: 0 0 0 12px transparent; }
 }
 
@@ -1799,7 +1800,7 @@
   }
 
   .guide-step .btn-modrinth,
-  .guide-step .btn-gold {
+  .guide-step .btn-brand {
     width: 100%;
   }
 }

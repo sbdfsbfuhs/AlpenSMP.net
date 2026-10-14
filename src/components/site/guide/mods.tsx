@@ -130,7 +130,7 @@ export function ModsGuide() {
               aber alles andere schon.
             </p>
             <div className="mt-5">
-              <a className="btn-gold" href="/#join">
+              <a className="btn-brand" href="/#join">
                 Direkt joinen →
               </a>
             </div>

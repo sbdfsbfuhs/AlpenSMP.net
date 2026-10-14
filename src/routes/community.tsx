@@ -119,12 +119,16 @@ function CommunityPage() {
           <p className="kicker">Stimmen</p>
           <h2 className="display mt-3 text-4xl">Was die Community sagt</h2>
           <p className="mt-3 text-muted">
-            {reviews.length} Stimmen · Schnitt {avg}★
+            {reviews.length} Stimmen · Schnitt {avg}
+            <span className="text-star">★</span>
           </p>
           <div className="mt-6 space-y-3">
             {reviews.map((review) => (
               <blockquote key={review.name + review.text.slice(0, 24)} className="card p-5">
-                <p className="text-sm text-gold">{"★".repeat(review.rating)}{"☆".repeat(Math.max(0, 5 - review.rating))}</p>
+                <p className="text-sm">
+                  <span className="text-star">{"★".repeat(review.rating)}</span>
+                  <span className="text-faint">{"☆".repeat(Math.max(0, 5 - review.rating))}</span>
+                </p>
                 <p className="mt-2 text-sm whitespace-pre-line">{review.text}</p>
                 <footer className="mt-3 text-xs text-faint">{review.name}</footer>
               </blockquote>

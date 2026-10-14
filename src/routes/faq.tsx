@@ -36,7 +36,7 @@ function FaqPage() {
                   onClick={() => setOpen(isOpen ? null : index)}
                 >
                   {item.q}
-                  <span className="faq-mark text-gold" aria-hidden="true">
+                  <span className="faq-mark text-brand" aria-hidden="true">
                     {isOpen ? "–" : "+"}
                   </span>
                 </button>

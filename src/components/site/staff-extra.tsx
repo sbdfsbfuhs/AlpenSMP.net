@@ -86,7 +86,7 @@ function CommandList({
           <input className="field" placeholder="/befehl" value={cmd} onChange={(e) => setCmd(e.target.value)} />
           <input className="field" placeholder="Beschreibung" value={text} onChange={(e) => setText(e.target.value)} />
           <div className="flex flex-wrap gap-2">
-            <button className="btn-gold" type="submit">Hinzufügen</button>
+            <button className="btn-brand" type="submit">Hinzufügen</button>
             {!rows.length ? (
               <button
                 className="btn-ghost"
@@ -105,7 +105,7 @@ function CommandList({
       <ul className="mt-4 space-y-2">
         {rows.map(([key, item]) => (
           <li key={key} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-line px-3 py-2 text-sm">
-            <span><code className="text-gold">{item.cmd}</code> <span className="text-muted">{item.text}</span></span>
+            <span><code className="text-brand">{item.cmd}</code> <span className="text-muted">{item.text}</span></span>
             {edit ? (
               <button
                 type="button"
@@ -152,7 +152,7 @@ export function RulesEditor({ real, view, note, staff }: { real: string; view: s
         >
           <input className="field" placeholder="Titel" value={title} onChange={(e) => setTitle(e.target.value)} />
           <textarea className="field min-h-24" placeholder="Text" value={body} onChange={(e) => setBody(e.target.value)} />
-          <button className="btn-gold" type="submit">Abschnitt speichern</button>
+          <button className="btn-brand" type="submit">Abschnitt speichern</button>
         </form>
       ) : (
         <p className="mt-2 text-sm text-muted">Nur lesen.</p>
@@ -212,13 +212,13 @@ export function BanGuideEditor({ real, view, note }: { real: string; view: strin
           <input className="field" placeholder="Vergehen" value={offense} onChange={(e) => setOffense(e.target.value)} />
           <input className="field" placeholder="Dauer, z. B. 7d" value={duration} onChange={(e) => setDuration(e.target.value)} />
           <input className="field" placeholder="Befehl" value={command} onChange={(e) => setCommand(e.target.value)} />
-          <button className="btn-gold" type="submit">Eintragen</button>
+          <button className="btn-brand" type="submit">Eintragen</button>
         </form>
       ) : null}
       <ul className="mt-4 space-y-2 text-sm">
         {entries(rows).map(([key, item]) => (
           <li key={key} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-line px-3 py-2">
-            <span>{item.offense} · {item.duration} · <code className="text-gold">{item.command}</code></span>
+            <span>{item.offense} · {item.duration} · <code className="text-brand">{item.command}</code></span>
             {edit ? (
               <button type="button" className="btn-ghost px-3" onClick={() => guard(real, "banGuideEdit", note) && void fbRemove(`banGuide/${key}`).then(() => note("Entfernt"))}>
                 Löschen
@@ -302,8 +302,8 @@ export function TasksBoard({ real, view, note, username }: { real: string; view:
           <textarea className="field mt-2 min-h-20" placeholder="Details" value={text} onChange={(e) => setText(e.target.value)} />
           {lead ? (
             <div className="mt-2 flex flex-wrap gap-2">
-              <button type="button" className={scope === "all" ? "btn-gold px-3" : "btn-ghost px-3"} onClick={() => setScope("all")}>Für alle</button>
-              <button type="button" className={scope === "one" ? "btn-gold px-3" : "btn-ghost px-3"} onClick={() => setScope("one")}>Für eine Person</button>
+              <button type="button" className={scope === "all" ? "btn-brand px-3" : "btn-ghost px-3"} onClick={() => setScope("all")}>Für alle</button>
+              <button type="button" className={scope === "one" ? "btn-brand px-3" : "btn-ghost px-3"} onClick={() => setScope("one")}>Für eine Person</button>
             </div>
           ) : null}
           {scope === "one" || !lead ? (
@@ -313,7 +313,7 @@ export function TasksBoard({ real, view, note, username }: { real: string; view:
             </select>
           ) : null}
           <label className="mt-2 block text-sm">Frist, optional<input className="field mt-1" type="date" value={due} onChange={(e) => setDue(e.target.value)} /></label>
-          <button className="btn-gold mt-3" type="submit">Speichern</button>
+          <button className="btn-brand mt-3" type="submit">Speichern</button>
         </form>
       ) : null}
       {open.map(([key, item]) => (
@@ -364,7 +364,7 @@ function TaskCard({ id, item, real, username, note }: { id: string; item: TaskIt
       {state === "open" && mine ? (
         <button
           type="button"
-          className="btn-gold mt-3"
+          className="btn-brand mt-3"
           onClick={() => void fbUpdate(`tasks/${id}`, { status: "active", acceptedBy: username, acceptedAt: Date.now(), updatedAt: Date.now() }).then(() => note("Angenommen"))}
         >
           Annehmen
@@ -376,7 +376,7 @@ function TaskCard({ id, item, real, username, note }: { id: string; item: TaskIt
           <textarea className="field min-h-16" placeholder="Frage ans Team, optional" value={question} onChange={(e) => setQuestion(e.target.value)} />
           <button
             type="button"
-            className="btn-gold"
+            className="btn-brand"
             onClick={() => void fbUpdate(`tasks/${id}`, {
               status: "archived",
               done: true,
@@ -452,7 +452,7 @@ export function AbsenceBoard({ real, view, note, username }: { real: string; vie
           <label className="mt-3 block text-sm">Von<input className="field mt-1" type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></label>
           <label className="mt-2 block text-sm">Bis<input className="field mt-1" type="date" value={until} onChange={(e) => setUntil(e.target.value)} /></label>
           <input className="field mt-2" placeholder="Grund" value={reason} onChange={(e) => setReason(e.target.value)} />
-          <button className="btn-gold mt-3" type="submit">Speichern</button>
+          <button className="btn-brand mt-3" type="submit">Speichern</button>
         </form>
       ) : null}
       <AbsenceCalendar rows={entries(rows)} />
@@ -497,9 +497,9 @@ function AbsenceCalendar({ rows }: { rows: [string, { by?: string; from?: string
           const key = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
           const who = rows.filter(([, item]) => item.from && item.until && item.from <= key && key <= item.until).map(([, item]) => item.by || "");
           return (
-            <div key={key} className={`min-h-16 rounded-md border p-1 ${who.length ? "border-gold bg-gold/10" : "border-line"}`}>
+            <div key={key} className={`min-h-16 rounded-md border p-1 ${who.length ? "border-brand bg-brand/10" : "border-line"}`}>
               <p>{day}</p>
-              {who.map((person) => <p key={person} className="truncate text-gold">{person}</p>)}
+              {who.map((person) => <p key={person} className="truncate text-brand">{person}</p>)}
             </div>
           );
         })}
@@ -548,7 +548,7 @@ export function GuideEditor({ real, view, note }: { real: string; view: string; 
           <input className="field mt-2" placeholder="Kurzbeschreibung" value={description} onChange={(e) => setDescription(e.target.value)} />
           <textarea className="field mt-2 min-h-24" placeholder="Schritte, eine Zeile pro Schritt" value={steps} onChange={(e) => setSteps(e.target.value)} />
           <input className="field mt-2" placeholder="Bild-URL, optional" value={image} onChange={(e) => setImage(e.target.value)} />
-          <button className="btn-gold mt-3" type="submit">Speichern</button>
+          <button className="btn-brand mt-3" type="submit">Speichern</button>
         </form>
       ) : null}
       {entries(rows).map(([key, item]) => (
@@ -587,7 +587,7 @@ export function LockdownTexts({ real, view, note }: { real: string; view: string
       <p className="mt-1 text-sm text-muted">Nur Owner. Setzt niemanden zurück und löscht nichts.</p>
       <input className="field mt-3" placeholder="Titel" value={title} onChange={(e) => setTitle(e.target.value)} />
       <textarea className="field mt-2 min-h-20" placeholder="Text" value={message} onChange={(e) => setMessage(e.target.value)} />
-      <button className="btn-gold mt-3" type="submit">Text speichern</button>
+      <button className="btn-brand mt-3" type="submit">Text speichern</button>
     </form>
   );
 }
@@ -651,14 +651,14 @@ export function MascotDesk({ real, note }: { real: string; note: Note }) {
       </div>
       <div className="flex flex-wrap gap-2">
         {TESTS.map((item) => (
-          <button key={item.id} type="button" className={demo === item.id ? "btn-gold" : "btn-ghost"} onClick={() => setDemo(item.id)}>
+          <button key={item.id} type="button" className={demo === item.id ? "btn-brand" : "btn-ghost"} onClick={() => setDemo(item.id)}>
             {item.label}
           </button>
         ))}
       </div>
       <div className="flex flex-wrap gap-2">
         {MODES.map((mode) => (
-          <button key={mode.id} type="button" className={form.mode === mode.id ? "btn-gold" : "btn-ghost"} onClick={() => save({ ...form, mode: mode.id, order: mode.id === "auto" ? "" : form.order })}>
+          <button key={mode.id} type="button" className={form.mode === mode.id ? "btn-brand" : "btn-ghost"} onClick={() => save({ ...form, mode: mode.id, order: mode.id === "auto" ? "" : form.order })}>
             {mode.label}
           </button>
         ))}
@@ -671,7 +671,7 @@ export function MascotDesk({ real, note }: { real: string; note: Note }) {
         <Num label="Besondere Aktionen" value={form.special} min={0} max={100} onChange={(special) => setForm({ ...form, special })} />
         <Num label="Reaktionsstärke 1–3" value={form.reaction} min={1} max={3} onChange={(reaction) => setForm({ ...form, reaction })} />
       </div>
-      <button type="button" className="btn-gold" onClick={() => save(form)}>Werte speichern</button>
+      <button type="button" className="btn-brand" onClick={() => save(form)}>Werte speichern</button>
       <form
         className="space-y-2 border-t border-line pt-4"
         onSubmit={(event) => {
@@ -684,7 +684,7 @@ export function MascotDesk({ real, note }: { real: string; note: Note }) {
           <input className="field mt-1" value={order} placeholder="Setz dich hin. Schlaf jetzt. Wink den Besuchern." onChange={(event) => setOrder(event.target.value)} />
         </label>
         <div className="flex flex-wrap gap-2">
-          <button className="btn-gold" type="submit">Ausführen</button>
+          <button className="btn-brand" type="submit">Ausführen</button>
           <button className="btn-ghost" type="button" onClick={() => { setOrder(""); save({ ...form, order: "", mode: "auto" }); }}>
             Anweisung löschen
           </button>

@@ -59,17 +59,17 @@ function PrefixPage() {
           <p className="kicker">Zuerst</p>
           <h2 className="mt-2 text-lg font-semibold">Ohne Team geht das nicht</h2>
           <p className="mt-2 text-sm text-muted">
-            <code className="text-gold">/team prefix</code> ändert den Prefix nur von einem Team, das es schon gibt.
-            Bist du in keinem, kommt nichts an. Dasselbe gilt für Team-Home, Warps, die Endertruhe, <code className="text-gold">/tc</code> und <code className="text-gold">/team pvp</code>.
+            <code className="text-brand">/team prefix</code> ändert den Prefix nur von einem Team, das es schon gibt.
+            Bist du in keinem, kommt nichts an. Dasselbe gilt für Team-Home, Warps, die Endertruhe, <code className="text-brand">/tc</code> und <code className="text-brand">/team pvp</code>.
           </p>
           <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm text-muted">
             <li>
-              Team anlegen: <code className="text-gold">/team create Name</code>. 3 bis 10 Buchstaben, nur a bis z, kein Farbcode, keine Leerzeichen.
+              Team anlegen: <code className="text-brand">/team create Name</code>. 3 bis 10 Buchstaben, nur a bis z, kein Farbcode, keine Leerzeichen.
               Gesperrt: {TEAM_BLOCKED.join(", ")}. Kostenlos, höchstens 20 Mitglieder.
             </li>
             <li>
               Danach der Prefix: ein Farbcode und danach nur Buchstaben. Beides zusammen 3 bis 10 Zeichen.
-              Beispiel <code className="text-gold">/team prefix &cAlpen</code>.
+              Beispiel <code className="text-brand">/team prefix &cAlpen</code>.
             </li>
           </ol>
           <p className="mt-3 text-sm text-muted">
@@ -114,14 +114,14 @@ function PrefixPage() {
               value={name}
               onChange={(event) => setName(event.target.value.replace(/[^a-zA-Z]/g, "").slice(0, 8))}
             />
-            <p className={`mt-2 text-sm ${!prefixOk ? "text-gold" : "text-muted"}`}>
+            <p className={`mt-2 text-sm ${!prefixOk ? "text-brand" : "text-muted"}`}>
               <code>{token || `&${code}`}</code> · {token.length}/10
               {clean.length === 0 ? " · mindestens ein Buchstabe" : ""}
               {blocked ? " · dieser Name ist gesperrt" : ""}
             </p>
             {createOk ? (
               <p className="mt-2 text-sm text-muted">
-                Team dazu, falls du noch keins hast: <code className="text-gold">/team create {clean}</code>
+                Team dazu, falls du noch keins hast: <code className="text-brand">/team create {clean}</code>
               </p>
             ) : (
               <p className="mt-2 text-sm text-muted">Für /team create brauchst du 3 bis 10 Buchstaben. Der Prefix darf mit Farbcode kürzer wirken, der Teamname nicht.</p>
@@ -147,7 +147,7 @@ function PrefixPage() {
               </div>
             ) : null}
             <p className="mt-3 text-sm text-muted">
-              Beispiel: <code className="text-gold">/team prefix &cAlpen</code> · das sind 7 von 10 Zeichen. Ohne vorheriges <code className="text-gold">/team create</code> setzt der Befehl nichts.
+              Beispiel: <code className="text-brand">/team prefix &cAlpen</code> · das sind 7 von 10 Zeichen. Ohne vorheriges <code className="text-brand">/team create</code> setzt der Befehl nichts.
             </p>
           </article>
         </section>

@@ -49,7 +49,7 @@ export function CopyIp({ value, label }: { value: string; label: string }) {
         <span className="block text-xs font-medium text-faint">{burst.copied ? "✓ Kopiert" : label}</span>
         <span className="font-semibold tracking-wide text-fg">{value}</span>
       </span>
-      {burst.copied ? <CopyTick /> : <Copy className="size-4 text-gold" />}
+      {burst.copied ? <CopyTick /> : <Copy className="size-4 text-brand" />}
     </button>
   );
 }
@@ -163,8 +163,8 @@ export function MotdNotice() {
   const lines = status?.motd ?? [];
   if (!lines.length) return null;
   return (
-    <p className="rounded-md border border-gold/30 bg-gold/10 px-4 py-3 text-sm text-fg">
-      <span className="font-semibold text-gold">Vom Server: </span>
+    <p className="rounded-md border border-brand/30 bg-brand/10 px-4 py-3 text-sm text-fg">
+      <span className="font-semibold text-brand">Vom Server: </span>
       {lines.join(" · ")}
     </p>
   );
@@ -310,7 +310,7 @@ export function PlayerChart() {
             <button
               key={key}
               type="button"
-              className={key === range ? "btn-gold px-3" : "btn-ghost px-3"}
+              className={key === range ? "btn-brand px-3" : "btn-ghost px-3"}
               onClick={() => setRange(key)}
             >
               {key === "1h" ? "1 Std" : key === "5h" ? "5 Std" : key === "24h" ? "24 Std" : "7 Tage"}
@@ -329,7 +329,7 @@ export function PlayerChart() {
                 contentStyle={{ background: "var(--color-surface)", border: "1px solid var(--color-line)", borderRadius: 12, color: "var(--color-fg)" }}
                 labelStyle={{ color: "var(--color-muted)" }}
               />
-              <Line type="monotone" dataKey="spieler" stroke="var(--color-gold)" strokeWidth={2} dot={rows.length < 30} />
+              <Line type="monotone" dataKey="spieler" stroke="var(--color-brand)" strokeWidth={2} dot={rows.length < 30} />
             </LineChart>
           </ResponsiveContainer>
         ) : (
