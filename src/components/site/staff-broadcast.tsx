@@ -175,6 +175,12 @@ const PLATFORMS = [
   { id: "other", label: "Sonstige" },
 ];
 
+function streamLink(raw: string) {
+  const value = raw.trim().replace(/\s+/g, "");
+  if (!value) return "";
+  return `https://${value.replace(/^(?:https?:\/\/)+/i, "").replace(/^\/+/, "")}`;
+}
+
 export function StreamDesk({ user, note }: { user: StaffSession; note: (text: string) => void }) {
   const live = useFbValue<LiveStream>("live_streams/active");
   const [platform, setPlatform] = useState("twitch");
@@ -197,7 +203,14 @@ export function StreamDesk({ user, note }: { user: StaffSession; note: (text: st
 
   async function goLive(event: FormEvent) {
     event.preventDefault();
-    if (!url.startsWith("https://")) return note("Link muss mit https:// beginnen");
+    const link = streamLink(url);
+    let host = "";
+    try {
+      host = new URL(link).hostname;
+    } catch {
+      host = "";
+    }
+    if (!host || host === "https" || !host.includes(".")) return note("Bitte einen vollständigen Link eintragen");
     if (title.length > 80) return note("Titel max. 80 Zeichen");
     const started = when === "now" || !start ? Date.now() : new Date(start).getTime();
     const ends = end ? new Date(end).getTime() : null;
@@ -205,7 +218,7 @@ export function StreamDesk({ user, note }: { user: StaffSession; note: (text: st
       streamer_name: name.trim() || user.username,
       platform,
       title: title.trim().slice(0, 80),
-      url: url.trim(),
+      url: link,
       started_at: started,
       ends_at: ends,
       is_live: true,

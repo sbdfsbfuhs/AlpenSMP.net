@@ -5,7 +5,6 @@ import { DiscordLink, Shell, TikTokLink } from "@/components/site/shell";
 import { ModrinthLink } from "@/components/site/guide/mods";
 import { SiteMascot } from "@/components/site/assistant";
 import { CopyIp, MotdNotice, PlayerChart, SiteBanner, StatStrip, StatusCard } from "@/components/site/live";
-import { BerlinClock } from "@/components/site/berlin-clock";
 import { FEATURES, PILLARS, REVIEWS } from "@/lib/alpen/content";
 import { SITE } from "@/lib/alpen/site";
 
@@ -148,7 +147,6 @@ function Home() {
         <div className="shell relative z-[3] hero-layout">
           <div>
             <p className="kicker">Deutschsprachiger Minecraft Survival Server</p>
-            <BerlinClock />
             <h1 className="display mt-4 text-5xl text-fg md:text-7xl">
               Alpen<span className="text-brand">SMP</span>
             </h1>
