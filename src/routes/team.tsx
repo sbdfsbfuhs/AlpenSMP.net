@@ -101,7 +101,7 @@ function StaffPage() {
 
   function note(text: string) {
     setToast(text);
-    window.setTimeout(() => setToast(""), 2400);
+    window.setTimeout(() => setToast(""), 6000);
   }
 
   function logout() {
@@ -130,7 +130,7 @@ function StaffPage() {
         ) : user ? (
           <Desk user={user} onLogout={logout} note={note} />
         ) : null}
-        {toast ? <p className="panel-in fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-md bg-brand px-4 py-2 text-sm text-fg">{toast}</p> : null}
+        {toast ? <p className="panel-in fixed bottom-6 left-1/2 z-[80] -translate-x-1/2 rounded-md bg-brand px-4 py-2 text-sm text-fg shadow-lg">{toast}</p> : null}
       </div>
     </Shell>
   );

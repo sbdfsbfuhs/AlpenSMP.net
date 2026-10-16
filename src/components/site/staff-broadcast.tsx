@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { countdown, useFbValue, type LiveStream, type NewsCategory, type NewsItem, type ServerStatus } from "@/lib/alpen/broadcast";
 import { fbGet, fbPush, fbRemove, fbSet, fbUpdate, formatWhen, type StaffSession } from "@/lib/alpen/staff";
+import { currentLogin } from "@/lib/alpen/fb-auth";
 
 const CATS: NewsCategory[] = ["Update", "Regel", "Command", "Event", "Wartung", "Neu"];
 
@@ -190,6 +191,8 @@ export function StreamDesk({ user, note }: { user: StaffSession; note: (text: st
   const [when, setWhen] = useState("now");
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const mine = !live?.uid || live.uid === user.uid || user.role === "owner";
 
   useEffect(() => {
@@ -210,39 +213,68 @@ export function StreamDesk({ user, note }: { user: StaffSession; note: (text: st
     } catch {
       host = "";
     }
-    if (!host || host === "https" || !host.includes(".")) return note("Bitte einen vollständigen Link eintragen");
-    if (title.length > 80) return note("Titel max. 80 Zeichen");
+    if (!host || host === "https" || !host.includes(".")) {
+      const text = "Bitte einen vollständigen Link eintragen";
+      setMsg({ ok: false, text });
+      note(text);
+      return;
+    }
+    if (title.length > 80) {
+      const text = "Titel max. 80 Zeichen";
+      setMsg({ ok: false, text });
+      note(text);
+      return;
+    }
+    const uid = user.uid || currentLogin()?.uid || "";
+    if (!uid) {
+      const text = "Die Anmeldung hat keine ID. Bitte neu einloggen und noch einmal live gehen.";
+      setMsg({ ok: false, text });
+      note(text);
+      return;
+    }
     const started = when === "now" || !start ? Date.now() : new Date(start).getTime();
-    const ends = end ? new Date(end).getTime() : null;
+    const ends = end ? new Date(end).getTime() : 0;
     const body: LiveStream = {
       streamer_name: name.trim() || user.username,
       platform,
       title: title.trim().slice(0, 80),
       url: link,
       started_at: started,
-      ends_at: ends,
       is_live: true,
       created_by: user.username,
-      uid: user.uid,
+      uid,
     };
-    await fbSet(`live_streams/profiles/${user.uid}`, {
-      streamer_name: body.streamer_name,
-      platform,
-      url: body.url,
-    });
-    await fbSet("live_streams/active", body);
-    const self = await fbGet<{ notifyLive?: boolean }>(`staffUsers/${user.username}`).catch(() => null);
-    if (self?.notifyLive !== false) {
-      await fbPush("live_streams/notices", {
-        by: user.username,
-        name: body.streamer_name,
-        title: body.title,
+    if (ends > started) body.ends_at = ends;
+    setBusy(true);
+    setMsg(null);
+    try {
+      await fbSet("live_streams/active", body);
+      await fbSet(`live_streams/profiles/${uid}`, {
+        streamer_name: body.streamer_name,
         platform,
         url: body.url,
-        ts: Date.now(),
       }).catch(() => undefined);
+      const self = await fbGet<{ notifyLive?: boolean }>(`staffUsers/${user.username}`).catch(() => null);
+      if (self?.notifyLive !== false) {
+        await fbPush("live_streams/notices", {
+          by: user.username,
+          name: body.streamer_name,
+          title: body.title,
+          platform,
+          url: body.url,
+          ts: Date.now(),
+        }).catch(() => undefined);
+      }
+      const text = "Du bist live. Der Hinweis steht jetzt auf der Startseite.";
+      setMsg({ ok: true, text });
+      note(text);
+    } catch (err) {
+      const text = err instanceof Error ? err.message : "Speichern fehlgeschlagen";
+      setMsg({ ok: false, text });
+      note(text);
+    } finally {
+      setBusy(false);
     }
-    note("Du bist live");
   }
 
   return (
@@ -289,7 +321,12 @@ export function StreamDesk({ user, note }: { user: StaffSession; note: (text: st
           Ende, optional
           <input className="field mt-1" type="datetime-local" value={end} onChange={(e) => setEnd(e.target.value)} />
         </label>
-        <button className="btn-brand mt-4" type="submit">Live gehen</button>
+        <button className="btn-brand mt-4" type="submit" disabled={busy}>{busy ? "Speichere…" : "Live gehen"}</button>
+        {msg ? (
+          <p className={`mt-3 rounded-md border px-3 py-2 text-sm ${msg.ok ? "border-[#34d399]/50 bg-[#34d399]/10 text-[#bbf7d0]" : "border-brand bg-brand/15 text-fg"}`} role="status">
+            {msg.text}
+          </p>
+        ) : null}
       </form>
     </div>
   );
