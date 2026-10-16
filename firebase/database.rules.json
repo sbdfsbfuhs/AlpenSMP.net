@@ -51,7 +51,7 @@
     "live_streams": {
       "active": {
         ".read": true,
-        ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || (root.child('staffByUid').child(auth.uid).child('role').val() == 'admin' && newData.exists()) || (root.child('staffByUid').child(auth.uid).child('role').val() == 'streamer' && ((newData.exists() && newData.child('uid').val() == auth.uid && (!data.exists() || data.child('uid').val() == auth.uid)) || (!newData.exists() && data.child('uid').val() == auth.uid))))"
+        ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'admin' || (root.child('staffByUid').child(auth.uid).child('role').val() == 'streamer' && newData.exists() && newData.child('uid').val() == auth.uid && (!data.exists() || data.child('uid').val() == auth.uid || data.child('is_live').val() != true)))"
       },
       "profiles": {
         "$uid": {
