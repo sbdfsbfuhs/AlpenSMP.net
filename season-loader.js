@@ -146,5 +146,5 @@
     apply(event.detail);
   });
   pull();
-  window.setInterval(pull, 20000);
+  window.setInterval(pull, 180000);
 })();
