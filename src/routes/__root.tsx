@@ -37,6 +37,7 @@ function RootDocument() {
     <html lang="de" suppressHydrationWarning>
       <head>
         <HeadContent />
+        <script src="/season-loader.js" />
       </head>
       <body>
         <PreviewHostBridge />

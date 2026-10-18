@@ -85,7 +85,7 @@ export function LiveHero() {
   const left = countdown(live.ends_at);
   return (
     <section className="live-hero" aria-label="Livestream">
-      <div className="shell live-hero-row">
+      <div className="live-hero-row">
         <div>
           <p className="live-kicker"><i className="live-dot" aria-hidden="true" /> Jetzt live</p>
           <p className="mt-1 text-lg font-semibold">{live.streamer_name || "Jemand"} streamt AlpenSMP</p>

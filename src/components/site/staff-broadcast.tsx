@@ -277,19 +277,75 @@ export function StreamDesk({ user, note }: { user: StaffSession; note: (text: st
     }
   }
 
+  async function stopLive() {
+    if (!live?.is_live) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      await fbSet("live_streams/active", { ...live, is_live: false, uid: live.uid });
+      const text = "Stream ist aus. Der Hinweis auf der Seite ist weg.";
+      setMsg({ ok: true, text });
+      note(text);
+    } catch (err) {
+      const text = err instanceof Error ? err.message : "Speichern fehlgeschlagen";
+      setMsg({ ok: false, text });
+      note(text);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const onAir = Boolean(live?.is_live);
+  const platformLabel = PLATFORMS.find((item) => item.id === (live?.platform || platform))?.label || live?.platform || "Stream";
+
   return (
     <div className="space-y-4">
-      {live?.is_live ? (
-        <p className="rounded-md border border-brand/40 bg-brand/10 px-4 py-3 text-sm">
-          Live: {live.streamer_name} · {live.title || live.platform}
-          {mine ? (
-            <button type="button" className="btn-ghost ml-3" onClick={() => void fbSet("live_streams/active", { ...live, is_live: false, uid: live.uid }).then(() => note("Stream beendet"))}>
-              Stream beenden
+      <section className="stream-board">
+        <div className="stream-panel">
+          <p className="text-xs uppercase tracking-[0.14em] text-faint">Schalter</p>
+          <button
+            type="button"
+            className="stream-hook"
+            data-on={onAir ? "1" : "0"}
+            role="switch"
+            aria-checked={onAir}
+            disabled={busy || (onAir && !mine)}
+            onClick={() => {
+              if (onAir) void stopLive();
+              else {
+                const form = document.getElementById("stream-form");
+                if (form instanceof HTMLFormElement) form.requestSubmit();
+              }
+            }}
+          >
+            <span className="stream-hook-track" aria-hidden="true">
+              <span className="stream-hook-knob" />
+            </span>
+            <span className="stream-hook-copy">
+              <strong>{onAir ? "Live" : "Offline"}</strong>
+              <span>{onAir ? "Zum Ausschalten nach links tippen" : "Zum Livegehen nach rechts tippen"}</span>
+            </span>
+          </button>
+          {onAir && mine ? (
+            <button type="button" className="stream-stop" disabled={busy} onClick={() => void stopLive()}>
+              Stream aus
             </button>
           ) : null}
-        </p>
-      ) : null}
-      <form className="card card-still p-5" onSubmit={(event) => void goLive(event)}>
+          {onAir && !mine ? <p className="text-sm text-muted">{live?.streamer_name} ist gerade live. Nur diese Person oder der Owner stellt aus.</p> : null}
+        </div>
+        <figure className="stream-frame">
+          <figcaption>So sehen es Besucher</figcaption>
+          <div className={`stream-mini${onAir ? " is-on" : ""}`}>
+            <i className="live-dot" aria-hidden="true" />
+            <div className="min-w-0">
+              <p className="text-xs font-extrabold uppercase tracking-[0.12em]">{onAir ? "Jetzt live" : "Offline"}</p>
+              <p className="truncate text-sm font-semibold">{onAir ? `${live?.streamer_name || name} streamt` : "Noch niemand"}</p>
+              <p className="truncate text-xs text-muted">{onAir ? `„${live?.title || "AlpenSMP"}" · ${platformLabel}` : "Vorschau bleibt leer, bis der Schalter rechts steht"}</p>
+            </div>
+          </div>
+        </figure>
+      </section>
+      <form id="stream-form" className="card card-still p-5" onSubmit={(event) => void goLive(event)}>
         <h2 className="text-lg font-semibold">Stream ankündigen</h2>
         <label className="mt-3 block text-sm">
           Anzeigename
@@ -321,7 +377,6 @@ export function StreamDesk({ user, note }: { user: StaffSession; note: (text: st
           Ende, optional
           <input className="field mt-1" type="datetime-local" value={end} onChange={(e) => setEnd(e.target.value)} />
         </label>
-        <button className="btn-brand mt-4" type="submit" disabled={busy}>{busy ? "Speichere…" : "Live gehen"}</button>
         {msg ? (
           <p className={`mt-3 rounded-md border px-3 py-2 text-sm ${msg.ok ? "border-[#34d399]/50 bg-[#34d399]/10 text-[#bbf7d0]" : "border-brand bg-brand/15 text-fg"}`} role="status">
             {msg.text}

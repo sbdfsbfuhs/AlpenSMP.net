@@ -109,6 +109,18 @@ function useTorch(ref: RefObject<HTMLElement | null>) {
   }, [ref]);
 }
 
+function SeasonBadge() {
+  const [label, setLabel] = useState("");
+  useEffect(() => {
+    const read = () => setLabel(document.documentElement.dataset.seasonLabel || "");
+    read();
+    window.addEventListener("alpen-season", read);
+    return () => window.removeEventListener("alpen-season", read);
+  }, []);
+  if (!label) return null;
+  return <p className="season-badge">{label}</p>;
+}
+
 function Home() {
   const hero = useHeroParallax();
   const stage = useRef<HTMLElement>(null);
@@ -147,6 +159,7 @@ function Home() {
         <div className="shell relative z-[3] hero-layout">
           <div>
             <p className="kicker">Deutschsprachiger Minecraft Survival Server</p>
+            <SeasonBadge />
             <h1 className="display mt-4 text-5xl text-fg md:text-7xl">
               Alpen<span className="text-brand">SMP</span>
             </h1>
