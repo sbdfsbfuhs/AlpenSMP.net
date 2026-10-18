@@ -97,7 +97,10 @@ export function fbListen(path: string, onValue: (data: unknown) => void) {
   } catch {
     source = null;
   }
-  const poll = window.setInterval(pull, 12000);
+  const poll = window.setInterval(() => {
+    if (document.hidden) return;
+    pull();
+  }, 3 * 60 * 1000);
   return () => {
     closed = true;
     source?.close();

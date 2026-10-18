@@ -148,7 +148,7 @@ export function SiteMascot({
         .catch(() => {});
     };
     pull();
-    const id = window.setInterval(pull, 8000);
+    const id = window.setInterval(pull, 120000);
     return () => window.clearInterval(id);
   }, []);
 

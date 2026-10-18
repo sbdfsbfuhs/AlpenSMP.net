@@ -107,6 +107,7 @@ export function useSiteNotice() {
   useEffect(() => {
     let stop = false;
     const pull = () => {
+      if (document.hidden) return;
       fetch(`${SITE.fb}/site_status/active.json`)
         .then((res) => res.json())
         .then((data) => {
@@ -115,7 +116,7 @@ export function useSiteNotice() {
         .catch(() => {});
     };
     pull();
-    const id = window.setInterval(pull, 12000);
+    const id = window.setInterval(pull, 120000);
     return () => {
       stop = true;
       window.clearInterval(id);
@@ -181,7 +182,7 @@ export function StatStrip() {
   useEffect(() => {
     fetchSiteStats().then((row) => setTotal(row.total)).catch(() => {});
     fetchDiscordCount().then(setDiscord).catch(() => {});
-    fetchHistory().then(setHistory).catch(() => {});
+    fetchHistory(300).then(setHistory).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -272,7 +273,9 @@ export function PlayerChart() {
   useEffect(() => {
     let stop = false;
     const load = () => {
-      fetchHistory()
+      if (document.hidden) return;
+      const cap = range === "7d" ? 700 : range === "24h" ? 300 : range === "5h" ? 80 : 24;
+      fetchHistory(cap)
         .then((rows) => {
           if (!stop) setPoints(rows);
         })
@@ -280,12 +283,14 @@ export function PlayerChart() {
     };
     load();
     void pruneOldHistory().catch(() => {});
-    const id = window.setInterval(load, 180000);
+    const id = window.setInterval(load, 15 * 60 * 1000);
+    document.addEventListener("visibilitychange", load);
     return () => {
       stop = true;
       window.clearInterval(id);
+      document.removeEventListener("visibilitychange", load);
     };
-  }, []);
+  }, [range]);
 
   const rows = useMemo(() => {
     const span = range === "1h" ? 3600000 : range === "5h" ? 18000000 : range === "24h" ? 86400000 : 7 * 86400000;

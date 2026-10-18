@@ -52,8 +52,9 @@ export async function fetchSiteStats(): Promise<{ total: number | null; listed: 
   };
 }
 
-export async function fetchHistory(): Promise<HistoryPoint[]> {
-  const res = await fetch(`${SITE.fb}/site_stats_history.json?orderBy="$key"&limitToLast=2200`);
+export async function fetchHistory(limit = 120): Promise<HistoryPoint[]> {
+  const cap = Math.max(20, Math.min(700, limit));
+  const res = await fetch(`${SITE.fb}/site_stats_history.json?orderBy="$key"&limitToLast=${cap}`);
   if (!res.ok) return [];
   const data = (await res.json()) as Record<string, { t?: number; n?: number; by?: string }> | null;
   if (!data) return [];
@@ -64,7 +65,7 @@ export async function fetchHistory(): Promise<HistoryPoint[]> {
     .sort((a, b) => a.t - b.t);
 }
 
-const SAMPLE_GAP = 5 * 60 * 1000;
+const SAMPLE_GAP = 15 * 60 * 1000;
 const WEEK = 7 * 24 * 60 * 60 * 1000;
 
 export async function recordPlayerSample(players: number) {
@@ -92,11 +93,11 @@ export async function recordPlayerSample(players: number) {
 
 export async function pruneOldHistory() {
   const key = "alpensmp_prune_at";
-  if (Date.now() - Number(localStorage.getItem(key) || 0) < 10 * 60 * 1000) return;
+  if (Date.now() - Number(localStorage.getItem(key) || 0) < 12 * 60 * 60 * 1000) return;
   localStorage.setItem(key, String(Date.now()));
   const cutoff = Date.now() - WEEK;
-  for (let batch = 0; batch < 30; batch += 1) {
-    const res = await fetch(`${SITE.fb}/site_stats_history.json?orderBy="$key"&limitToFirst=80`);
+  for (let batch = 0; batch < 2; batch += 1) {
+    const res = await fetch(`${SITE.fb}/site_stats_history.json?orderBy="$key"&limitToFirst=40`);
     if (!res.ok) return;
     const data = (await res.json()) as Record<string, { t?: number }> | null;
     if (!data) return;
@@ -109,7 +110,7 @@ export async function pruneOldHistory() {
       }),
     );
     if (!removed.some(Boolean)) return;
-    if (old.length < 80) return;
+    if (old.length < 40) return;
   }
 }
 

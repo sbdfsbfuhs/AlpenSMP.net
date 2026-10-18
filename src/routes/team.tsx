@@ -383,7 +383,7 @@ function useLive<T>(path: string) {
       }).catch(() => {});
     };
     pull();
-    const id = window.setInterval(pull, 6000);
+    const id = window.setInterval(pull, 30000);
     return () => {
       stop = true;
       window.clearInterval(id);
