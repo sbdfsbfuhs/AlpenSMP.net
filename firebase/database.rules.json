@@ -32,6 +32,10 @@
       ".read": true,
       ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true"
     },
+    "season": {
+      ".read": true,
+      ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'admin')"
+    },
     "changelog": {
       ".read": true,
       "$id": {

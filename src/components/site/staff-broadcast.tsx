@@ -404,3 +404,61 @@ export function LiveNotices({ note }: { note: (text: string) => void }) {
     </div>
   );
 }
+
+const SEASONS: { id: string; emoji: string; name: string; text: string; fx: string }[] = [
+  { id: "halloween", emoji: "🍂", name: "Halloween", text: "Orange und Lila", fx: "Geister fliegen von unten" },
+  { id: "christmas", emoji: "🎄", name: "Weihnachten", text: "Rot, Gold und Schnee", fx: "Schneeflocken fallen" },
+  { id: "newyear", emoji: "🎆", name: "Neujahr", text: "Gold, Silber und Rot", fx: "Konfetti fällt von oben" },
+  { id: "easter", emoji: "🐣", name: "Ostern", text: "Pastell, sehr ruhig", fx: "Bunte Punkte steigen auf" },
+  { id: "spring", emoji: "🌸", name: "Frühling", text: "Grün und Blüten", fx: "Kirschblüten fallen diagonal" },
+  { id: "default", emoji: "⚙️", name: "Standard", text: "Alpenrot, ohne Effekt", fx: "Kein Effekt" },
+];
+
+export function SeasonDesk({ note }: { note: (text: string) => void }) {
+  const saved = useFbValue<{ active?: string }>("season");
+  const [pick, setPick] = useState("halloween");
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (saved?.active) setPick(saved.active);
+  }, [saved?.active]);
+  const chosen = SEASONS.find((item) => item.id === pick) || SEASONS[5];
+
+  async function activate() {
+    setBusy(true);
+    try {
+      await fbSet("season", { active: pick });
+      window.dispatchEvent(new CustomEvent("alpen-season-pick", { detail: pick }));
+      note("Season ist aktiv");
+    } catch (err) {
+      note(err instanceof Error ? err.message : "Speichern fehlgeschlagen");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="card card-still p-5">
+      <h2 className="text-lg font-semibold">Season & Events</h2>
+      <p className="mt-1 max-w-xl text-sm text-muted">Eine Karte wählen und aktivieren. Die Seite wechselt Farbe und Effekt, ohne dass jemand CSS anfasst.</p>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {SEASONS.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            className={`rounded-xl border px-3 py-3 text-left ${item.id === pick ? "border-brand bg-brand/10" : "border-line bg-bg"}`}
+            aria-pressed={item.id === pick}
+            onClick={() => setPick(item.id)}
+          >
+            <span className="text-xl" aria-hidden="true">{item.emoji}</span>
+            <span className="mt-1 block font-semibold">{item.name}</span>
+            <span className="mt-1 block text-xs text-muted">{item.text}</span>
+          </button>
+        ))}
+      </div>
+      <p className="mt-4 text-sm text-muted">Aktiver Effekt: {chosen.fx}</p>
+      <button type="button" className="btn-brand mt-3" disabled={busy} onClick={() => void activate()}>
+        {busy ? "Speichere…" : "Aktivieren"}
+      </button>
+    </section>
+  );
+}

@@ -4,7 +4,7 @@ import { CopyBurstButton } from "@/components/site/copy-burst";
 import { PageHero, Shell } from "@/components/site/shell";
 import { SiteMascot } from "@/components/site/assistant";
 import { AbsenceBoard, BanGuideEditor, GuideEditor, PlayerCommandEditor, RulesEditor, TasksBoard } from "@/components/site/staff-extra";
-import { LiveNotices, NewsEditor, StatusDesk, StreamDesk } from "@/components/site/staff-broadcast";
+import { LiveNotices, NewsEditor, SeasonDesk, StatusDesk, StreamDesk } from "@/components/site/staff-broadcast";
 import { can, roleLabel, ROLES, asRole, type Role } from "@/lib/alpen/roles";
 import {
   createStaffAccount,
@@ -45,10 +45,10 @@ export const Route = createFileRoute("/team")({
   component: StaffPage,
 });
 
-type Tab = "roster" | "moderation" | "help" | "community" | "tasks" | "absence" | "chat" | "commands" | "rules" | "ban" | "guide" | "settings" | "website" | "archive" | "users" | "news" | "status" | "stream";
+type Tab = "roster" | "moderation" | "help" | "community" | "tasks" | "absence" | "chat" | "commands" | "rules" | "ban" | "guide" | "settings" | "website" | "archive" | "users" | "news" | "status" | "stream" | "season";
 type Filter = "active" | "expired" | "archived" | "all";
 
-const TABS: { id: Tab; label: string; area: "roster" | "moderation" | "help" | "community" | "tasks" | "absence" | "chat" | "commandsRead" | "rulesRead" | "banGuide" | "guide" | "settings" | "website" | "archive" | "roles" | "news" | "status" | "stream" }[] = [
+const TABS: { id: Tab; label: string; area: "roster" | "moderation" | "help" | "community" | "tasks" | "absence" | "chat" | "commandsRead" | "rulesRead" | "banGuide" | "guide" | "settings" | "website" | "archive" | "roles" | "news" | "status" | "stream" | "season" }[] = [
   { id: "roster", label: "Team", area: "roster" },
   { id: "moderation", label: "Moderation", area: "moderation" },
   { id: "help", label: "Hilfe", area: "help" },
@@ -63,6 +63,7 @@ const TABS: { id: Tab; label: string; area: "roster" | "moderation" | "help" | "
   { id: "news", label: "📋 News", area: "news" },
   { id: "status", label: "🚦 Status", area: "status" },
   { id: "stream", label: "📺 Mein Stream", area: "stream" },
+  { id: "season", label: "Season & Events", area: "season" },
   { id: "settings", label: "Einstellungen", area: "settings" },
   { id: "website", label: "Website", area: "website" },
   { id: "archive", label: "Archiv", area: "archive" },
@@ -356,6 +357,7 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
         {safeTab === "news" ? <NewsEditor user={user} note={note} /> : null}
         {safeTab === "status" ? <StatusDesk user={user} note={note} /> : null}
         {safeTab === "stream" ? <StreamDesk user={user} note={note} /> : null}
+        {safeTab === "season" ? <SeasonDesk note={note} /> : null}
         {safeTab === "website" ? <Website user={user} note={note} /> : null}
         {safeTab === "archive" ? <Archive user={user} note={note} /> : null}
         {safeTab === "users" ? <Accounts note={note} actor={user} /> : null}

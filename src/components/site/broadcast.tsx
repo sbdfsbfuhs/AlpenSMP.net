@@ -86,13 +86,13 @@ export function LiveHero() {
   return (
     <section className="live-hero" aria-label="Livestream">
       <div className="live-hero-row">
-        <div>
-          <p className="live-kicker"><i className="live-dot" aria-hidden="true" /> Jetzt live</p>
-          <p className="mt-1 text-lg font-semibold">{live.streamer_name || "Jemand"} streamt AlpenSMP</p>
-          {live.title ? <p className="mt-1 text-sm text-muted">„{live.title}"</p> : null}
-          <p className="mt-1 text-xs text-faint">{PLATFORMS[live.platform || "other"] || live.platform}{left ? ` · ${left}` : ""}</p>
-        </div>
-        <a className="btn-brand" href={live.url} target="_blank" rel="noopener noreferrer">
+        <p className="live-kicker">
+          <i className="live-dot" aria-hidden="true" /> Jetzt live
+        </p>
+        <p className="live-hero-name">{live.streamer_name || "Jemand"}</p>
+        <p className="live-hero-plat">{PLATFORMS[live.platform || "other"] || live.platform}{left ? ` · ${left}` : ""}</p>
+        {live.title ? <p className="live-hero-title">„{live.title}"</p> : null}
+        <a className="btn-brand live-cta" href={live.url} target="_blank" rel="noopener noreferrer">
           ▶ Stream ansehen
         </a>
       </div>
