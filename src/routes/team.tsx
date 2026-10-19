@@ -6,6 +6,8 @@ import { SiteMascot } from "@/components/site/assistant";
 import { AbsenceBoard, BanGuideEditor, GuideEditor, PlayerCommandEditor, RulesEditor, TasksBoard } from "@/components/site/staff-extra";
 import { LiveNotices, NewsEditor, SeasonDesk, StatusDesk, StreamDesk } from "@/components/site/staff-broadcast";
 import { can, roleLabel, ROLES, asRole, type Role } from "@/lib/alpen/roles";
+import { ensureIdToken } from "@/lib/alpen/fb-auth";
+import { SITE } from "@/lib/alpen/site";
 import {
   createStaffAccount,
   entries,
@@ -212,9 +214,20 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
   const real = user.role;
   const [view, setView] = useState<Role>(asRole(user.role));
   const shown = (real === "owner" ? view : user.role) as string;
-  const reviews = useLive<{ status?: string }>("community_reviews");
-  const images = useLive<{ status?: string }>("community_images");
-  const help = useLive<{ status?: string; archived?: boolean }>("helpRequests");
+  const [counts, setCounts] = useState({ reviews: 0, images: 0, help: 0 });
+  useEffect(() => {
+    let stop = false;
+    void Promise.all([
+      shallowCount("community_reviews"),
+      shallowCount("community_images"),
+      shallowCount("helpRequests"),
+    ]).then(([reviews, images, help]) => {
+      if (!stop) setCounts({ reviews, images, help });
+    });
+    return () => {
+      stop = true;
+    };
+  }, []);
   const tabs = TABS.filter((item) => {
     if (item.id === "moderation") return can(shown, "moderation") || can(shown, "moderationRead") || can(shown, "notes");
     if (item.id === "commands") return can(shown, "commandsRead") || can(shown, "staffCommands");
@@ -251,11 +264,7 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
   }, [banRows, warnRows, real]);
   const [tab, setTab] = useState<Tab>("roster");
   const safeTab = tabs.some((item) => item.id === tab) ? tab : tabs[0]?.id;
-  const badges: Partial<Record<Tab, number>> = {
-    community: Object.values(reviews).filter((item) => item.status !== "approved" && item.status !== "rejected").length
-      + Object.values(images).filter((item) => item.status !== "approved" && item.status !== "rejected").length,
-    help: Object.values(help).filter((item) => !item.archived && item.status !== "erledigt").length,
-  };
+  const badges: Partial<Record<Tab, number>> = {};
 
   useEffect(() => {
     const beat = (writing = false) => {
@@ -287,6 +296,9 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted">
           Angemeldet als <span className="text-fg">{user.username}</span> · {roleLabel(real)}
+        </p>
+        <p className="text-sm text-muted">
+          {counts.reviews} Rezensionen · {counts.images} Bilder · {counts.help} Tickets
         </p>
         <div className="flex gap-2">
           {can(shown, "help") ? (
@@ -371,6 +383,19 @@ async function askHelp(user: StaffSession, note: (text: string) => void) {
   if (!msg) return;
   await fbPush("helpRequests", { by: user.username, msg, ts: Date.now(), replies: {}, status: "open" });
   note("Hilfe gesendet");
+}
+
+function shallowCount(path: string) {
+  return ensureIdToken()
+    .then((token) => {
+      const url = new URL(`${SITE.fb}/${path}.json`);
+      url.searchParams.set("shallow", "true");
+      if (token) url.searchParams.set("auth", token);
+      return fetch(url);
+    })
+    .then((res) => (res.ok ? res.json() : null))
+    .then((data: Record<string, unknown> | null) => (data && typeof data === "object" ? Object.keys(data).length : 0))
+    .catch(() => 0);
 }
 
 function useLive<T>(path: string) {
@@ -768,20 +793,34 @@ function Commands({ user, note }: { user: StaffSession; note: (text: string) => 
 }
 
 function Community({ user, note }: { user: StaffSession; note: (text: string) => void }) {
-  const reviews = useLive<CommunityItem>("community_reviews");
-  const images = useLive<CommunityItem>("community_images");
+  const [reviews, setReviews] = useState<Record<string, CommunityItem>>({});
+  const [images, setImages] = useState<Record<string, CommunityItem>>({});
   const [filter, setFilter] = useState("open");
+  const load = () => {
+    void fbGet<Record<string, CommunityItem>>("community_reviews").then((value) => setReviews(value ?? {}));
+    void fbGet<Record<string, CommunityItem>>("community_images").then((value) => setImages(value ?? {}));
+  };
+  useEffect(() => {
+    load();
+  }, []);
+  const mark = (kind: "reviews" | "images", key: string, status: string) => {
+    const set = kind === "reviews" ? setReviews : setImages;
+    set((prev) => ({ ...prev, [key]: { ...prev[key], status } }));
+  };
   return (
     <div className="space-y-8">
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {["open", "approved", "rejected", "all"].map((item) => (
           <button key={item} type="button" className={item === filter ? "btn-brand" : "btn-ghost"} onClick={() => setFilter(item)}>
             {item === "open" ? "Offen" : item === "approved" ? "Frei" : item === "rejected" ? "Abgelehnt" : "Alle"}
           </button>
         ))}
+        <button type="button" className="btn-ghost" onClick={load}>
+          Neu laden
+        </button>
       </div>
-      <Queue title="Rezensionen" path="community_reviews" items={entries(reviews)} filter={filter} user={user} note={note} />
-      <Queue title="Screenshots" path="community_images" items={entries(images)} filter={filter} user={user} note={note} shots />
+      <Queue title="Rezensionen" path="community_reviews" items={entries(reviews)} filter={filter} user={user} note={note} onStatus={(key, status) => mark("reviews", key, status)} />
+      <Queue title="Screenshots" path="community_images" items={entries(images)} filter={filter} user={user} note={note} shots onStatus={(key, status) => mark("images", key, status)} />
     </div>
   );
 }
@@ -800,6 +839,7 @@ function Queue({
   user,
   note,
   shots,
+  onStatus,
 }: {
   title: string;
   path: string;
@@ -808,6 +848,7 @@ function Queue({
   user: StaffSession;
   note: (text: string) => void;
   shots?: boolean;
+  onStatus: (key: string, status: string) => void;
 }) {
   const rows = items.filter(([, item]) => matches(item.status, filter));
   return (
@@ -821,8 +862,8 @@ function Queue({
             {item.imageUrl ? <img src={item.imageUrl} alt="" className="mt-3 max-h-40 rounded-md object-cover" /> : null}
             <p className="mt-2 text-xs text-faint">{item.status || "offen"} · {formatWhen(item.ts)}</p>
             <div className="mt-3 flex gap-2">
-              <button type="button" className="btn-brand" onClick={() => void fbUpdate(`${path}/${key}`, { status: "approved", moderatedBy: user.username, moderatedAt: Date.now(), updatedAt: Date.now() }).then(() => note("Freigegeben"))}>Frei</button>
-              <button type="button" className="btn-ghost" onClick={() => void fbUpdate(`${path}/${key}`, { status: "rejected", moderatedBy: user.username, moderatedAt: Date.now(), updatedAt: Date.now() }).then(() => note("Abgelehnt"))}>Ablehnen</button>
+              <button type="button" className="btn-brand" onClick={() => void fbUpdate(`${path}/${key}`, { status: "approved", moderatedBy: user.username, moderatedAt: Date.now(), updatedAt: Date.now() }).then(() => { onStatus(key, "approved"); note("Freigegeben"); })}>Frei</button>
+              <button type="button" className="btn-ghost" onClick={() => void fbUpdate(`${path}/${key}`, { status: "rejected", moderatedBy: user.username, moderatedAt: Date.now(), updatedAt: Date.now() }).then(() => { onStatus(key, "rejected"); note("Abgelehnt"); })}>Ablehnen</button>
             </div>
           </article>
         ))}
