@@ -47,10 +47,10 @@ export const Route = createFileRoute("/team")({
   component: StaffPage,
 });
 
-type Tab = "roster" | "moderation" | "help" | "community" | "tasks" | "absence" | "chat" | "commands" | "rules" | "ban" | "guide" | "settings" | "website" | "archive" | "users" | "news" | "status" | "stream" | "season";
+type Tab = "roster" | "moderation" | "help" | "community" | "tasks" | "absence" | "chat" | "commands" | "rules" | "ban" | "guide" | "settings" | "website" | "archive" | "users" | "news" | "status" | "stream" | "season" | "console";
 type Filter = "active" | "expired" | "archived" | "all";
 
-const TABS: { id: Tab; label: string; area: "roster" | "moderation" | "help" | "community" | "tasks" | "absence" | "chat" | "commandsRead" | "rulesRead" | "banGuide" | "guide" | "settings" | "website" | "archive" | "roles" | "news" | "status" | "stream" | "season" }[] = [
+const TABS: { id: Tab; label: string; area: "roster" | "moderation" | "help" | "community" | "tasks" | "absence" | "chat" | "commandsRead" | "rulesRead" | "banGuide" | "guide" | "settings" | "website" | "archive" | "roles" | "news" | "status" | "stream" | "season" | "console" }[] = [
   { id: "roster", label: "Team", area: "roster" },
   { id: "moderation", label: "Moderation", area: "moderation" },
   { id: "help", label: "Hilfe", area: "help" },
@@ -66,6 +66,7 @@ const TABS: { id: Tab; label: string; area: "roster" | "moderation" | "help" | "
   { id: "status", label: "🚦 Status", area: "status" },
   { id: "stream", label: "📺 Mein Stream", area: "stream" },
   { id: "season", label: "Season & Events", area: "season" },
+  { id: "console", label: "Konsole", area: "console" },
   { id: "settings", label: "Einstellungen", area: "settings" },
   { id: "website", label: "Website", area: "website" },
   { id: "archive", label: "Archiv", area: "archive" },
@@ -370,6 +371,7 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
         {safeTab === "status" ? <StatusDesk user={user} note={note} /> : null}
         {safeTab === "stream" ? <StreamDesk user={user} note={note} /> : null}
         {safeTab === "season" ? <SeasonDesk note={note} /> : null}
+        {safeTab === "console" ? <ConsoleDesk /> : null}
         {safeTab === "website" ? <Website user={user} note={note} /> : null}
         {safeTab === "archive" ? <Archive user={user} note={note} /> : null}
         {safeTab === "users" ? <Accounts note={note} actor={user} /> : null}
@@ -383,6 +385,20 @@ async function askHelp(user: StaffSession, note: (text: string) => void) {
   if (!msg) return;
   await fbPush("helpRequests", { by: user.username, msg, ts: Date.now(), replies: {}, status: "open" });
   note("Hilfe gesendet");
+}
+
+function ConsoleDesk() {
+  return (
+    <section className="card card-still max-w-xl p-5">
+      <h2 className="text-lg font-semibold">Server steuern</h2>
+      <p className="mt-2 text-sm text-muted">
+        Start, Stopp und Neustart laufen im Control Center auf dem Server. Die Anmeldung dort bleibt, inklusive Code aus der App.
+      </p>
+      <a className="btn-brand mt-4" href="https://panel.alpensmp.net/" target="_blank" rel="noopener noreferrer">
+        Control Center öffnen
+      </a>
+    </section>
+  );
 }
 
 function shallowCount(path: string) {
