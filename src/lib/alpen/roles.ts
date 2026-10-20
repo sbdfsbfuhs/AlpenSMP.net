@@ -94,6 +94,7 @@ const MAP: Record<Role, Area[]> = {
     "news",
     "status",
     "season",
+    "console",
   ],
   helper: [
     "moderation",
@@ -110,6 +111,7 @@ const MAP: Record<Role, Area[]> = {
     "notesRead",
     "chat",
     "search",
+    "console",
   ],
   supporter: [
     "moderationRead",
