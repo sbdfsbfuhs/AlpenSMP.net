@@ -3,30 +3,10 @@ import { BEDROCK_COMMANDS, COMMANDS } from "@/lib/alpen/content";
 import { MASCOT_DEFAULT, type Act, type MascotMode, type MascotSettings } from "@/lib/alpen/mascot";
 import { can, type Area } from "@/lib/alpen/roles";
 import { MascotView } from "@/components/site/mascot-art";
+import { useLive } from "@/components/site/staff-live";
 import { entries, fbGet, fbPush, fbRemove, fbSet, fbUpdate, formatWhen, freshStamp } from "@/lib/alpen/staff";
 
 type Note = (text: string) => void;
-
-function useLive<T>(path: string) {
-  const [data, setData] = useState<Record<string, T>>({});
-  useEffect(() => {
-    let stop = false;
-    const pull = () => {
-      fbGet<Record<string, T>>(path)
-        .then((value) => {
-          if (!stop) setData(value ?? {});
-        })
-        .catch(() => {});
-    };
-    pull();
-    const id = window.setInterval(pull, 30000);
-    return () => {
-      stop = true;
-      window.clearInterval(id);
-    };
-  }, [path]);
-  return data;
-}
 
 function guard(real: string, area: Area, note: Note) {
   if (can(real, area)) return true;

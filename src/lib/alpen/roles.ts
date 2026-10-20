@@ -34,6 +34,7 @@ export type Area =
   | "status"
   | "stream"
   | "season"
+  | "channels"
   | "console";
 
 const ALL: Area[] = [
@@ -69,6 +70,7 @@ const ALL: Area[] = [
   "status",
   "stream",
   "season",
+  "channels",
   "console",
 ];
 
@@ -94,6 +96,7 @@ const MAP: Record<Role, Area[]> = {
     "news",
     "status",
     "season",
+    "channels",
     "console",
   ],
   helper: [

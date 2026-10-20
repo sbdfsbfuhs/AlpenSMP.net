@@ -148,7 +148,8 @@
   .btn-ghost:hover svg,
   .btn-ice:hover svg,
   .btn-discord:hover svg,
-  .btn-tiktok:hover svg {
+  .btn-tiktok:hover svg,
+  .btn-channel:hover svg {
     transform: translateX(2px);
   }
 
@@ -157,6 +158,7 @@
   .btn-ice:active,
   .btn-discord:active,
   .btn-tiktok:active,
+  .btn-channel:active,
   .chip:active {
     transform: translateY(0) scale(0.98);
   }
@@ -220,7 +222,8 @@
   }
 
   .btn-discord,
-  .btn-tiktok {
+  .btn-tiktok,
+  .btn-channel {
     position: relative;
     overflow: hidden;
     isolation: isolate;
@@ -269,10 +272,47 @@
     box-shadow: 0 12px 24px rgb(254 44 85 / 0.32);
   }
 
+  .btn-channel {
+    background: #241416;
+    border: 1px solid color-mix(in oklab, var(--color-brand) 45%, transparent);
+  }
+
+  .btn-channel[data-platform="youtube"] {
+    background: #9f1520;
+    border-color: transparent;
+  }
+
+  .btn-channel[data-platform="twitch"] {
+    background: #5c16c5;
+    border-color: transparent;
+  }
+
+  .btn-channel[data-platform="tiktok"] {
+    background: #111;
+    border-color: transparent;
+  }
+
+  .btn-channel[data-platform="kick"] {
+    background: #14533a;
+    border-color: transparent;
+  }
+
+  .btn-channel[data-platform="instagram"] {
+    background: #6d2848;
+    border-color: transparent;
+  }
+
+  .btn-channel:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 12px 24px color-mix(in oklab, var(--color-brand) 36%, transparent);
+  }
+
   .btn-discord svg,
   .btn-tiktok svg,
+  .btn-channel svg,
   .btn-discord span,
-  .btn-tiktok span {
+  .btn-tiktok span,
+  .btn-channel span {
     position: relative;
     z-index: 1;
   }
