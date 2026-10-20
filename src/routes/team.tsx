@@ -47,30 +47,74 @@ export const Route = createFileRoute("/team")({
   component: StaffPage,
 });
 
-type Tab = "roster" | "moderation" | "help" | "community" | "tasks" | "absence" | "chat" | "commands" | "rules" | "ban" | "guide" | "settings" | "website" | "archive" | "users" | "news" | "status" | "stream" | "season" | "console";
+type Tab =
+  | "roster"
+  | "moderation"
+  | "help"
+  | "community"
+  | "tasks"
+  | "absence"
+  | "chat"
+  | "commands"
+  | "rules"
+  | "ban"
+  | "guide"
+  | "settings"
+  | "website"
+  | "archive"
+  | "users"
+  | "news"
+  | "status"
+  | "stream"
+  | "season"
+  | "console";
 type Filter = "active" | "expired" | "archived" | "all";
+type TabGroup = "Team" | "Support" | "Inhalte" | "Verwaltung";
+type TabArea =
+  | "roster"
+  | "moderation"
+  | "help"
+  | "community"
+  | "tasks"
+  | "absence"
+  | "chat"
+  | "commandsRead"
+  | "rulesRead"
+  | "banGuide"
+  | "guide"
+  | "settings"
+  | "website"
+  | "archive"
+  | "roles"
+  | "news"
+  | "status"
+  | "stream"
+  | "season"
+  | "console";
 
-const TABS: { id: Tab; label: string; area: "roster" | "moderation" | "help" | "community" | "tasks" | "absence" | "chat" | "commandsRead" | "rulesRead" | "banGuide" | "guide" | "settings" | "website" | "archive" | "roles" | "news" | "status" | "stream" | "season" | "console" }[] = [
-  { id: "roster", label: "Team", area: "roster" },
-  { id: "moderation", label: "Moderation", area: "moderation" },
-  { id: "help", label: "Hilfe", area: "help" },
-  { id: "community", label: "Community", area: "community" },
-  { id: "tasks", label: "Aufgaben", area: "tasks" },
-  { id: "absence", label: "Abwesenheit", area: "absence" },
-  { id: "chat", label: "Chat", area: "chat" },
-  { id: "commands", label: "Commands", area: "commandsRead" },
-  { id: "rules", label: "Regeln", area: "rulesRead" },
-  { id: "ban", label: "Ban-Leitfaden", area: "banGuide" },
-  { id: "guide", label: "Guide", area: "guide" },
-  { id: "news", label: "📋 News", area: "news" },
-  { id: "status", label: "🚦 Status", area: "status" },
-  { id: "stream", label: "📺 Mein Stream", area: "stream" },
-  { id: "season", label: "Season & Events", area: "season" },
-  { id: "console", label: "Konsole", area: "console" },
-  { id: "settings", label: "Einstellungen", area: "settings" },
-  { id: "website", label: "Website", area: "website" },
-  { id: "archive", label: "Archiv", area: "archive" },
-  { id: "users", label: "Accounts", area: "roles" },
+const TAB_GROUPS: TabGroup[] = ["Team", "Support", "Inhalte", "Verwaltung"];
+
+const TABS: { id: Tab; label: string; group: TabGroup; area: TabArea }[] = [
+  { id: "roster", label: "Team", group: "Team", area: "roster" },
+  { id: "tasks", label: "Aufgaben", group: "Team", area: "tasks" },
+  { id: "absence", label: "Abwesenheit", group: "Team", area: "absence" },
+  { id: "chat", label: "Chat", group: "Team", area: "chat" },
+  { id: "moderation", label: "Moderation", group: "Support", area: "moderation" },
+  { id: "help", label: "Hilfe", group: "Support", area: "help" },
+  { id: "community", label: "Community", group: "Support", area: "community" },
+  { id: "ban", label: "Ban-Leitfaden", group: "Support", area: "banGuide" },
+  { id: "archive", label: "Archiv", group: "Support", area: "archive" },
+  { id: "commands", label: "Commands", group: "Inhalte", area: "commandsRead" },
+  { id: "rules", label: "Regeln", group: "Inhalte", area: "rulesRead" },
+  { id: "guide", label: "Guide", group: "Inhalte", area: "guide" },
+  { id: "news", label: "News", group: "Inhalte", area: "news" },
+  { id: "status", label: "Status", group: "Inhalte", area: "status" },
+  { id: "stream", label: "Mein Stream", group: "Inhalte", area: "stream" },
+  { id: "season", label: "Season & Events", group: "Inhalte", area: "season" },
+  { id: "console", label: "Konsole", group: "Verwaltung", area: "console" },
+  { id: "settings", label: "Einstellungen", group: "Verwaltung", area: "settings" },
+  { id: "website", label: "Website", group: "Verwaltung", area: "website" },
+  { id: "users", label: "Accounts", group: "Verwaltung", area: "roles" },
 ];
 
 function StaffPage() {
@@ -123,7 +167,7 @@ function StaffPage() {
       <PageHero
         kicker="Nur fürs Team"
         title="Staff-Center"
-        lede="Moderation, Hilfe, Commands und Freigaben. Dieselben Daten wie bisher – in der neuen Oberfläche."
+        lede="Dein interner Arbeitsbereich für Team, Support, Inhalte und Server-Verwaltung."
       />
       <SiteMascot home="team" bias="sit" align="end" line="Öffentliche Fragen beantworte ich auf den anderen Seiten." />
       <div className="shell py-10">
@@ -265,6 +309,11 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
   }, [banRows, warnRows, real]);
   const [tab, setTab] = useState<Tab>("roster");
   const safeTab = tabs.some((item) => item.id === tab) ? tab : tabs[0]?.id;
+  const activeTab = tabs.find((item) => item.id === safeTab);
+  const tabGroups = TAB_GROUPS.map((group) => ({
+    group,
+    items: tabs.filter((item) => item.group === group),
+  })).filter((group) => group.items.length > 0);
   const badges: Partial<Record<Tab, number>> = {};
 
   useEffect(() => {
@@ -294,14 +343,36 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted">
-          Angemeldet als <span className="text-fg">{user.username}</span> · {roleLabel(real)}
-        </p>
-        <p className="text-sm text-muted">
-          {counts.reviews} Rezensionen · {counts.images} Bilder · {counts.help} Tickets
-        </p>
-        <div className="flex gap-2">
+      <section className="card card-still grid gap-5 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+        <div className="flex min-w-0 items-center gap-3">
+          <span
+            aria-hidden="true"
+            className="grid size-12 shrink-0 place-items-center rounded-full border border-brand/40 bg-brand/10 text-lg font-semibold text-ice"
+          >
+            {user.username.slice(0, 1).toUpperCase()}
+          </span>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-faint">Angemeldet als</p>
+            <p className="truncate text-lg font-semibold text-fg">{user.username}</p>
+            <p className="text-sm text-muted">{roleLabel(real)}</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          {[
+            { label: "Rezensionen", count: counts.reviews },
+            { label: "Bilder", count: counts.images },
+            { label: "Tickets", count: counts.help },
+          ].map((item) => (
+            <div
+              key={item.label}
+              className="min-w-0 rounded-md border border-line/80 bg-bg/50 px-3 py-2 text-center"
+            >
+              <p className="text-lg font-semibold tabular-nums text-fg">{item.count}</p>
+              <p className="truncate text-xs text-muted">{item.label}</p>
+            </div>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-2 lg:col-span-2 lg:justify-end">
           {can(shown, "help") ? (
             <button type="button" className="btn-ghost" onClick={() => void askHelp(user, note)}>
               Hilfe rufen
@@ -311,70 +382,144 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
             Abmelden
           </button>
         </div>
-      </div>
+      </section>
       {real === "owner" ? (
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <span className="text-sm text-muted">Ansicht als</span>
-          {ROLES.map((role) => (
-            <button key={role} type="button" className={shown === role ? "btn-brand px-3" : "btn-ghost px-3"} onClick={() => setView(role)}>
-              {roleLabel(role)}
-            </button>
-          ))}
-          <span className="text-xs text-faint">Nur für dich. Ändert nicht die echte Rolle.</span>
+        <div className="mt-4 flex flex-col gap-3 rounded-md border border-line/70 bg-surface/60 p-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-fg">Rollen-Vorschau</p>
+            <p className="text-xs text-muted">Nur für dich – deine echte Rolle bleibt unverändert.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {ROLES.map((role) => (
+              <button
+                key={role}
+                type="button"
+                aria-pressed={shown === role}
+                className={
+                  shown === role
+                    ? "btn-brand min-h-9 px-3 py-1 text-xs"
+                    : "btn-ghost min-h-9 px-3 py-1 text-xs"
+                }
+                onClick={() => setView(role)}
+              >
+                {roleLabel(role)}
+              </button>
+            ))}
+          </div>
         </div>
       ) : null}
       {real === "owner" || real === "admin" ? <LiveNotices note={note} /> : null}
       {shown === "streamer" ? null : <PlayerSearch />}
       {real === "owner" ? <CheckInBanner /> : null}
-      <div className="mt-5 flex gap-2 overflow-x-auto px-1 pb-2">
-        {tabs.map((item) => {
-          const count = badges[item.id] || 0;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              className={item.id === safeTab ? "btn-brand shrink-0" : "btn-ghost shrink-0"}
-              onClick={() => setTab(item.id)}
-            >
-              {item.label}
-              {count > 0 ? <span className="ml-2 inline-flex min-w-5 justify-center rounded-full bg-red-600 px-1.5 text-xs font-bold text-white">{count}</span> : null}
-            </button>
-          );
-        })}
-      </div>
-      <div className="panel-in mt-6 px-1" key={safeTab}>
-        {safeTab === "moderation" ? <Moderation user={user} note={note} ban={can(shown, "moderation") && can(real, "moderation")} writeNotes={can(shown, "notes") && can(real, "notes")} /> : null}
-        {safeTab === "help" ? <HelpDesk user={user} note={note} act={can(shown, "helpAct") && can(real, "helpAct")} moderate={can(shown, "moderation") && can(real, "moderation")} /> : null}
-        {safeTab === "commands" ? (
-          <div className="space-y-6">
-            {can(shown, "commandsRead") ? <PlayerCommandEditor real={real} view={shown} note={note} /> : null}
-            {can(shown, "staffCommands") ? <Commands user={user} note={note} /> : null}
+      <div className="mt-6 grid min-w-0 gap-5 lg:grid-cols-[14rem_minmax(0,1fr)] lg:items-start">
+        <nav
+          className="card card-still min-w-0 p-2 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto"
+          aria-label="Team-Bereiche"
+        >
+          <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:gap-3 lg:overflow-visible lg:pb-0">
+            {tabGroups.map(({ group, items }) => (
+              <section key={group} className="shrink-0 lg:shrink">
+                <h2 className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-faint">
+                  {group}
+                </h2>
+                <div className="flex gap-1 lg:flex-col">
+                  {items.map((item) => {
+                    const count = badges[item.id] || 0;
+                    const selected = item.id === safeTab;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        aria-current={selected ? "page" : undefined}
+                        className={`flex min-h-10 items-center justify-between gap-3 whitespace-nowrap rounded-md px-3 py-2 text-left text-sm transition-colors lg:w-full lg:whitespace-normal ${
+                          selected
+                            ? "border border-brand/40 bg-brand/10 font-semibold text-fg lg:border-y-0 lg:border-r-0 lg:border-l-2 lg:pl-[calc(0.75rem-2px)]"
+                            : "border border-transparent text-muted hover:bg-surface-2 hover:text-fg"
+                        }`}
+                        onClick={() => setTab(item.id)}
+                      >
+                        <span>{item.label}</span>
+                        {count > 0 ? (
+                          <span className="inline-flex min-w-5 justify-center rounded-full bg-red-600 px-1.5 text-xs font-bold text-white">
+                            {count}
+                          </span>
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
           </div>
-        ) : null}
-        {safeTab === "community" ? <Community user={user} note={note} /> : null}
-        {safeTab === "rules" ? (
-          <div className="space-y-4">
-            <RulesEditor real={real} view={shown} note={note} />
-            {can(shown, "rulesRead") && (can(real, "rulesEdit") || can(shown, "staffCommands") || shown !== "builder") ? (
-              <RulesEditor real={real} view={can(shown, "rulesEdit") ? shown : "helper"} note={note} staff />
+        </nav>
+        <section className="min-w-0">
+          {activeTab ? (
+            <header className="mb-4 flex items-end justify-between gap-3 px-1">
+              <div>
+                <p className="kicker">{activeTab.group}</p>
+                <h2 className="display mt-1 text-2xl text-fg">{activeTab.label}</h2>
+              </div>
+              <p className="shrink-0 text-xs text-faint">
+                {tabs.findIndex((item) => item.id === safeTab) + 1} / {tabs.length} Bereiche
+              </p>
+            </header>
+          ) : null}
+          <div className="panel-in min-w-0 px-1" key={safeTab}>
+            {safeTab === "moderation" ? (
+              <Moderation
+                user={user}
+                note={note}
+                ban={can(shown, "moderation") && can(real, "moderation")}
+                writeNotes={can(shown, "notes") && can(real, "notes")}
+              />
             ) : null}
+            {safeTab === "help" ? (
+              <HelpDesk
+                user={user}
+                note={note}
+                act={can(shown, "helpAct") && can(real, "helpAct")}
+                moderate={can(shown, "moderation") && can(real, "moderation")}
+              />
+            ) : null}
+            {safeTab === "commands" ? (
+              <div className="space-y-6">
+                {can(shown, "commandsRead") ? <PlayerCommandEditor real={real} view={shown} note={note} /> : null}
+                {can(shown, "staffCommands") ? <Commands user={user} note={note} /> : null}
+              </div>
+            ) : null}
+            {safeTab === "community" ? <Community user={user} note={note} /> : null}
+            {safeTab === "rules" ? (
+              <div className="space-y-4">
+                <RulesEditor real={real} view={shown} note={note} />
+                {can(shown, "rulesRead") &&
+                (can(real, "rulesEdit") || can(shown, "staffCommands") || shown !== "builder") ? (
+                  <RulesEditor real={real} view={can(shown, "rulesEdit") ? shown : "helper"} note={note} staff />
+                ) : null}
+              </div>
+            ) : null}
+            {safeTab === "ban" ? <BanGuideEditor real={real} view={shown} note={note} /> : null}
+            {safeTab === "tasks" ? (
+              <TasksBoard real={real} view={shown} note={note} username={user.username} />
+            ) : null}
+            {safeTab === "absence" ? (
+              <AbsenceBoard real={real} view={shown} note={note} username={user.username} />
+            ) : null}
+            {safeTab === "guide" ? <GuideEditor real={real} view={shown} note={note} /> : null}
+            {safeTab === "roster" ? <Roster owner={real === "owner"} /> : null}
+            {safeTab === "chat" ? (
+              <StaffChat user={user} builder={can(shown, "builderChat") && can(real, "builderChat")} />
+            ) : null}
+            {safeTab === "settings" ? <Settings user={user} note={note} /> : null}
+            {safeTab === "news" ? <NewsEditor user={user} note={note} /> : null}
+            {safeTab === "status" ? <StatusDesk user={user} note={note} /> : null}
+            {safeTab === "stream" ? <StreamDesk user={user} note={note} /> : null}
+            {safeTab === "season" ? <SeasonDesk note={note} /> : null}
+            {safeTab === "console" ? <ConsoleDesk /> : null}
+            {safeTab === "website" ? <Website user={user} note={note} /> : null}
+            {safeTab === "archive" ? <Archive user={user} note={note} /> : null}
+            {safeTab === "users" ? <Accounts note={note} actor={user} /> : null}
           </div>
-        ) : null}
-        {safeTab === "ban" ? <BanGuideEditor real={real} view={shown} note={note} /> : null}
-        {safeTab === "tasks" ? <TasksBoard real={real} view={shown} note={note} username={user.username} /> : null}
-        {safeTab === "absence" ? <AbsenceBoard real={real} view={shown} note={note} username={user.username} /> : null}
-        {safeTab === "guide" ? <GuideEditor real={real} view={shown} note={note} /> : null}
-        {safeTab === "roster" ? <Roster owner={real === "owner"} /> : null}
-        {safeTab === "chat" ? <StaffChat user={user} builder={can(shown, "builderChat") && can(real, "builderChat")} /> : null}
-        {safeTab === "settings" ? <Settings user={user} note={note} /> : null}
-        {safeTab === "news" ? <NewsEditor user={user} note={note} /> : null}
-        {safeTab === "status" ? <StatusDesk user={user} note={note} /> : null}
-        {safeTab === "stream" ? <StreamDesk user={user} note={note} /> : null}
-        {safeTab === "season" ? <SeasonDesk note={note} /> : null}
-        {safeTab === "console" ? <ConsoleDesk /> : null}
-        {safeTab === "website" ? <Website user={user} note={note} /> : null}
-        {safeTab === "archive" ? <Archive user={user} note={note} /> : null}
-        {safeTab === "users" ? <Accounts note={note} actor={user} /> : null}
+        </section>
       </div>
     </div>
   );
