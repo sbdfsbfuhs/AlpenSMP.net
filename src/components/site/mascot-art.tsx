@@ -44,9 +44,9 @@ function Eye({ cx, cy, gaze }: { cx: number; cy: number; gaze: Gaze }) {
         <path d={`M${cx + 5} ${top}c0.45-1.7 1.2-2.5 2.1-2.9`} />
       </g>
       <g className="lid">
-        <ellipse cx={cx} cy={cy} rx={EYE_R + 1.8} ry={EYE_R + 2.4} fill="#f6e2cc" />
+        <ellipse cx={cx} cy={cy - EYE_R * 0.7} rx={EYE_R + 2} ry={EYE_R * 0.85} fill="#f6e2cc" />
         <path
-          d={`M${cx - 12} ${cy + 1.2}q12 7.2 24 0`}
+          d={`M${cx - 10} ${cy + EYE_R * 0.3}q10 5 20 0`}
           fill="none"
           stroke="#3a241c"
           strokeWidth="2.3"
