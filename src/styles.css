@@ -1300,15 +1300,15 @@
 .face-happy,
 .face-tired,
 .face-wow,
-.face-think { opacity: 0; }
+.face-think { display: none; }
 .mood-happy .face-normal,
 .mood-tired .face-normal,
 .mood-wow .face-normal,
-.mood-think .face-normal { opacity: 0; }
+.mood-think .face-normal { display: none; }
 .mood-happy .face-happy,
 .mood-tired .face-tired,
 .mood-wow .face-wow,
-.mood-think .face-think { opacity: 1; }
+.mood-think .face-think { display: inline; }
 .brows, .brow { transform-box: fill-box; transform-origin: center; }
 .mood-wow .brows { transform: translateY(-4px); }
 .mood-tired .brows { transform: translateY(3px); }
@@ -1332,10 +1332,8 @@
 .pose-wave .scarf,
 .mascot-waving .scarf,
 [data-state="waving"] .scarf { animation: scarf-flap 0.4s ease-in-out 3 0.08s; }
-.pose-sleep .lid,
-.pose-pet .lid { animation: none; opacity: 1; }
+.pose-sleep .lid { animation: none; opacity: 1; }
 .pose-sleep .shine,
-.pose-pet .shine,
 .mood-tired .shine { animation: none; opacity: 0; }
 .pose-sleep .live { animation-duration: 7s; }
 .pose-look .head { animation: head-tilt 1.6s ease-in-out; }
