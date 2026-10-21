@@ -1,3 +1,4 @@
+import { useId } from "react";
 import type { Act } from "@/lib/alpen/mascot";
 
 type Gaze = { x: number; y: number };
