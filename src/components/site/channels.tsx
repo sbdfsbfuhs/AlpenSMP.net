@@ -10,7 +10,7 @@ function ChannelMark() {
   );
 }
 
-export function ChannelLinks({ place = "hero" }: { place?: "hero" | "footer" }) {
+export function CommunityChannels() {
   const [items, setItems] = useState<Channel[]>(DEFAULT_CHANNELS);
   useEffect(() => {
     let stop = false;
@@ -22,34 +22,28 @@ export function ChannelLinks({ place = "hero" }: { place?: "hero" | "footer" }) 
     };
   }, []);
   if (!items.length) return null;
-  if (place === "footer") {
-    return (
-      <>
-        {items.map((item) => (
-          <li key={`${item.platform}-${item.url}`}>
-            <a className="hover:text-brand" href={item.url} target="_blank" rel="noopener noreferrer">
-              {item.label}
-            </a>
-          </li>
-        ))}
-      </>
-    );
-  }
   return (
-    <>
-      {items.map((item) => (
-        <a
-          key={`${item.platform}-${item.url}`}
-          className="btn-channel"
-          data-platform={item.platform}
-          href={item.url}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <ChannelMark />
-          <span>{item.label}</span>
-        </a>
-      ))}
-    </>
+    <section className="shell pb-12">
+      <p className="kicker">Von der Community</p>
+      <h2 className="display mt-2 text-3xl">Für die Community</h2>
+      <p className="mt-2 max-w-xl text-sm text-muted">
+        Das sind keine offiziellen AlpenSMP-Accounts. Spieler laden hier eigene Videos hoch.
+      </p>
+      <div className="mt-4 flex flex-wrap gap-2">
+        {items.map((item) => (
+          <a
+            key={`${item.platform}-${item.url}`}
+            className="btn-channel"
+            data-platform={item.platform}
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <ChannelMark />
+            <span>{item.label}</span>
+          </a>
+        ))}
+      </div>
+    </section>
   );
 }

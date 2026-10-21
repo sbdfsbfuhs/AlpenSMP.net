@@ -18,7 +18,7 @@ export type Channel = {
 };
 
 export const DEFAULT_CHANNELS: Channel[] = [
-  { label: "YouTube", platform: "youtube", url: "https://www.youtube.com/@Lennart-p9v" },
+  { label: "YouTube · Lennart", platform: "youtube", url: "https://www.youtube.com/@Lennart-p9v" },
 ];
 
 export const CHANNEL_LIMIT = 8;

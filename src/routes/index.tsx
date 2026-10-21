@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Map, Mic, Shield, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { DiscordLink, Shell, TikTokLink } from "@/components/site/shell";
-import { ChannelLinks } from "@/components/site/channels";
 import { ModrinthLink } from "@/components/site/guide/mods";
 import { SiteMascot } from "@/components/site/assistant";
 import { CopyIp, MotdNotice, PlayerChart, SiteBanner, StatStrip, StatusCard } from "@/components/site/live";
@@ -180,7 +179,6 @@ function Home() {
               </Link>
               <DiscordLink>Discord</DiscordLink>
               <TikTokLink>TikTok</TikTokLink>
-              <ChannelLinks />
             </div>
           </div>
           <div className="hero-status">

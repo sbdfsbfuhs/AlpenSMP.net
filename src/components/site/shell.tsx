@@ -4,7 +4,6 @@ import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CautionTape, useSiteNotice } from "@/components/site/live";
 import { LiveDock, LiveHero, ServerStatusBanner } from "@/components/site/broadcast";
-import { ChannelLinks } from "@/components/site/channels";
 import { LockScreen } from "@/components/site/offline-run";
 import { MORE, NAV, SITE } from "@/lib/alpen/site";
 
@@ -150,7 +149,6 @@ function Footer() {
             <li className="pt-2">
               <TikTokLink />
             </li>
-            <ChannelLinks place="footer" />
             <li>
               <Link to="/karte" className="hover:text-brand">
                 Live-Karte

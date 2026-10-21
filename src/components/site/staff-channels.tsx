@@ -63,7 +63,7 @@ export function ChannelsDesk({ note }: { note: (text: string) => void }) {
       await fbSet("site_stats/channelBoard", { set: true, items });
       setCustom(true);
       setError("");
-      note(rows.length ? "Accounts stehen auf der Startseite" : "Extra-Accounts sind von der Startseite weg");
+      note(rows.length ? "Accounts stehen auf der Community-Seite" : "Community-Accounts sind weg");
     } catch (err) {
       const text = err instanceof Error ? err.message : "Speichern fehlgeschlagen";
       setError(text);
@@ -77,13 +77,13 @@ export function ChannelsDesk({ note }: { note: (text: string) => void }) {
 
   return (
     <section className="card card-still max-w-2xl p-5">
-      <h2 className="text-lg font-semibold">Accounts auf der Startseite</h2>
+      <h2 className="text-lg font-semibold">Community-Accounts</h2>
       <p className="mt-2 text-sm text-muted">
-        Discord und TikTok bleiben fest. Hier kommen weitere Accounts dazu, zum Beispiel YouTube. Nach dem Speichern gilt genau diese Liste.
+        Discord und TikTok bleiben eure Accounts. Hier kommen Kanäle von Spielern dazu. Sie stehen auf der Community-Seite, unter Discord und TikTok. Nach dem Speichern gilt genau diese Liste.
       </p>
       {!custom ? (
         <p className="mt-3 text-sm text-ice">
-          Der YouTube-Account ist schon verlinkt. Speichern, sobald du etwas ändern oder weitere Accounts hinzufügen willst.
+          Lennarts YouTube ist schon auf der Community-Seite. Speichern, sobald du etwas ändern oder weitere Accounts hinzufügen willst.
         </p>
       ) : null}
       <ul className="mt-4 space-y-3">
@@ -134,7 +134,7 @@ export function ChannelsDesk({ note }: { note: (text: string) => void }) {
           </li>
         ))}
       </ul>
-      {!rows.length ? <p className="mt-4 text-sm text-muted">Keine Extra-Accounts. Die Startseite zeigt dann nur Discord und TikTok.</p> : null}
+      {!rows.length ? <p className="mt-4 text-sm text-muted">Keine Community-Accounts. Auf der Community-Seite bleiben dann nur Discord und TikTok.</p> : null}
       {error ? <p className="mt-3 text-sm text-ember">{error}</p> : null}
       <div className="mt-4 flex flex-wrap gap-2">
         <button

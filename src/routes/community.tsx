@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { DiscordMark, PageHero, Shell, TikTokMark } from "@/components/site/shell";
+import { CommunityChannels } from "@/components/site/channels";
 import { SiteMascot } from "@/components/site/assistant";
 import { ReviewForm } from "@/components/site/forms";
 import { REVIEWS, type Review } from "@/lib/alpen/content";
@@ -81,6 +82,8 @@ function CommunityPage() {
           </div>
         </a>
       </div>
+
+      <CommunityChannels />
 
       <SiteMascot home="community" bias="wave" line="Discord ist freiwillig. Zum Spielen reicht die IP." />
 
