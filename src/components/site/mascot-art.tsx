@@ -1,58 +1,16 @@
-import { useId } from "react";
 import type { Act } from "@/lib/alpen/mascot";
 
 type Gaze = { x: number; y: number };
 
 const SIT_LIKE = new Set<Act>(["stand", "walk", "hop", "mine", "bored", "stumble", "stretch", "up"]);
 
-const EYE_R = 13.6;
-
-function eyeTop(cy: number, r = EYE_R) {
-  return cy - r + r * 0.36;
-}
-
-function eyePath(cx: number, cy: number, r = EYE_R) {
-  const y = eyeTop(cy, r);
-  const dx = Math.sqrt(r * r - (y - cy) ** 2);
-  return `M${cx - dx} ${y}A${r} ${r} 0 1 0 ${cx + dx} ${y}Z`;
-}
-
 function Eye({ cx, cy, gaze }: { cx: number; cy: number; gaze: Gaze }) {
-  const clip = useId().replace(/:/g, "");
-  const d = eyePath(cx, cy);
-  const top = eyeTop(cy);
-  const lx = gaze.x * 2.2;
-  const ly = gaze.y * -1.8;
+  const lx = gaze.x * 1.2;
+  const ly = gaze.y * -0.9;
   return (
-    <g className="eye">
-      <defs>
-        <clipPath id={clip}>
-          <path d={d} />
-        </clipPath>
-      </defs>
-      <path d={d} fill="#3d1f0a" />
-      <g clipPath={`url(#${clip})`}>
-        <g className="pupils" transform={`translate(${lx} ${ly})`}>
-          <circle cx={cx} cy={cy} r={EYE_R * 0.45} fill="#140c08" />
-          <circle className="shine" cx={cx + 3.5} cy={cy - 3.6} r={EYE_R * 0.18} fill="#fff" />
-          <circle className="shine" cx={cx - 2.6} cy={cy + 2.4} r={EYE_R * 0.08} fill="#fff" />
-        </g>
-      </g>
-      <g className="lashes" fill="none" stroke="#3a241c" strokeWidth="1.5" strokeLinecap="round">
-        <path d={`M${cx - 5.2} ${top}c-0.4-1.8-1.1-2.6-2-3`} />
-        <path d={`M${cx} ${top - 0.2}c0.05-2 0.1-3.1 0.35-3.6`} />
-        <path d={`M${cx + 5} ${top}c0.45-1.7 1.2-2.5 2.1-2.9`} />
-      </g>
-      <g className="lid">
-        <ellipse cx={cx} cy={cy - EYE_R * 0.7} rx={EYE_R + 2} ry={EYE_R * 0.85} fill="#f6e2cc" />
-        <path
-          d={`M${cx - 10} ${cy + EYE_R * 0.3}q10 5 20 0`}
-          fill="none"
-          stroke="#3a241c"
-          strokeWidth="2.3"
-          strokeLinecap="round"
-        />
-      </g>
+    <g className="eye" transform={`translate(${lx} ${ly})`}>
+      <ellipse cx={cx} cy={cy} rx={8.2} ry={9.2} fill="#1a120f" />
+      <circle className="shine" cx={cx + 2.3} cy={cy - 3.2} r={2.2} fill="#fff" />
     </g>
   );
 }
@@ -195,24 +153,18 @@ export function MascotView({
               <path className="mouth mouth-happy" d="M64 110q12 12 24 0" fill="none" stroke="#3a241c" strokeWidth="2.3" strokeLinecap="round" />
             </g>
             <g className="face-tired">
-              <path d="M48 92h20" stroke="#1a120f" strokeWidth="3" strokeLinecap="round" />
-              <path d="M84 92h20" stroke="#1a120f" strokeWidth="3" strokeLinecap="round" />
-              <path d="M50 96q8 4 16 0" fill="none" stroke="#c49670" strokeWidth="1.4" strokeLinecap="round" />
-              <path d="M86 96q8 4 16 0" fill="none" stroke="#c49670" strokeWidth="1.4" strokeLinecap="round" />
+              <Eye cx={58} cy={90} gaze={gaze} />
+              <Eye cx={94} cy={90} gaze={gaze} />
               <path className="mouth mouth-tired" d="M68 114h16" stroke="#3a241c" strokeWidth="2.2" strokeLinecap="round" />
             </g>
             <g className="face-wow">
-              <circle cx="58" cy="90" r="10" fill="#1a120f" />
-              <circle cx="94" cy="90" r="10" fill="#1a120f" />
-              <circle cx="61" cy="86" r="2.6" fill="#fff" />
-              <circle cx="97" cy="86" r="2.6" fill="#fff" />
+              <Eye cx={58} cy={90} gaze={gaze} />
+              <Eye cx={94} cy={90} gaze={gaze} />
               <ellipse className="mouth mouth-wow" cx="76" cy="116" rx="7" ry="6" fill="#1a120f" />
             </g>
             <g className="face-think">
-              <ellipse cx="58" cy="92" rx="9" ry="8" fill="#1a120f" />
-              <ellipse cx="94" cy="92" rx="9" ry="8" fill="#1a120f" />
-              <circle cx="60" cy="89" r="2.2" fill="#fff" />
-              <circle cx="96" cy="89" r="2.2" fill="#fff" />
+              <Eye cx={58} cy={90} gaze={gaze} />
+              <Eye cx={94} cy={90} gaze={gaze} />
               <path className="mouth mouth-think" d="M68 114q6 4 14 0" fill="none" stroke="#3a241c" strokeWidth="2.2" strokeLinecap="round" />
             </g>
 

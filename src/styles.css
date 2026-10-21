@@ -1289,7 +1289,7 @@
 }
 
 .live { transform-box: fill-box; transform-origin: center bottom; animation: breathe 4.8s ease-in-out infinite; }
-.shine { animation: shine-hide 6.5s ease-in-out infinite; }
+.shine { opacity: 1; }
 .lid { opacity: 1; animation: blink-open 6.5s ease-in-out infinite; }
 .scarf { transform-box: fill-box; transform-origin: 40% 10%; }
 .head { transform-box: fill-box; transform-origin: center bottom; }
@@ -1334,8 +1334,6 @@
 [data-state="waving"] .scarf { animation: scarf-flap 0.4s ease-in-out 3 0.08s; }
 .pose-sleep .lid { animation: none; opacity: 1; }
 .pose-sleep .pupils { opacity: 0; }
-.pose-sleep .shine,
-.mood-tired .shine { animation: none; opacity: 0; }
 .pose-sleep .live { animation-duration: 7s; }
 .pose-look .head { animation: head-tilt 1.6s ease-in-out; }
 .pose-scratch .ear-l { animation: ear-wiggle 0.45s ease-in-out 3; }
