@@ -190,8 +190,8 @@ export function MascotView({
             </g>
 
             <g className="face-happy">
-              <path d="M48 92q10-14 20 0" fill="none" stroke="#1a120f" strokeWidth="3.5" strokeLinecap="round" />
-              <path d="M84 92q10-14 20 0" fill="none" stroke="#1a120f" strokeWidth="3.5" strokeLinecap="round" />
+              <Eye cx={58} cy={90} gaze={gaze} />
+              <Eye cx={94} cy={90} gaze={gaze} />
               <path className="mouth mouth-happy" d="M64 110q12 12 24 0" fill="none" stroke="#3a241c" strokeWidth="2.3" strokeLinecap="round" />
             </g>
             <g className="face-tired">
