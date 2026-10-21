@@ -1290,7 +1290,7 @@
 
 .live { transform-box: fill-box; transform-origin: center bottom; animation: breathe 4.8s ease-in-out infinite; }
 .shine { animation: shine-hide 6.5s ease-in-out infinite; }
-.lid { opacity: 0; animation: blink 6.5s ease-in-out infinite; }
+.lid { opacity: 1; animation: blink-open 6.5s ease-in-out infinite; }
 .scarf { transform-box: fill-box; transform-origin: 40% 10%; }
 .head { transform-box: fill-box; transform-origin: center bottom; }
 .ear-l, .ear-r { transform-box: fill-box; transform-origin: center bottom; }
@@ -1333,6 +1333,7 @@
 .mascot-waving .scarf,
 [data-state="waving"] .scarf { animation: scarf-flap 0.4s ease-in-out 3 0.08s; }
 .pose-sleep .lid { animation: none; opacity: 1; }
+.pose-sleep .pupils { opacity: 0; }
 .pose-sleep .shine,
 .mood-tired .shine { animation: none; opacity: 0; }
 .pose-sleep .live { animation-duration: 7s; }
@@ -1591,6 +1592,10 @@
 @keyframes blink {
   0%, 84%, 100% { opacity: 0; }
   89%, 95% { opacity: 1; }
+}
+@keyframes blink-open {
+  0%, 92%, 100% { opacity: 1; }
+  95%, 97% { opacity: 0; }
 }
 @keyframes shine-hide {
   0%, 84%, 100% { opacity: 1; }
