@@ -1,135 +1,81 @@
 /* Season-Loader.
-   Live-Wert: Firebase /season  (Staff-Center schreibt das)
-   Fallback:  /season.json      { "active": "halloween" }
+   Live-Wert: Firebase /season  { "active": "christmas" | "auto" | ... }
+   Fallback:  /season.json, danach Datum.
+   Dekoration zeichnet die React-Komponente SeasonalDecorations.
 */
 (function () {
   var FB = "https://alpensmp-ad844-default-rtdb.europe-west1.firebasedatabase.app/season.json";
-  var allowed = { default: 1, halloween: 1, christmas: 1, newyear: 1, easter: 1, spring: 1 };
-  var labels = {
-    halloween: "🎃 Spooky Season",
-    christmas: "🎄 Frohe Weihnachten",
-    newyear: "🎆 Gutes neues Jahr",
-    easter: "🐣 Frohe Ostern",
-    spring: "🌸 Willkommen Frühling",
+  var allowed = {
+    default: 1, spring: 1, summer: 1, autumn: 1, halloween: 1,
+    winter: 1, christmas: 1, easter: 1, newyear: 1,
   };
-  var current = "";
-  var stopFx = function () {};
+  var labels = {
+    spring: "🌸 Willkommen Frühling",
+    summer: "☀️ Sommer auf dem Berg",
+    autumn: "🍂 Goldener Herbst",
+    halloween: "🎃 Spooky Season",
+    winter: "❄️ Winter auf AlpenSMP",
+    christmas: "🎄 Frohe Weihnachten",
+    easter: "🐣 Frohe Ostern",
+    newyear: "🎆 Gutes neues Jahr",
+  };
 
-  function reduced() {
-    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function easterSunday(year) {
+    var a = year % 19;
+    var b = Math.floor(year / 100);
+    var c = year % 100;
+    var d = Math.floor(b / 4);
+    var e = b % 4;
+    var f = Math.floor((b + 8) / 25);
+    var g = Math.floor((b - f + 1) / 3);
+    var h = (19 * a + b - d - g + 15) % 30;
+    var i = Math.floor(c / 4);
+    var k = c % 4;
+    var l = (32 + 2 * e + 2 * i - h - k) % 7;
+    var m = Math.floor((a + 11 * h + 22 * l) / 451);
+    var month = Math.floor((h + l - 7 * m + 114) / 31);
+    var day = ((h + l - 7 * m + 114) % 31) + 1;
+    return new Date(year, month - 1, day);
   }
 
-  function rand(min, max) {
-    return min + Math.random() * (max - min);
+  function autoSeason(now) {
+    var month = now.getMonth() + 1;
+    var day = now.getDate();
+    if ((month === 12 && day === 31) || (month === 1 && day === 1)) return "newyear";
+    if (month === 10) return "halloween";
+    if (month === 12 || (month === 1 && day <= 6)) return "christmas";
+    var easter = easterSunday(now.getFullYear());
+    var start = new Date(easter);
+    start.setDate(easter.getDate() - 7);
+    start.setHours(0, 0, 0, 0);
+    var end = new Date(easter);
+    end.setDate(easter.getDate() + 1);
+    end.setHours(23, 59, 59, 999);
+    if (now >= start && now <= end) return "easter";
+    if (month >= 3 && month <= 5) return "spring";
+    if (month >= 6 && month <= 8) return "summer";
+    if (month === 9) return "autumn";
+    if (month === 11 || month === 1 || month === 2) return "winter";
+    return "default";
   }
 
-  function piece(className, html) {
-    var node = document.createElement("span");
-    node.className = className;
-    node.style.setProperty("--x", rand(0, 100) + "%");
-    node.style.setProperty("--sway", rand(-70, 70) + "px");
-    node.style.setProperty("--rot", rand(180, 720) + "deg");
-    if (html) node.innerHTML = html;
-    return node;
-  }
-
-  function field(root, count, build) {
-    var nodes = [];
-    var alive = true;
-    function birth() {
-      if (!alive || nodes.length >= count) return;
-      var node = build();
-      root.appendChild(node);
-      nodes.push(node);
-      node.addEventListener("animationend", function () {
-        if (!alive) return;
-        node.remove();
-        nodes = nodes.filter(function (item) { return item !== node; });
-        birth();
-      });
-    }
-    var i;
-    for (i = 0; i < count; i += 1) birth();
-    return function () {
-      alive = false;
-      nodes.forEach(function (node) { node.remove(); });
-    };
-  }
-
-  function start(name) {
-    stopFx();
-    var old = document.getElementById("season-overlay");
-    if (old) old.remove();
-    if (name === "default" || reduced()) return;
-    var root = document.createElement("div");
-    root.id = "season-overlay";
-    document.body.appendChild(root);
-    if (name === "halloween") {
-      stopFx = field(root, 6, function () {
-        var node = piece("fx fx-up");
-        node.style.setProperty("--d", rand(16, 26) + "s");
-        node.style.setProperty("--o", String(rand(0.16, 0.4)));
-        node.style.setProperty("--s", rand(18, 34) + "px");
-        node.innerHTML = '<svg viewBox="0 0 32 40" width="1em" height="1.25em" aria-hidden="true"><path fill="#fff" d="M16 1c-8 0-13 7-13 15v18l4-3 4 4 5-4 5 4 4-4 4 3V16C29 8 24 1 16 1zm-5 16a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm10 0a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"/></svg>';
-        return node;
-      });
-    } else if (name === "christmas") {
-      stopFx = field(root, 26, function () {
-        var node = piece("fx fx-down", "❄");
-        node.style.setProperty("--d", rand(10, 20) + "s");
-        node.style.setProperty("--o", String(rand(0.35, 0.85)));
-        node.style.setProperty("--s", rand(10, 22) + "px");
-        node.style.color = Math.random() > 0.8 ? "#d8dde6" : "#fff";
-        return node;
-      });
-    } else if (name === "newyear") {
-      var colors = ["#ffd700", "#f5f5f5", "#cc0000"];
-      stopFx = field(root, 28, function () {
-        var node = piece("fx fx-confetti");
-        node.style.setProperty("--d", rand(4.5, 8) + "s");
-        node.style.setProperty("--o", "0.9");
-        node.style.setProperty("--c", colors[Math.floor(Math.random() * colors.length)]);
-        node.style.setProperty("--w", rand(6, 10) + "px");
-        node.style.setProperty("--h", rand(8, 14) + "px");
-        return node;
-      });
-    } else if (name === "easter") {
-      var pastels = ["#f6c6ea", "#a8d5a2", "#fde68a", "#bfdbfe"];
-      stopFx = field(root, 8, function () {
-        var node = piece("fx fx-up", "●");
-        node.style.setProperty("--d", rand(18, 28) + "s");
-        node.style.setProperty("--o", String(rand(0.15, 0.32)));
-        node.style.setProperty("--s", rand(10, 16) + "px");
-        node.style.color = pastels[Math.floor(Math.random() * pastels.length)];
-        return node;
-      });
-    } else if (name === "spring") {
-      stopFx = field(root, 16, function () {
-        var node = piece("fx fx-petal", "🌸");
-        node.style.setProperty("--d", rand(12, 20) + "s");
-        node.style.setProperty("--o", String(rand(0.28, 0.55)));
-        node.style.setProperty("--s", rand(12, 20) + "px");
-        node.style.setProperty("--sway", rand(40, 140) + "px");
-        return node;
-      });
-    }
+  function resolve(name) {
+    if (!name || name === "auto") return autoSeason(new Date());
+    return allowed[name] ? name : "default";
   }
 
   function apply(name) {
-    if (!allowed[name]) name = "default";
-    if (name === current) return;
-    current = name;
+    name = resolve(name);
     document.documentElement.setAttribute("data-season", name);
     document.documentElement.dataset.seasonLabel = labels[name] || "";
     window.dispatchEvent(new Event("alpen-season"));
-    start(name);
   }
 
   function fromFile() {
     return fetch("/season.json", { cache: "no-store" })
       .then(function (res) { return res.ok ? res.json() : null; })
       .then(function (data) { apply(data && data.active); })
-      .catch(function () { apply("default"); });
+      .catch(function () { apply("auto"); });
   }
 
   function pull() {
@@ -145,6 +91,10 @@
   window.addEventListener("alpen-season-pick", function (event) {
     apply(event.detail);
   });
-  pull();
-  window.setInterval(pull, 180000);
+
+  var query = "";
+  try { query = new URLSearchParams(window.location.search).get("season") || ""; } catch (err) { query = ""; }
+  if (query) apply(query);
+  else pull();
+  if (!query) window.setInterval(pull, 180000);
 })();
