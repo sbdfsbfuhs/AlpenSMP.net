@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { countdown, useFbValue, type LiveStream, type NewsCategory, type NewsItem, type ServerStatus } from "@/lib/alpen/broadcast";
 import { fbGet, fbPush, fbRemove, fbSet, fbUpdate, formatWhen, type StaffSession } from "@/lib/alpen/staff";
 import { currentLogin } from "@/lib/alpen/fb-auth";
+import { autoSeason, SEASONS } from "@/lib/alpen/seasons";
+import { MascotView } from "@/components/site/mascot-art";
 
 const CATS: NewsCategory[] = ["Update", "Regel", "Command", "Event", "Wartung", "Neu"];
 
@@ -405,30 +407,22 @@ export function LiveNotices({ note }: { note: (text: string) => void }) {
   );
 }
 
-const SEASONS: { id: string; emoji: string; name: string; text: string; fx: string }[] = [
-  { id: "halloween", emoji: "🍂", name: "Halloween", text: "Orange und Lila", fx: "Geister fliegen von unten" },
-  { id: "christmas", emoji: "🎄", name: "Weihnachten", text: "Rot, Gold und Schnee", fx: "Schneeflocken fallen" },
-  { id: "newyear", emoji: "🎆", name: "Neujahr", text: "Gold, Silber und Rot", fx: "Konfetti fällt von oben" },
-  { id: "easter", emoji: "🐣", name: "Ostern", text: "Pastell, sehr ruhig", fx: "Bunte Punkte steigen auf" },
-  { id: "spring", emoji: "🌸", name: "Frühling", text: "Grün und Blüten", fx: "Kirschblüten fallen diagonal" },
-  { id: "default", emoji: "⚙️", name: "Standard", text: "Alpenrot, ohne Effekt", fx: "Kein Effekt" },
-];
-
 export function SeasonDesk({ note }: { note: (text: string) => void }) {
   const saved = useFbValue<{ active?: string }>("season");
-  const [pick, setPick] = useState("halloween");
+  const [pick, setPick] = useState("auto");
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     if (saved?.active) setPick(saved.active);
   }, [saved?.active]);
-  const chosen = SEASONS.find((item) => item.id === pick) || SEASONS[5];
+  const preview = pick === "auto" ? autoSeason() : pick;
+  const chosen = SEASONS.find((item) => item.key === preview);
 
   async function activate() {
     setBusy(true);
     try {
       await fbSet("season", { active: pick });
       window.dispatchEvent(new CustomEvent("alpen-season-pick", { detail: pick }));
-      note("Season ist aktiv");
+      note(pick === "auto" ? "Saison folgt jetzt dem Datum" : "Season ist aktiv");
     } catch (err) {
       note(err instanceof Error ? err.message : "Speichern fehlgeschlagen");
     } finally {
@@ -439,23 +433,46 @@ export function SeasonDesk({ note }: { note: (text: string) => void }) {
   return (
     <section className="card card-still p-5">
       <h2 className="text-lg font-semibold">Season & Events</h2>
-      <p className="mt-1 max-w-xl text-sm text-muted">Eine Karte wählen und aktivieren. Die Seite wechselt Farbe und Effekt, ohne dass jemand CSS anfasst.</p>
+      <p className="mt-1 max-w-xl text-sm text-muted">Eine Karte wählen und aktivieren. Besucher sehen die neue Saison beim nächsten Laden, spätestens nach drei Minuten.</p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {SEASONS.map((item) => (
+        <button
+          type="button"
+          className={`rounded-xl border px-3 py-3 text-left ${pick === "auto" ? "border-brand bg-brand/10" : "border-line bg-bg"}`}
+          aria-pressed={pick === "auto"}
+          onClick={() => setPick("auto")}
+        >
+          <span className="text-xl" aria-hidden="true">📅</span>
+          <span className="mt-1 block font-semibold">Automatisch nach Datum</span>
+          <span className="mt-1 block text-xs text-muted">Gerade: {chosen?.label || "Normal"}</span>
+        </button>
+        {SEASONS.filter((item) => item.key !== "default").map((item) => (
           <button
-            key={item.id}
+            key={item.key}
             type="button"
-            className={`rounded-xl border px-3 py-3 text-left ${item.id === pick ? "border-brand bg-brand/10" : "border-line bg-bg"}`}
-            aria-pressed={item.id === pick}
-            onClick={() => setPick(item.id)}
+            className={`rounded-xl border px-3 py-3 text-left ${item.key === pick ? "border-brand bg-brand/10" : "border-line bg-bg"}`}
+            aria-pressed={item.key === pick}
+            onClick={() => setPick(item.key)}
           >
-            <span className="text-xl" aria-hidden="true">{item.emoji}</span>
-            <span className="mt-1 block font-semibold">{item.name}</span>
-            <span className="mt-1 block text-xs text-muted">{item.text}</span>
+            <span className="mt-1 block font-semibold">{item.label}</span>
+            <span className="mt-1 block text-xs text-muted">{item.months}</span>
           </button>
         ))}
+        <button
+          type="button"
+          className={`rounded-xl border px-3 py-3 text-left ${pick === "default" ? "border-brand bg-brand/10" : "border-line bg-bg"}`}
+          aria-pressed={pick === "default"}
+          onClick={() => setPick("default")}
+        >
+          <span className="mt-1 block font-semibold">Normal</span>
+          <span className="mt-1 block text-xs text-muted">Alpenrot, ohne Effekt</span>
+        </button>
       </div>
-      <p className="mt-4 text-sm text-muted">Aktiver Effekt: {chosen.fx}</p>
+      <div className="mt-4 flex items-center gap-4">
+        <div className="w-24">
+          <MascotView act="stand" gaze={{ x: 0, y: 0 }} season={preview} preview />
+        </div>
+        <p className="text-sm text-muted">Vorschau: {chosen?.label}. Outfit: {chosen?.mascotOutfit}. {chosen?.decorations}.</p>
+      </div>
       <button type="button" className="btn-brand mt-3" disabled={busy} onClick={() => void activate()}>
         {busy ? "Speichere…" : "Aktivieren"}
       </button>

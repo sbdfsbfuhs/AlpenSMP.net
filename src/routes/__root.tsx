@@ -1,6 +1,7 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
+import { SeasonalDecorations } from "@/components/site/season-decor";
 import appCss from "../styles.css?url";
 
 export const Route = createRootRoute({
@@ -41,6 +42,7 @@ function RootDocument() {
       </head>
       <body>
         <PreviewHostBridge />
+        <SeasonalDecorations />
         <AuthProvider>
           <Outlet />
         </AuthProvider>
