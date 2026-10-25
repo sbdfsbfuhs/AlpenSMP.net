@@ -6,13 +6,16 @@ const TWO_WEEKS = 14 * 24 * 60 * 60 * 1000;
 
 type Msg = { by?: string; text?: string; ts?: number };
 
-export function StaffChat({ user, builder }: { user: StaffSession; builder: boolean }) {
-  const rooms = [{ path: "chats/team", title: "Team" }];
-  if (builder || user.role === "owner") rooms.push({ path: "chats/builder", title: "Builder" });
-  const [path, setPath] = useState(rooms[0].path);
+export function StaffChat({ user, team = true, builder = false, dock = false }: { user: StaffSession; team?: boolean; builder?: boolean; dock?: boolean }) {
+  const rooms = [
+    ...(team ? [{ path: "chats/team", title: "Team" }] : []),
+    ...(builder ? [{ path: "chats/builder", title: "Builder" }] : []),
+  ];
+  const [path, setPath] = useState(rooms[0]?.path || "chats/team");
   const active = rooms.find((room) => room.path === path) || rooms[0];
+  if (!active) return null;
   return (
-    <div className="flex h-[min(72vh,740px)] overflow-hidden rounded-2xl border border-line bg-bg">
+    <div className={`flex overflow-hidden rounded-2xl border border-line bg-bg shadow-lg ${dock ? "h-full" : "h-[min(72vh,740px)]"}`}>
       {rooms.length > 1 ? (
         <aside className="hidden w-52 shrink-0 flex-col border-r border-line sm:flex">
           <p className="border-b border-line px-3 py-3 text-sm font-semibold">Chats</p>

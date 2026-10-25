@@ -177,9 +177,9 @@
     },
     "chats": {
       "team": {
-        ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
+        ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('role').val() != 'builder' && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
         "$id": {
-          ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && root.child('staffByUid').child(auth.uid).child('role').val() != null && ((!data.exists() && newData.child('by').isString() && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 800) || (!newData.exists() && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || (data.child('ts').isNumber() && data.child('ts').val() + 1209600000 < now))))"
+          ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('role').val() != 'builder' && ((!data.exists() && newData.child('by').isString() && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 800) || (!newData.exists() && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || (data.child('ts').isNumber() && data.child('ts').val() + 1209600000 < now))))"
         }
       },
       "pin": {
@@ -189,7 +189,7 @@
         }
       },
       "builder": {
-        ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && (root.child('staffByUid').child(auth.uid).child('role').val() == 'builder' || root.child('staffByUid').child(auth.uid).child('role').val() == 'owner')",
+        ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('role').val() != 'streamer'",
         "$id": {
           ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && (root.child('staffByUid').child(auth.uid).child('role').val() == 'builder' || root.child('staffByUid').child(auth.uid).child('role').val() == 'owner') && ((!data.exists() && newData.child('by').isString() && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 800) || (!newData.exists() && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || (data.child('ts').isNumber() && data.child('ts').val() + 1209600000 < now))))"
         }

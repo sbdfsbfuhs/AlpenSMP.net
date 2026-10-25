@@ -1,94 +1,132 @@
-import { useEffect, useState } from "react";
-import { fireworksOpen, useSeason } from "@/lib/alpen/seasons";
+import { useSeason } from "@/lib/alpen/seasons";
 
-function Flakes({ count, kind }: { count: number; kind: string }) {
+export function SeasonalDecorations() {
+  const season = useSeason();
+  if (season === "default") return null;
+  return (
+    <div className={`season-scene season-scene-${season}`} aria-hidden="true">
+      {season === "christmas" ? <Christmas /> : null}
+      {season === "winter" ? <Winter /> : null}
+      {season === "halloween" ? <Halloween /> : null}
+      {season === "autumn" ? <Autumn /> : null}
+      {season === "spring" ? <Spring /> : null}
+      {season === "summer" ? <Summer /> : null}
+      {season === "easter" ? <Easter /> : null}
+      {season === "newyear" ? <NewYear /> : null}
+    </div>
+  );
+}
+
+function Snow({ count }: { count: number }) {
   return (
     <>
       {Array.from({ length: count }, (_, index) => (
-        <span
-          key={index}
-          className={`season-bit ${kind}`}
-          style={{
-            ["--x" as string]: `${(index * 37) % 100}%`,
-            ["--d" as string]: `${8 + (index % 7) * 1.6}s`,
-            ["--delay" as string]: `${(index % 9) * -1.3}s`,
-            ["--sway" as string]: `${(index % 2 === 0 ? -1 : 1) * (18 + (index % 5) * 8)}px`,
-            ["--s" as string]: `${10 + (index % 4) * 4}px`,
-          }}
-        />
+        <span key={index} className={`snowflake snow-${index % 5}`} />
       ))}
     </>
   );
 }
 
-export function SeasonalDecorations() {
-  const season = useSeason();
-  const [pile, setPile] = useState(8);
-  const [confetti, setConfetti] = useState(false);
-  const [rockets, setRockets] = useState(false);
-
-  useEffect(() => {
-    if (season !== "christmas" && season !== "winter") return;
-    const key = "alpen-snow-pile";
-    const started = Number(sessionStorage.getItem(key) || Date.now());
-    if (!sessionStorage.getItem(key)) sessionStorage.setItem(key, String(started));
-    const tick = () => setPile(Math.min(60, 8 + (Date.now() - started) / 20000));
-    tick();
-    const id = window.setInterval(tick, 2000);
-    return () => window.clearInterval(id);
-  }, [season]);
-
-  useEffect(() => {
-    if (season !== "newyear") {
-      setConfetti(false);
-      setRockets(false);
-      return;
-    }
-    setConfetti(true);
-    setRockets(fireworksOpen());
-    const hide = window.setTimeout(() => setConfetti(false), 30000);
-    return () => window.clearTimeout(hide);
-  }, [season]);
-
+function Christmas() {
   return (
-    <div className="season-decor" data-season-decor={season} aria-hidden="true">
-      {season === "christmas" || season === "winter" ? (
-        <>
-          <Flakes count={season === "christmas" ? 16 : 8} kind="season-snow" />
-          <div className="season-pile" style={{ height: pile }} />
-        </>
-      ) : null}
-      {season === "christmas" ? (
-        <>
-          <div className="season-lights" />
-          <span className="season-branch season-branch-l" />
-          <span className="season-branch season-branch-r" />
-        </>
-      ) : null}
-      {season === "halloween" ? (
-        <>
-          <div className="season-fog" />
-          <Flakes count={3} kind="season-bat" />
-          <Flakes count={4} kind="season-pumpkin" />
-        </>
-      ) : null}
-      {season === "easter" ? (
-        <>
-          <Flakes count={10} kind="season-egg" />
-          <Flakes count={3} kind="season-butterfly" />
-        </>
-      ) : null}
-      {season === "spring" ? <Flakes count={14} kind="season-petal" /> : null}
-      {season === "summer" ? (
-        <>
-          <span className="season-sun" />
-          <Flakes count={8} kind="season-bubble" />
-        </>
-      ) : null}
-      {season === "autumn" ? <Flakes count={12} kind="season-leaf" /> : null}
-      {season === "winter" ? <div className="season-frost" /> : null}
-      {confetti ? <Flakes count={22} kind="season-confetti" /> : null}
-      {rockets ? <Flakes count={4} kind="season-rocket" /> : null}
-    </div>
+    <>
+      <svg className="season-lights-svg" viewBox="0 0 800 90" preserveAspectRatio="none">
+        <path d="M0 18 Q200 62 400 28 T800 18" fill="none" stroke="#243028" strokeWidth="3" />
+        {[80, 200, 320, 440, 560, 680].map((x, index) => (
+          <circle key={x} className={`bulb bulb-${index % 4}`} cx={x} cy={index % 2 === 0 ? 42 : 28} r="6" />
+        ))}
+      </svg>
+      <svg className="season-tree" viewBox="0 0 120 140">
+        <polygon points="60,8 18,58 102,58" fill="#1a3a1a" />
+        <polygon points="60,36 10,92 110,92" fill="#163216" />
+        <polygon points="60,64 4,124 116,124" fill="#122812" />
+        <rect x="50" y="124" width="20" height="16" fill="#3a241c" />
+      </svg>
+      <Snow count={12} />
+    </>
+  );
+}
+
+function Winter() {
+  return (
+    <>
+      <span className="twinkle t1" />
+      <span className="twinkle t2" />
+      <span className="twinkle t3" />
+      <Snow count={10} />
+    </>
+  );
+}
+
+function Halloween() {
+  return (
+    <>
+      <span className="fog-drift" />
+      <svg className="pumpkin p1" viewBox="0 0 64 48"><Pumpkin /></svg>
+      <svg className="pumpkin p2" viewBox="0 0 64 48"><Pumpkin /></svg>
+    </>
+  );
+}
+
+function Pumpkin() {
+  return (
+    <>
+      <ellipse cx="32" cy="28" rx="22" ry="16" fill="#c2410c" />
+      <path d="M32 12c2-6 8-6 8 0" fill="none" stroke="#2f6b32" strokeWidth="2" />
+    </>
+  );
+}
+
+function Autumn() {
+  return (
+    <>
+      {["a", "b", "c", "d", "e", "f"].map((id) => (
+        <span key={id} className={`leaf leaf-${id}`} />
+      ))}
+    </>
+  );
+}
+
+function Spring() {
+  return (
+    <>
+      {["a", "b", "c", "d"].map((id) => (
+        <span key={id} className={`petal petal-${id}`} />
+      ))}
+      <svg className="bird bird-a" viewBox="0 0 24 8"><path d="M0 6 L8 1 L16 6" fill="none" stroke="#6b8f71" strokeWidth="1.4" /></svg>
+      <svg className="bird bird-b" viewBox="0 0 24 8"><path d="M0 6 L8 1 L16 6" fill="none" stroke="#6b8f71" strokeWidth="1.4" /></svg>
+    </>
+  );
+}
+
+function Summer() {
+  return (
+    <svg className="sun-mark" viewBox="0 0 80 80">
+      <circle cx="40" cy="40" r="14" fill="#f2b544" />
+      {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => (
+        <line key={deg} x1="40" y1="18" x2="40" y2="8" stroke="#f2b544" strokeWidth="2" transform={`rotate(${deg} 40 40)`} />
+      ))}
+    </svg>
+  );
+}
+
+function Easter() {
+  return (
+    <svg className="easter-eggs" viewBox="0 0 220 70">
+      <ellipse cx="30" cy="46" rx="14" ry="18" fill="#f6c6ea" />
+      <ellipse cx="78" cy="50" rx="14" ry="18" fill="#a8d5a2" />
+      <ellipse cx="126" cy="46" rx="14" ry="18" fill="#fde68a" />
+      <ellipse cx="174" cy="50" rx="14" ry="18" fill="#c4b5fd" />
+    </svg>
+  );
+}
+
+function NewYear() {
+  return (
+    <>
+      <span className="burst b1" />
+      <span className="burst b2" />
+      <span className="burst b3" />
+    </>
   );
 }

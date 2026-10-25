@@ -144,7 +144,6 @@ export function MascotView({
               <path className="brow brow-l" d="M46 74q10-7 18 1" fill="none" stroke="#3a241c" strokeWidth="2.2" strokeLinecap="round" />
               <path className="brow brow-r" d="M88 75q10-7 18 1" fill="none" stroke="#3a241c" strokeWidth="2.2" strokeLinecap="round" />
             </g>
-            <SeasonUnder season={look} />
 
             <g className="face-normal">
               <g className="eyes">
@@ -188,85 +187,61 @@ export function MascotView({
   );
 }
 
-function SeasonUnder({ season }: { season: SeasonKey }) {
-  if (season !== "halloween") return null;
-  return (
-    <g className="fit-halloween-eyes">
-      <circle cx="58" cy="90" r="11" fill="#ff7a1a" />
-      <circle cx="94" cy="90" r="11" fill="#ff7a1a" />
-    </g>
-  );
-}
-
 function SeasonOver({ season }: { season: SeasonKey }) {
   if (season === "default") return null;
   return (
-    <g className="season-fit" stroke="#3a241c" strokeWidth="1.7" strokeLinejoin="round">
+    <g className="season-fit" stroke="#3a241c" strokeWidth="1.6" strokeLinejoin="round">
       {season === "halloween" ? (
         <g>
-          <path d="M60 40c2-14 30-14 32 0" fill="#f08a24" />
-          <ellipse cx="76" cy="40" rx="18" ry="6" fill="#e8771a" />
-          <path d="M74 26c1-6 6-6 7 0" fill="none" stroke="#2f6b32" strokeWidth="1.6" />
+          <path d="M76 6 L58 40 L94 40 Z" fill="#1a120f" />
+          <ellipse cx="76" cy="40" rx="22" ry="5" fill="#1a120f" />
         </g>
       ) : null}
       {season === "christmas" ? (
         <g>
-          <path d="M52 48c8-30 40-32 48 0" fill="#c10522" />
-          <ellipse cx="76" cy="48" rx="26" ry="6" fill="#fff" />
-          <circle cx="78" cy="18" r="5.5" fill="#fff" />
-        </g>
-      ) : null}
-      {season === "easter" ? (
-        <g>
-          <ellipse cx="46" cy="30" rx="7" ry="16" fill="#f6e2cc" />
-          <ellipse cx="46" cy="32" rx="3.2" ry="9" fill="#f6b7b4" stroke="none" />
-          <ellipse cx="106" cy="30" rx="7" ry="16" fill="#f6e2cc" />
-          <ellipse cx="106" cy="32" rx="3.2" ry="9" fill="#f6b7b4" stroke="none" />
-          <ellipse cx="118" cy="150" rx="10" ry="6" fill="#c4a574" />
-          <ellipse cx="114" cy="146" rx="3" ry="4" fill="#f6c6ea" stroke="none" />
-          <ellipse cx="120" cy="145" rx="3" ry="4" fill="#a8d5a2" stroke="none" />
-          <ellipse cx="123" cy="150" rx="3" ry="4" fill="#fde68a" stroke="none" />
-        </g>
-      ) : null}
-      {season === "newyear" ? (
-        <g>
-          <path d="M62 46 L76 16 L90 46 Z" fill="#ffd700" />
-          <circle cx="76" cy="14" r="3.2" fill="#cc0000" />
-          <rect x="48" y="36" width="4" height="6" rx="1" fill="#cc0000" stroke="none" transform="rotate(20 50 39)" />
-          <rect x="108" y="34" width="4" height="6" rx="1" fill="#f5f5f5" stroke="none" transform="rotate(-16 110 37)" />
+          <path d="M54 46c8-28 36-30 44 0" fill="#c10522" />
+          <ellipse cx="76" cy="46" rx="24" ry="5.5" fill="#fff" />
+          <circle cx="76" cy="16" r="5" fill="#fff" />
+          <path d="M58 122h36l-6 10h-24z" fill="#c10522" />
         </g>
       ) : null}
       {season === "winter" ? (
         <g>
-          <path d="M48 50c4-16 52-16 56 0" fill="#7ec4d8" />
-          <ellipse cx="76" cy="50" rx="30" ry="6" fill="#d7f3fb" />
-          <circle cx="76" cy="34" r="5" fill="#fff" />
+          <path d="M50 48c4-18 48-18 52 0" fill="#3d6f86" />
+          <path d="M50 44c6-8 18-8 24 0" fill="#d7f3fb" stroke="none" />
+          <ellipse cx="76" cy="48" rx="28" ry="5" fill="#d7f3fb" />
+          <circle cx="76" cy="30" r="4.5" fill="#fff" />
         </g>
       ) : null}
       {season === "spring" ? (
         <g>
-          <ellipse cx="58" cy="48" rx="5" ry="3.2" fill="#f6c6ea" />
-          <ellipse cx="68" cy="44" rx="5" ry="3.2" fill="#fff" />
-          <ellipse cx="78" cy="42" rx="5" ry="3.2" fill="#f6c6ea" />
-          <ellipse cx="88" cy="44" rx="5" ry="3.2" fill="#fff" />
-          <ellipse cx="96" cy="50" rx="5" ry="3.2" fill="#a8d5a2" />
-          <circle cx="76" cy="46" r="2" fill="#f2b544" stroke="none" />
+          <circle cx="96" cy="42" r="5" fill="#f6c6ea" />
+          <circle cx="96" cy="42" r="1.6" fill="#f2b544" stroke="none" />
         </g>
       ) : null}
       {season === "summer" ? (
+        <g fill="none">
+          <ellipse cx="58" cy="78" rx="11" ry="6" />
+          <ellipse cx="94" cy="78" rx="11" ry="6" />
+          <path d="M69 78h14" />
+        </g>
+      ) : null}
+      {season === "easter" ? (
         <g>
-          <ellipse cx="76" cy="46" rx="36" ry="6" fill="#e6c27a" />
-          <path d="M54 46c4-14 40-16 44 0" fill="#f0d48a" />
-          <ellipse cx="58" cy="90" rx="12" ry="7" fill="#9fd7e8" opacity="0.35" />
-          <ellipse cx="94" cy="90" rx="12" ry="7" fill="#9fd7e8" opacity="0.35" />
-          <path d="M70 90h12" fill="none" />
+          <ellipse cx="52" cy="28" rx="6" ry="14" fill="#f6e2cc" />
+          <ellipse cx="52" cy="30" rx="2.6" ry="8" fill="#f6b7b4" stroke="none" />
+          <ellipse cx="100" cy="28" rx="6" ry="14" fill="#f6e2cc" />
+          <ellipse cx="100" cy="30" rx="2.6" ry="8" fill="#f6b7b4" stroke="none" />
+        </g>
+      ) : null}
+      {season === "newyear" ? (
+        <g>
+          <path d="M64 44 L76 14 L88 44 Z" fill="#7a1f3d" />
+          <circle cx="76" cy="12" r="3" fill="#ffd700" />
         </g>
       ) : null}
       {season === "autumn" ? (
-        <g>
-          <path d="M100 58c8-10 16-8 14 2-8 1-12 2-14-2z" fill="#d4641c" />
-          <path d="M108 56c2 6-4 8-8 4" fill="none" strokeWidth="1.2" />
-        </g>
+        <path d="M98 40c8-8 14-6 12 2-6 1-10 1-12-2z" fill="#d4641c" />
       ) : null}
     </g>
   );

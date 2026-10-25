@@ -23,8 +23,8 @@ export function Moderation({ user, note, ban, writeNotes }: { user: StaffSession
   const warns = useLive<ModItem>("warns");
   const notes = useLive<ModItem>("notes");
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      {ban ? <ModForm title="Ban" path="bans" user={user} note={note} withDuration presets={["5min", "1h", "1d", "7d", "30d", "Permanent"]} reasons={[["Griefing", "1d"], ["Beleidigung", "7d"], ["Cheating", "30d"]]} /> : null}
+    <div className="space-y-4">
+      {ban ? <ModForm title="Ban" path="bans" user={user} note={note} withDuration presets={["1h", "1d", "7d", "30d", "Permanent"]} /> : null}
       <List title="Bans" path="bans" items={entries(bans)} user={user} note={note} timed write={ban} />
       {ban ? <ModForm title="Warnung" path="warns" user={user} note={note} withDuration presets={["1d", "7d", "30d"]} /> : null}
       <List title="Warnungen" path="warns" items={entries(warns)} user={user} note={note} timed write={ban} />
@@ -41,7 +41,6 @@ function ModForm({
   note,
   withDuration,
   presets,
-  reasons,
 }: {
   title: string;
   path: string;
@@ -49,29 +48,22 @@ function ModForm({
   note: (text: string) => void;
   withDuration?: boolean;
   presets?: string[];
-  reasons?: [string, string][];
 }) {
   const [name, setName] = useState("");
   const [reason, setReason] = useState("");
-  const [duration, setDuration] = useState(withDuration ? (path === "warns" ? "7d" : "Permanent") : "");
-  const [proof, setProof] = useState("");
+  const [duration, setDuration] = useState("");
   const known = useLive<ModItem>(path);
   const guide = useLive<{ offense?: string; duration?: string }>("banGuide");
   const needle = name.trim().toLowerCase();
   const past = withDuration && needle.length >= 2
     ? entries(known).filter(([, item]) => (item.name || "").toLowerCase().includes(needle))
     : [];
-  const reasonNeedle = reason.trim().toLowerCase();
-  const tips = withDuration && reasonNeedle.length >= 3
-    ? entries(guide).filter(([, item]) => {
-      const offense = (item.offense || "").toLowerCase();
-      return offense && (offense.includes(reasonNeedle) || reasonNeedle.includes(offense));
-    })
-    : [];
+  const guideRows = entries(guide).filter(([, item]) => item.offense && item.duration);
 
   async function save(event: FormEvent) {
     event.preventDefault();
     if (!name.trim()) return note("Name fehlt");
+    if (withDuration && !duration.trim()) return note("Dauer wählen");
     const body: ModItem = {
       name: name.trim(),
       reason: reason.trim() || "–",
@@ -79,19 +71,18 @@ function ModForm({
       ts: Date.now(),
     };
     if (withDuration) {
-      body.duration = duration.trim() || (path === "warns" ? "7d" : "Permanent");
+      body.duration = duration.trim();
       body.endsAt = parseDuration(body.duration);
-      if (path === "bans" && isPermanentBan({ duration: body.duration, endsAt: body.endsAt })) {
+      if (path === "bans" && isPermanentBan({ duration: body.duration, endsAt: body.endsAt }) && user.role !== "owner") {
         body.pending = true;
       }
     }
-    if (path === "bans" && proof.trim()) body.proof = proof.trim().slice(0, 500);
     await fbPush(path, body);
     void logStaff(user.username, title, `${name.trim()} · ${reason.trim() || "–"}`);
     setName("");
     setReason("");
-    setProof("");
-    note(body.pending ? "Ban wartet auf eine zweite Person" : `${title} gespeichert`);
+    setDuration("");
+    note(body.pending ? "Permanent wartet auf den Owner" : `${title} gespeichert`);
   }
 
   return (
@@ -99,36 +90,33 @@ function ModForm({
       <h2 className="text-lg font-semibold">{title}</h2>
       <input className="field mt-3" placeholder="Spieler" value={name} onChange={(e) => setName(e.target.value)} />
       <input className="field mt-2" placeholder="Grund" value={reason} onChange={(e) => setReason(e.target.value)} />
-      {withDuration ? <input className="field mt-2" placeholder="Dauer" value={duration} onChange={(e) => setDuration(e.target.value)} /> : null}
-      {path === "bans" ? <input className="field mt-2" placeholder="Beweis-Link, optional" value={proof} onChange={(e) => setProof(e.target.value)} /> : null}
       {presets ? (
-        <div className="mt-2 flex flex-wrap gap-2">
+        <div className="mt-3 flex flex-wrap gap-2">
           {presets.map((item) => (
-            <button key={item} type="button" className="btn-ghost px-3" onClick={() => setDuration(item)}>
+            <button key={item} type="button" className={duration === item ? "btn-brand px-3" : "btn-ghost px-3"} onClick={() => setDuration(item)}>
               {item}
             </button>
           ))}
         </div>
       ) : null}
-      {reasons ? (
-        <div className="mt-2 flex flex-wrap gap-2">
-          {reasons.map(([label, dur]) => (
-            <button key={label} type="button" className="btn-ghost px-3" onClick={() => { setReason(label); setDuration(dur); }}>
-              {label}
-            </button>
-          ))}
-        </div>
-      ) : null}
-      {tips.length ? (
-        <div className="mt-3 space-y-1 text-sm">
-          <p className="text-muted">Passende Dauer aus dem Leitfaden</p>
-          {tips.map(([key, item]) => (
-            <button key={key} type="button" className="btn-ghost mr-2 mt-1 px-3" onClick={() => item.duration && setDuration(item.duration)}>
+      {guideRows.length && path === "bans" ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {guideRows.map(([key, item]) => (
+            <button
+              key={key}
+              type="button"
+              className="btn-ghost px-3"
+              onClick={() => {
+                setReason(item.offense || "");
+                if (item.duration) setDuration(item.duration);
+              }}
+            >
               {item.offense} · {item.duration}
             </button>
           ))}
         </div>
       ) : null}
+      {withDuration ? <input className="field mt-2" placeholder="Oder eigene Dauer, z. B. 12h" value={duration} onChange={(e) => setDuration(e.target.value)} /> : null}
       {past.length ? (
         <ul className="mt-3 space-y-1 text-sm">
           {past.slice(0, 5).map(([key, item]) => (
@@ -221,7 +209,6 @@ function List({
         {rows.map(([key, item]) => {
           const perm = path === "bans" && isPermanentBan(item) && !item.archived;
           const waiting = Boolean(perm && item.pending);
-          const proof = item.proof && /^https?:\/\//i.test(item.proof) ? item.proof : "";
           return (
           <li key={key} className={`cmd-in rounded-md border bg-bg px-3 py-2 text-sm${perm && !waiting ? " border-red-500 bg-red-950/40" : waiting ? " border-amber-500" : freshStamp(item.ts, item.updatedAt) ? " mark-new border-line" : " border-line"}`}>
             <p className={`font-semibold${perm && !waiting ? " text-red-200" : ""}`}>{notes ? item.name || item.text : item.name}<Neu ts={item.ts} updatedAt={item.updatedAt} /></p>
@@ -229,11 +216,10 @@ function List({
             <p className="text-xs text-faint">
               {timed && !waiting ? formatRemaining(item.endsAt) : ""} {item.duration ? `· ${item.duration}` : ""} · {item.by} · {formatWhen(item.ts)}
             </p>
-            {proof ? <a className="mt-1 inline-block text-xs text-brand" href={proof} target="_blank" rel="noreferrer">Beweis</a> : null}
-            {waiting ? <p className="text-xs font-semibold text-amber-300">Wartet auf eine zweite Person. Noch nicht gültig.</p> : null}
+            {waiting ? <p className="text-xs font-semibold text-amber-300">Permanent. Wartet auf den Owner.</p> : null}
             {perm && !waiting ? <p className="text-xs font-semibold text-red-300">{permLeft(item.confirmedAt || item.ts)}</p> : null}
             <div className="mt-2 flex flex-wrap gap-2">
-              {waiting && write && item.by !== user.username ? (
+              {waiting && user.role === "owner" ? (
                 <button type="button" className="btn-brand px-3" onClick={() => void fbUpdate(`${path}/${key}`, { pending: false, confirmedBy: user.username, confirmedAt: Date.now(), updatedAt: Date.now() }).then(() => note("Ban gilt jetzt"))}>
                   Bestätigen
                 </button>

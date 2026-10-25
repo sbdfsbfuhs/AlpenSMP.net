@@ -95,7 +95,6 @@ const TABS: { id: Tab; label: string; group: TabGroup; area: TabArea }[] = [
   { id: "roster", label: "Team", group: "Team", area: "roster" },
   { id: "tasks", label: "Aufgaben", group: "Team", area: "tasks" },
   { id: "absence", label: "Abwesenheit", group: "Team", area: "absence" },
-  { id: "chat", label: "Chat", group: "Team", area: "chat" },
   { id: "moderation", label: "Moderation", group: "Moderation & Support", area: "moderation" },
   { id: "help", label: "Hilfe", group: "Moderation & Support", area: "help" },
   { id: "community", label: "Community", group: "Moderation & Support", area: "community" },
@@ -109,7 +108,6 @@ const TABS: { id: Tab; label: string; group: TabGroup; area: TabArea }[] = [
   { id: "stream", label: "Mein Stream", group: "Inhalte & Kommunikation", area: "stream" },
   { id: "season", label: "Season & Events", group: "Inhalte & Kommunikation", area: "season" },
   { id: "channels", label: "Kanäle", group: "Inhalte & Kommunikation", area: "channels" },
-  { id: "console", label: "Konsole", group: "Verwaltung", area: "console" },
   { id: "settings", label: "Einstellungen", group: "Verwaltung", area: "settings" },
   { id: "website", label: "Website", group: "Verwaltung", area: "website" },
   { id: "users", label: "Accounts", group: "Verwaltung", area: "roles" },
@@ -312,7 +310,9 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
     group,
     items: tabs.filter((item) => item.group === group),
   })).filter((group) => group.items.length > 0);
-  const badges: Partial<Record<Tab, number>> = {};
+  const helpRows = useLive<ModItem>("helpRequests");
+  const helpOpen = Object.values(helpRows).filter((item) => item && !item.archived && item.status !== "erledigt").length;
+  const badges: Partial<Record<Tab, number>> = { help: helpOpen };
 
   useEffect(() => {
     const beat = (writing = false) => {
@@ -339,8 +339,12 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
     };
   }, [user.username, user.role]);
 
+  const showChat = can(shown, "chat") && can(real, "chat");
+  const seeTeamChat = showChat && shown !== "builder";
+  const seeBuilderChat = showChat && (shown === "builder" || shown === "owner" || shown === "admin" || shown === "helper" || shown === "supporter");
+
   return (
-    <div>
+    <div className={showChat ? "lg:pr-[23.5rem]" : ""}>
       <section className="card card-still grid gap-5 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
         <div className="flex min-w-0 items-center gap-3">
           <span
@@ -414,6 +418,11 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
           className="card card-still min-w-0 p-2 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto"
           aria-label="Team-Bereiche"
         >
+          {can(shown, "console") && can(real, "console") ? (
+            <a className="btn-brand mb-2 flex min-h-10 items-center justify-center" href="https://panel.alpensmp.net/" target="_blank" rel="noopener noreferrer">
+              Konsole
+            </a>
+          ) : null}
           <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:gap-3 lg:overflow-visible lg:pb-0">
             {tabGroups.map(({ group, items }) => (
               <section key={group} className="shrink-0 lg:shrink">
@@ -482,16 +491,15 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
             {safeTab === "commands" ? (
               <div className="space-y-6">
                 {can(shown, "commandsRead") ? <PlayerCommandEditor real={real} view={shown} note={note} /> : null}
-                {can(shown, "staffCommands") ? <Commands user={user} note={note} /> : null}
+                {can(shown, "staffCommands") ? <Commands user={user} view={shown} note={note} /> : null}
               </div>
             ) : null}
             {safeTab === "community" ? <Community user={user} note={note} /> : null}
             {safeTab === "rules" ? (
               <div className="space-y-4">
                 <RulesEditor real={real} view={shown} note={note} />
-                {can(shown, "rulesRead") &&
-                (can(real, "rulesEdit") || can(shown, "staffCommands") || shown !== "builder") ? (
-                  <RulesEditor real={real} view={can(shown, "rulesEdit") ? shown : "helper"} note={note} staff />
+                {can(real, "rulesEdit") && shown === "owner" ? (
+                  <RulesEditor real={real} view={shown} note={note} staff />
                 ) : null}
               </div>
             ) : null}
@@ -504,22 +512,23 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
             ) : null}
             {safeTab === "guide" ? <GuideEditor real={real} view={shown} note={note} /> : null}
             {safeTab === "roster" ? <Roster owner={real === "owner"} /> : null}
-            {safeTab === "chat" ? (
-              <StaffChat user={user} builder={can(shown, "builderChat") && can(real, "builderChat")} />
-            ) : null}
             {safeTab === "settings" ? <Settings user={user} note={note} /> : null}
             {safeTab === "news" ? <NewsEditor user={user} note={note} /> : null}
             {safeTab === "status" ? <StatusDesk user={user} note={note} /> : null}
             {safeTab === "stream" ? <StreamDesk user={user} note={note} /> : null}
             {safeTab === "season" ? <SeasonDesk note={note} /> : null}
             {safeTab === "channels" ? <ChannelsDesk note={note} /> : null}
-            {safeTab === "console" ? <ConsoleDesk /> : null}
             {safeTab === "website" ? <Website user={user} note={note} /> : null}
             {safeTab === "archive" ? <Archive user={user} note={note} /> : null}
             {safeTab === "users" ? <Accounts note={note} actor={user} /> : null}
           </div>
         </section>
       </div>
+      {showChat ? (
+        <div className="fixed bottom-24 right-3 z-40 hidden h-[min(68vh,640px)] w-[22rem] lg:block">
+          <StaffChat user={user} team={seeTeamChat} builder={seeBuilderChat} dock />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -531,16 +540,3 @@ async function askHelp(user: StaffSession, note: (text: string) => void) {
   note("Hilfe gesendet");
 }
 
-function ConsoleDesk() {
-  return (
-    <section className="card card-still max-w-xl p-5">
-      <h2 className="text-lg font-semibold">Server steuern</h2>
-      <p className="mt-2 text-sm text-muted">
-        Start, Stopp und Neustart laufen im Control Center auf dem Server. Die Anmeldung dort bleibt, inklusive Code aus der App.
-      </p>
-      <a className="btn-brand mt-4" href="https://panel.alpensmp.net/" target="_blank" rel="noopener noreferrer">
-        Control Center öffnen
-      </a>
-    </section>
-  );
-}

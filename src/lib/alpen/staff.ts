@@ -41,6 +41,7 @@ export type CommandItem = {
   category?: string;
   by?: string;
   ts?: number;
+  roles?: Partial<Record<"admin" | "helper" | "supporter", boolean>>;
 };
 
 export type CommunityItem = {
