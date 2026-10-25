@@ -56,11 +56,13 @@ function Mark() {
 }
 
 function Header() {
+  const path = useRouterState({ select: (state) => state.location.pathname });
+  const frame = path.startsWith("/team") ? "shell-staff" : "shell";
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
   return (
     <header className="sticky top-0 z-40 border-b border-line/80 bg-bg/90 backdrop-blur">
-      <div className="shell flex h-16 items-center gap-4">
+      <div className={`${frame} flex h-16 items-center gap-4`}>
         <Link to="/" className="brand flex items-center gap-3" onClick={close}>
           <Mark />
           <span className="display text-lg text-fg">
@@ -94,7 +96,7 @@ function Header() {
       </div>
       {open ? (
         <nav className="border-t border-line bg-bg-raised lg:hidden" aria-label="Mobile Navigation">
-          <div className="shell flex flex-col py-3">
+          <div className={`${frame} flex flex-col py-3`}>
             {[...NAV, ...MORE].map((item) => (
               <Link
                 key={item.to}
@@ -116,9 +118,11 @@ function Header() {
 }
 
 function Footer() {
+  const path = useRouterState({ select: (state) => state.location.pathname });
+  const frame = path.startsWith("/team") ? "shell-staff" : "shell";
   return (
     <footer className="relative z-20 mt-20 border-t border-line bg-bg">
-      <div className="shell grid gap-10 py-12 md:grid-cols-4">
+      <div className={`${frame} grid gap-10 py-12 md:grid-cols-4`}>
         <div className="md:col-span-2">
           <p className="display text-2xl">
             Alpen<span className="text-brand">SMP</span>
@@ -163,7 +167,7 @@ function Footer() {
         </div>
       </div>
       <div className="border-t border-line">
-        <div className="shell flex flex-col gap-2 py-4 text-xs text-faint sm:flex-row sm:justify-between">
+        <div className={`${frame} flex flex-col gap-2 py-4 text-xs text-faint sm:flex-row sm:justify-between`}>
           <span>© 2026 AlpenSMP</span>
           <a href="/ki-transparenz" className="hover:text-brand">
             KI-Transparenz
@@ -178,17 +182,19 @@ export function PageHero({
   kicker,
   title,
   lede,
+  wide = false,
 }: {
   kicker: string;
   title: string;
   lede: string;
+  wide?: boolean;
 }) {
   return (
     <header className="relative overflow-hidden border-b border-line bg-bg-raised">
       <div className="glow-line" />
       <span className="hero-mote" aria-hidden="true" />
       <span className="hero-mote late" aria-hidden="true" />
-      <div className="shell py-14 md:py-16">
+      <div className={`${wide ? "shell-staff" : "shell"} py-14 md:py-16`}>
         <p className="kicker">{kicker}</p>
         <h1 className="display mt-3 max-w-3xl text-4xl text-fg md:text-5xl">{title}</h1>
         <p className="mt-4 max-w-2xl text-lg text-muted">{lede}</p>

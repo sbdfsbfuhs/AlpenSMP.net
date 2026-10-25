@@ -89,6 +89,13 @@
     padding-inline: 1.25rem;
   }
 
+  .shell-staff {
+    margin-inline: auto;
+    width: 100%;
+    max-width: 100rem;
+    padding-inline: 1.25rem;
+  }
+
   .kicker {
     font-size: 0.75rem;
     font-weight: 600;
@@ -2715,7 +2722,23 @@ html[data-season="halloween"] {
 
 .season-scene-christmas { background: radial-gradient(circle at 12% 80%, rgb(20 50 28 / 0.35), transparent 32%), radial-gradient(circle at 80% 10%, rgb(90 16 24 / 0.22), transparent 28%); }
 .season-scene-winter { background: radial-gradient(circle at 50% 0%, rgb(150 180 196 / 0.16), transparent 36%); }
-.season-scene-halloween { background: radial-gradient(circle at 20% 90%, rgb(90 40 16 / 0.28), transparent 34%), radial-gradient(circle at 80% 10%, rgb(60 30 80 / 0.18), transparent 30%); }
+.season-scene-halloween { background: radial-gradient(circle at 80% 0%, rgb(80 32 12 / 0.16), transparent 32%); }
+.fog-drift, .pumpkin { display: none; }
+.spirit {
+  position: absolute;
+  width: 16px;
+  height: 10px;
+  color: rgb(255 220 190 / 0.28);
+  opacity: 0.7;
+  will-change: transform;
+  animation: spirit-drift 36s linear infinite;
+}
+.spirit-1 { top: 16%; animation-duration: 42s; }
+.spirit-2 { top: 38%; width: 12px; animation-duration: 34s; animation-delay: -12s; color: rgb(255 180 90 / 0.22); }
+.spirit-3 { top: 62%; animation-duration: 48s; animation-delay: -20s; }
+.spirit-4 { top: 24%; width: 14px; height: 18px; animation-duration: 50s; animation-delay: -8s; color: rgb(255 255 255 / 0.16); }
+.spirit-5 { top: 70%; width: 12px; height: 16px; animation-duration: 44s; animation-delay: -26s; color: rgb(255 255 255 / 0.14); }
+.spirit-6 { top: 48%; width: 14px; animation-duration: 38s; animation-delay: -16s; }
 .season-scene-autumn { background: radial-gradient(circle at 70% 20%, rgb(140 70 24 / 0.2), transparent 32%); }
 .season-scene-spring { background: radial-gradient(circle at 20% 10%, rgb(150 200 160 / 0.16), transparent 34%); }
 .season-scene-summer { background: radial-gradient(circle at 88% 8%, rgb(242 181 68 / 0.22), transparent 28%); }
@@ -2801,6 +2824,10 @@ html[data-season="halloween"] {
 .b2 { top: 26%; left: 68%; animation-delay: 1.8s; }
 .b3 { top: 12%; left: 48%; animation-delay: 3.2s; }
 
+@keyframes spirit-drift {
+  from { transform: translate3d(-6vw, 0, 0); }
+  to { transform: translate3d(108vw, -4vh, 0); }
+}
 @keyframes bulb-glow { from { opacity: 0.35; } to { opacity: 1; } }
 @keyframes snow-calm { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(12px, 110vh, 0); } }
 @keyframes fog-slide { from { transform: translateX(0); } to { transform: translateX(18vw); } }

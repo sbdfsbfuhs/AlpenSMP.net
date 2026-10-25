@@ -61,19 +61,29 @@ function Winter() {
 function Halloween() {
   return (
     <>
-      <span className="fog-drift" />
-      <svg className="pumpkin p1" viewBox="0 0 64 48"><Pumpkin /></svg>
-      <svg className="pumpkin p2" viewBox="0 0 64 48"><Pumpkin /></svg>
+      <Bat className="spirit spirit-1" />
+      <Bat className="spirit spirit-2" />
+      <Bat className="spirit spirit-3" />
+      <Ghost className="spirit spirit-4" />
+      <Ghost className="spirit spirit-5" />
+      <Bat className="spirit spirit-6" />
     </>
   );
 }
 
-function Pumpkin() {
+function Bat({ className }: { className: string }) {
   return (
-    <>
-      <ellipse cx="32" cy="28" rx="22" ry="16" fill="#c2410c" />
-      <path d="M32 12c2-6 8-6 8 0" fill="none" stroke="#2f6b32" strokeWidth="2" />
-    </>
+    <svg className={className} viewBox="0 0 28 12" aria-hidden="true">
+      <path d="M2 7 Q7 1 14 6 Q21 1 26 7 Q20 5 14 8 Q8 5 2 7Z" fill="currentColor" />
+    </svg>
+  );
+}
+
+function Ghost({ className }: { className: string }) {
+  return (
+    <svg className={className} viewBox="0 0 16 20" aria-hidden="true">
+      <path d="M3 10a5 5 0 0 1 10 0v7l-2.5-1.6L8 17l-2.5-1.6L3 17Z" fill="currentColor" />
+    </svg>
   );
 }
 
