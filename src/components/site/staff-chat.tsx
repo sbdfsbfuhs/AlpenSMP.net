@@ -15,62 +15,28 @@ export function StaffChat({ user, team = true, builder = false, dock = false }: 
   const active = rooms.find((room) => room.path === path) || rooms[0];
   if (!active) return null;
   return (
-    <div className={`flex overflow-hidden rounded-2xl border border-line bg-bg shadow-lg ${dock ? "h-full" : "h-[min(72vh,740px)]"}`}>
-      {rooms.length > 1 ? (
-        <aside className="hidden w-52 shrink-0 flex-col border-r border-line sm:flex">
-          <p className="border-b border-line px-3 py-3 text-sm font-semibold">Chats</p>
-          {rooms.map((room) => (
-            <RoomButton key={room.path} room={room} active={room.path === active.path} onPick={setPath} />
-          ))}
-        </aside>
-      ) : null}
-      <section className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center gap-2 border-b border-line px-3 py-3">
-          {rooms.length > 1 ? (
-            <div className="flex gap-1 sm:hidden">
-              {rooms.map((room) => (
-                <button
-                  key={room.path}
-                  type="button"
-                  className={`rounded-full px-3 py-1 text-sm ${room.path === active.path ? "bg-brand text-white" : "border border-line"}`}
-                  onClick={() => setPath(room.path)}
-                >
-                  {room.title}
-                </button>
-              ))}
-            </div>
-          ) : null}
-          <div className="min-w-0">
-            <h2 className="font-semibold">{active.title}</h2>
-            <p className="text-xs text-muted">Nachrichten werden nach 14 Tagen gelöscht</p>
+    <div className={`flex min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-bg shadow-lg ${dock ? "h-full" : "h-[min(72vh,740px)]"}`}>
+      <header className="flex items-center gap-2 border-b border-line px-3 py-3">
+        {rooms.length > 1 ? (
+          <div className="flex gap-1">
+            {rooms.map((room) => (
+              <button
+                key={room.path}
+                type="button"
+                className={`rounded-full px-3 py-1 text-sm ${room.path === active.path ? "bg-brand text-white" : "border border-line"}`}
+                onClick={() => setPath(room.path)}
+              >
+                {room.title}
+              </button>
+            ))}
           </div>
-        </header>
-        <ChatThread path={active.path} user={user} />
-      </section>
+        ) : (
+          <h2 className="font-semibold">{active.title}</h2>
+        )}
+        <p className="ml-auto text-xs text-muted">14 Tage</p>
+      </header>
+      <ChatThread path={active.path} user={user} />
     </div>
-  );
-}
-
-function RoomButton({
-  room,
-  active,
-  onPick,
-}: {
-  room: { path: string; title: string };
-  active: boolean;
-  onPick: (path: string) => void;
-}) {
-  const rows = useLive<Msg>(room.path);
-  const last = entries(rows).sort((a, b) => (a[1].ts || 0) - (b[1].ts || 0)).at(-1)?.[1];
-  return (
-    <button
-      type="button"
-      className={`border-b border-line px-3 py-3 text-left ${active ? "bg-brand/10" : "hover:bg-bg-raised"}`}
-      onClick={() => onPick(room.path)}
-    >
-      <span className="block font-semibold">{room.title}</span>
-      <span className="mt-1 block truncate text-xs text-muted">{last?.text || "Noch nichts"}</span>
-    </button>
   );
 }
 

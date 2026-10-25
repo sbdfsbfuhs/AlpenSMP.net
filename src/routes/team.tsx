@@ -346,7 +346,7 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
   const seeBuilderChat = showChat && (shown === "builder" || shown === "owner" || shown === "admin" || shown === "helper" || shown === "supporter");
 
   return (
-    <div className={showChat ? "lg:pr-[23.5rem]" : ""}>
+    <div>
       <section className="card card-still grid gap-5 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
         <div className="flex min-w-0 items-center gap-3">
           <span
@@ -415,9 +415,9 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
       {real === "owner" || real === "admin" ? <LiveNotices note={note} /> : null}
       {shown === "streamer" ? null : <PlayerSearch />}
       {real === "owner" ? <CheckInBanner /> : null}
-      <div className="mt-6 grid min-w-0 gap-5 md:grid-cols-[17.5rem_minmax(0,1fr)] md:items-start">
+      <div className={`mt-6 grid min-w-0 items-start gap-5 ${showChat ? "lg:grid-cols-[16rem_minmax(0,1fr)_22rem]" : "lg:grid-cols-[16rem_minmax(0,1fr)]"}`}>
         <nav
-          className="card card-still min-w-0 p-2 md:sticky md:top-20 md:max-h-[calc(100vh-6rem)] md:overflow-y-auto"
+          className="card card-still min-w-0 p-2 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto"
           aria-label="Team-Bereiche"
         >
           {can(shown, "console") && can(real, "console") ? (
@@ -425,15 +425,13 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
               Konsole
             </a>
           ) : null}
-          <details className="md:contents">
-            <summary className="cursor-pointer list-none px-3 py-2 text-sm font-semibold md:hidden">Bereiche</summary>
-          <div className="mt-2 flex gap-2 overflow-x-auto pb-1 md:mt-0 md:flex-col md:gap-3 md:overflow-visible md:pb-0">
+          <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:gap-3 lg:overflow-visible lg:pb-0">
             {tabGroups.map(({ group, items }) => (
-              <section key={group} className="shrink-0 md:shrink">
+              <section key={group} className="shrink-0 lg:shrink">
                 <h2 className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-faint">
                   {group}
                 </h2>
-                <div className="flex gap-1 md:flex-col">
+                <div className="flex gap-1 lg:flex-col">
                   {items.map((item) => {
                     const count = badges[item.id] || 0;
                     const selected = item.id === safeTab;
@@ -442,9 +440,9 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
                         key={item.id}
                         type="button"
                         aria-current={selected ? "page" : undefined}
-                        className={`flex min-h-10 items-center justify-between gap-3 whitespace-nowrap rounded-md px-3 py-2 text-left text-sm transition-colors md:w-full md:whitespace-normal ${
+                        className={`flex min-h-10 items-center justify-between gap-3 whitespace-nowrap rounded-md px-3 py-2 text-left text-sm transition-colors lg:w-full lg:whitespace-normal ${
                           selected
-                            ? "border border-brand/40 bg-brand/10 font-semibold text-fg md:border-y-0 md:border-r-0 md:border-l-2 md:pl-[calc(0.75rem-2px)]"
+                            ? "border border-brand/40 bg-brand/10 font-semibold text-fg lg:border-y-0 lg:border-r-0 lg:border-l-2 lg:pl-[calc(0.75rem-2px)]"
                             : "border border-transparent text-muted hover:bg-surface-2 hover:text-fg"
                         }`}
                         onClick={() => setTab(item.id)}
@@ -462,7 +460,6 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
               </section>
             ))}
           </div>
-          </details>
         </nav>
         <section className="min-w-0">
           {activeTab ? (
@@ -528,6 +525,11 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
             {safeTab === "users" ? <Accounts note={note} actor={user} /> : null}
           </div>
         </section>
+        {showChat ? (
+          <div className="sticky top-24 hidden h-[min(72vh,680px)] min-w-0 lg:block">
+            <StaffChat user={user} team={seeTeamChat} builder={seeBuilderChat} dock />
+          </div>
+        ) : null}
       </div>
       {showChat ? (
         <>
@@ -542,9 +544,6 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
               </div>
             </div>
           ) : null}
-          <div className="fixed bottom-24 right-3 z-40 hidden h-[min(68vh,640px)] w-[22rem] lg:block">
-            <StaffChat user={user} team={seeTeamChat} builder={seeBuilderChat} dock />
-          </div>
         </>
       ) : null}
     </div>
