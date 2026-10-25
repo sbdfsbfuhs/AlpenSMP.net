@@ -304,6 +304,7 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
     }
   }, [banRows, warnRows, real]);
   const [tab, setTab] = useState<Tab>("roster");
+  const [chatOpen, setChatOpen] = useState(false);
   const safeTab = tabs.some((item) => item.id === tab) ? tab : tabs[0]?.id;
   const activeTab = tabs.find((item) => item.id === safeTab);
   const tabGroups = TAB_GROUPS.map((group) => ({
@@ -525,9 +526,22 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
         </section>
       </div>
       {showChat ? (
-        <div className="fixed bottom-24 right-3 z-40 hidden h-[min(68vh,640px)] w-[22rem] lg:block">
-          <StaffChat user={user} team={seeTeamChat} builder={seeBuilderChat} dock />
-        </div>
+        <>
+          <button type="button" className="btn-brand fixed bottom-24 right-3 z-40 lg:hidden" onClick={() => setChatOpen(true)}>
+            Chat
+          </button>
+          {chatOpen ? (
+            <div className="fixed inset-3 z-50 flex flex-col lg:hidden">
+              <button type="button" className="btn-ghost mb-2 self-end" onClick={() => setChatOpen(false)}>Schliessen</button>
+              <div className="min-h-0 flex-1">
+                <StaffChat user={user} team={seeTeamChat} builder={seeBuilderChat} dock />
+              </div>
+            </div>
+          ) : null}
+          <div className="fixed bottom-24 right-3 z-40 hidden h-[min(68vh,640px)] w-[22rem] lg:block">
+            <StaffChat user={user} team={seeTeamChat} builder={seeBuilderChat} dock />
+          </div>
+        </>
       ) : null}
     </div>
   );
