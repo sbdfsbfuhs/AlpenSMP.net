@@ -1,34 +1,15 @@
+import { Download, Keyboard, Mic, Package, Radio } from "lucide-react";
+import { MOD_CATEGORIES, MOD_FORBIDDEN, VOICE_STEPS } from "@/lib/alpen/content";
 import { SITE } from "@/lib/alpen/site";
+import { DiscordLink } from "@/components/site/shell";
 
-const LOADERS = ["Fabric", "Forge", "NeoForge", "Quilt"];
-
-const EXTRA = [
-  {
-    name: "Sodium",
-    text: "Mehr Bilder pro Sekunde, ohne am Spiel etwas zu ändern.",
-    href: "https://modrinth.com/mod/sodium",
-  },
-  {
-    name: "Iris Shaders",
-    text: "Shader, wenn der Rechner das mitmacht.",
-    href: "https://modrinth.com/mod/iris",
-  },
-  {
-    name: "Xaero's Minimap",
-    text: "Kleine Karte am Rand, damit du den Weg zurück findest.",
-    href: "https://modrinth.com/mod/xaeros-minimap",
-  },
-  {
-    name: "Freecam",
-    text: "Kamera loslösen und um den Bau schauen, ohne dich zu bewegen.",
-    href: "https://modrinth.com/mod/freecam",
-  },
-  {
-    name: "Shulker Box Tooltip",
-    text: "Zeigt, was in einer Shulker-Kiste ist, ohne sie zu öffnen.",
-    href: "https://modrinth.com/mod/shulkerboxtooltip",
-  },
-];
+const STEP_ICON = {
+  what: Mic,
+  app: Download,
+  install: Package,
+  use: Keyboard,
+  where: Radio,
+} as const;
 
 export function ModrinthMark() {
   return (
@@ -49,94 +30,90 @@ export function ModrinthLink({ href, children }: { href: string; children: strin
 
 export function ModsGuide() {
   return (
-    <section id="mods" className="scroll-mt-24" aria-labelledby="mods-title">
-      <p className="kicker">Java</p>
-      <h2 id="mods-title" className="display mt-2 text-4xl">
-        🎮 Mods & Voice Chat – So geht's
-      </h2>
-      <p className="mt-3 max-w-2xl text-muted">Vier Schritte. Mods sind freiwillig. Cheats bleiben verboten.</p>
-      <div className="mt-8 space-y-4">
-        <article className="card card-still guide-step p-6">
-          <span className="guide-step-no" aria-hidden="true">
-            01
-          </span>
-          <div className="guide-step-body">
-            <span className="chip-note go">Empfohlen für Anfänger</span>
-            <h3 className="mt-3 text-2xl font-semibold">Modrinth App holen</h3>
-            <p className="mt-2 max-w-xl text-muted">
-              Die Modrinth App ist der einfachste Weg, Mods zu installieren. Kostenlos, sicher, übersichtlich.
-            </p>
-            <div className="mt-5">
-              <ModrinthLink href={SITE.modrinthApp}>Modrinth App herunterladen →</ModrinthLink>
-            </div>
-          </div>
-        </article>
-
-        <article className="card card-still guide-step p-6">
-          <span className="guide-step-no" aria-hidden="true">
-            02
-          </span>
-          <div className="guide-step-body">
-            <h3 className="text-2xl font-semibold">Simple Voice Chat Mod</h3>
-            <p className="mt-2 max-w-xl text-muted">
-              Mit diesem Mod kannst du im Spiel mit anderen sprechen – wie ein Walkie-Talkie, je näher desto lauter.
-              Optional, du kannst auch ohne joinen.
-            </p>
-            <ul className="chip-row mt-4" aria-label="Loader">
-              {LOADERS.map((loader) => (
-                <li key={loader} className="chip-note load">
-                  {loader}
-                </li>
-              ))}
-            </ul>
-            <p className="chip-note warn mt-4">
-              Version passend zu deiner Minecraft-Version wählen – empfohlen: {SITE.version}
-            </p>
-            <div className="mt-5">
-              <ModrinthLink href={SITE.voiceMod}>Auf Modrinth öffnen →</ModrinthLink>
-            </div>
-          </div>
-        </article>
-
-        <article className="card card-still guide-step p-6">
-          <span className="guide-step-no" aria-hidden="true">
-            03
-          </span>
-          <div className="guide-step-body">
-            <h3 className="text-2xl font-semibold">Weitere empfohlene Mods</h3>
-            <p className="mt-2 max-w-xl text-muted">Optional, aber nützlich. Stehen so auch in Regel 3.</p>
-            <ul className="mt-2">
-              {EXTRA.map((mod) => (
-                <li key={mod.href} className="guide-mod">
-                  <div className="min-w-0">
-                    <p className="font-semibold">{mod.name}</p>
-                    <p className="text-sm text-muted">{mod.text}</p>
-                  </div>
-                  <ModrinthLink href={mod.href}>Modrinth →</ModrinthLink>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </article>
-
-        <article className="card card-still guide-step p-6">
-          <span className="guide-step-no" aria-hidden="true">
-            04
-          </span>
-          <div className="guide-step-body">
-            <h3 className="text-2xl font-semibold">Kein Bock auf Mods?</h3>
-            <p className="mt-2 max-w-xl text-muted">
-              Kein Problem. Du kannst auch ohne jeden Mod auf AlpenSMP spielen. Voice Chat funktioniert dann halt nicht,
-              aber alles andere schon.
-            </p>
-            <div className="mt-5">
-              <a className="btn-brand" href="/#join">
-                Direkt joinen →
-              </a>
-            </div>
-          </div>
-        </article>
+    <section id="mods" className="scroll-mt-24 space-y-8" aria-labelledby="mods-title">
+      <div>
+        <p className="kicker">Java</p>
+        <h2 id="mods-title" className="display mt-2 text-4xl">Mods und Voice</h2>
+        <p className="mt-3 max-w-2xl text-muted">Zwei Teile. Zuerst sprechen, danach welche Mods erlaubt sind. Ohne Mods kannst du trotzdem joinen.</p>
       </div>
+
+      <section className="card card-still p-5 sm:p-6" aria-labelledby="voice-title">
+        <div className="flex items-center gap-3">
+          <span className="grid size-11 shrink-0 place-items-center rounded-md bg-brand/15 text-brand" aria-hidden="true">
+            <Mic className="size-5" />
+          </span>
+          <div>
+            <p className="kicker">Block 1</p>
+            <h3 id="voice-title" className="text-2xl font-semibold">Simple Voice Chat</h3>
+          </div>
+        </div>
+        <ol className="mt-5 space-y-4">
+          {VOICE_STEPS.map((step, index) => {
+            const Icon = STEP_ICON[step.id as keyof typeof STEP_ICON] ?? Mic;
+            const href = step.href === "app" ? SITE.modrinthApp : step.href === "voice" ? SITE.voiceClient : "";
+            return (
+              <li key={step.id} className="card card-still guide-step p-5 sm:p-6">
+                <span className="guide-step-no" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+                <div className="guide-step-body">
+                  <div className="flex items-center gap-3">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-md border border-line text-brand" aria-hidden="true">
+                      <Icon className="size-4" />
+                    </span>
+                    <h4 className="text-xl font-semibold">{step.title}</h4>
+                  </div>
+                  <p className="mt-3 max-w-xl text-muted">{step.text}</p>
+                  {step.id === "install" ? (
+                    <p className="chip-note warn mt-3">Empfohlen: Minecraft {SITE.version}</p>
+                  ) : null}
+                  {href ? (
+                    <div className="mt-4">
+                      <ModrinthLink href={href}>{step.hrefLabel || "Öffnen"}</ModrinthLink>
+                    </div>
+                  ) : null}
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      </section>
+
+      <section className="card card-still p-5 sm:p-6" aria-labelledby="allowed-title">
+        <div className="flex items-center gap-3">
+          <span className="grid size-11 shrink-0 place-items-center rounded-md bg-brand/15 text-brand" aria-hidden="true">
+            <Package className="size-5" />
+          </span>
+          <div>
+            <p className="kicker">Block 2</p>
+            <h3 id="allowed-title" className="text-2xl font-semibold">Erlaubte Mods</h3>
+          </div>
+        </div>
+        <p className="mt-4 max-w-2xl text-muted">Erlaubt sind Mods, die dir keinen Vorteil gegenüber anderen geben. Sie dürfen nichts sehen oder tun, was ein normaler Spieler nicht kann.</p>
+        <ul className="mt-5 grid gap-3 sm:grid-cols-3">
+          {MOD_CATEGORIES.map((group) => (
+            <li key={group.id} className="rounded-md border border-line bg-bg p-4">
+              <h4 className="font-semibold">{group.title}</h4>
+              <p className="mt-2 text-sm text-muted">{group.text}</p>
+              <ul className="mt-3 space-y-1 text-sm">
+                {group.examples.map((name) => (
+                  <li key={name}>{name}</li>
+                ))}
+              </ul>
+            </li>
+          ))}
+        </ul>
+        <div className="mt-4 rounded-md border border-brand/40 bg-brand/10 p-4">
+          <h4 className="font-semibold">Verboten</h4>
+          <ul className="mt-2 flex flex-wrap gap-2">
+            {MOD_FORBIDDEN.map((name) => (
+              <li key={name} className="chip-note warn">{name}</li>
+            ))}
+          </ul>
+        </div>
+        <p className="mt-4 text-sm text-muted">Bei Unsicherheit im Discord fragen.</p>
+        <div className="mt-3">
+          <DiscordLink>Discord fragen</DiscordLink>
+        </div>
+      </section>
     </section>
   );
 }

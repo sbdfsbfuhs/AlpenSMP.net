@@ -12,6 +12,7 @@ export const SITE = {
   map: "https://alpensmp-map.falix.org/#hauptworld:-1792:139:493:38:0.01:0:0:0:perspective",
   mapOpen: false,
   voiceMod: "https://modrinth.com/plugin/simple-voice-chat",
+  voiceClient: "https://modrinth.com/mod/simple-voice-chat",
   modrinthApp: "https://modrinth.com/app",
   staff: "https://alpensmp.net/team",
   rulesPage: "https://alpensmp.net/regeln/",

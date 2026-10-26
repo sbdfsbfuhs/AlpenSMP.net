@@ -473,6 +473,61 @@ export const FAQ = [
   },
 ];
 
+export const VOICE_STEPS = [
+  {
+    id: "what",
+    title: "Was das ist",
+    text: "Damit kannst du mit anderen Spielern direkt im Spiel sprechen, wie ein Walkie-Talkie. Je näher, desto lauter.",
+  },
+  {
+    id: "app",
+    title: "Modrinth App holen",
+    text: "Die Modrinth App ist ein kostenloses Programm, das Mods für dich installiert. Du musst nichts von Hand in Ordner schieben.",
+    href: "app" as const,
+    hrefLabel: "Modrinth App herunterladen",
+  },
+  {
+    id: "install",
+    title: "Voice Chat einbauen",
+    text: "In der App nach „Simple Voice Chat“ suchen. Der Autor heißt henkelmax. Die Version muss zu deiner Minecraft-Version passen.",
+    href: "voice" as const,
+    hrefLabel: "Simple Voice Chat auf Modrinth",
+  },
+  {
+    id: "use",
+    title: "Im Spiel benutzen",
+    text: "Taste V öffnet die Einstellungen. Sprechen geht mit gedrückter Taste. Standard ist Caps Lock.",
+  },
+  {
+    id: "where",
+    title: "Nur auf dem Server",
+    text: "Der Voice Chat läuft nur, während du auf AlpenSMP bist. Im Hauptmenü oder auf einem anderen Server hörst du niemanden.",
+  },
+];
+
+export const MOD_CATEGORIES = [
+  {
+    id: "optik",
+    title: "Optik und Performance",
+    text: "Sieht besser aus oder läuft flüssiger. Am Spiel selbst ändert sich nichts.",
+    examples: ["Sodium", "Iris", "Bobby"],
+  },
+  {
+    id: "sound",
+    title: "Voice und Sound",
+    text: "Hören und sprechen. Kein Vorteil im Kampf.",
+    examples: ["Simple Voice Chat"],
+  },
+  {
+    id: "qol",
+    title: "Lebensqualität",
+    text: "Übersicht, ohne zu sehen, wo andere Spieler stehen.",
+    examples: ["Inventory HUD", "Minimap ohne Radar"],
+  },
+];
+
+export const MOD_FORBIDDEN = ["X-Ray", "Kill-Aura", "Auto-Clicker", "jede Form von Cheat-Mod"];
+
 export type GuideChapter = {
   id: string;
   track: "mc" | "alpen";
