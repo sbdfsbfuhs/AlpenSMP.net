@@ -176,8 +176,9 @@ export const FEATURES: Feature[] = [
     summary: "GriefPrevention schützt deine Builds.",
     body: [
       "Mit GriefPrevention (Claims) schützt du deine Builds vor Griefing.",
+      "Am Anfang ist es am schwierigsten. Nimm eine normale goldene Schaufel. Rechtsklick auf den Boden: ein Diamantblock erscheint. Geh in die andere Ecke und klicke nochmal rechts. Dann steht ein Viereck aus Glowstone und Goldblöcken. Ein Video auf Deutsch kommt. Das englische Video vom Plugin erklärt es nicht gut.",
       "Je länger du online bist, desto mehr Claim-Blöcke bekommst du. Pro 1 Stunde Spielzeit: +1000 Blöcke.",
-      "Beanspruche dein Gebiet und lade Freunde ein – Fremde können dort nichts abbauen oder platzieren.",
+      "Beanspruche dein Gebiet und lade Freunde mit /trust ein. Fremde können dort nichts abbauen oder platzieren.",
     ],
   },
   {
@@ -204,8 +205,8 @@ export const FEATURES: Feature[] = [
     title: "Homes",
     summary: "Setze Homes und kehre jederzeit zurück.",
     body: [
-      "Setze mit /sethome einen Speicherpunkt und kehre jederzeit mit /home zurück.",
-      "Praktisch für Base, Farm und Shop – ohne lange Wege. /homes zeigt deine gespeicherten Punkte.",
+      "Mit /sethome Name speicherst du einen Punkt. Höchstens 5 Homes.",
+      "/home Name bringt dich dorthin, /delhome Name löscht den Punkt.",
       "Das persönliche Home ist nicht das Team-Home. /team home gibt es erst, nachdem ein Team mit /team create existiert.",
     ],
   },
@@ -215,7 +216,7 @@ export const FEATURES: Feature[] = [
     summary: "Erst /team create. Ohne Team geht der Rest nicht.",
     body: [
       "Ein Team legst du mit /team create Name an. Der Name hat 3 bis 10 Buchstaben, nur a bis z, keine Leerzeichen und keinen Farbcode. Gamers, Rise und Up sind gesperrt. Erstellen kostet nichts. Höchstens 20 Mitglieder, und du bist nur in einem Team.",
-      "Ohne dieses Team funktionieren /team prefix, /team home, /team warp, /team echest, /tc und /team pvp nicht. /team list zeigt die Teams auch so.",
+      "Ohne dieses Team funktionieren /team prefix, /team home, /team warp, /tc und /team pvp nicht. /team list zeigt die Teams auch so.",
       "Der Prefix kommt danach: /team prefix und direkt Farbcode plus Buchstaben, zusammen 3 bis 10 Zeichen. Beispiel: /team prefix &cAlpen. Im Tab steht er vor dem Namen. Im Chat folgt ein Leerzeichen.",
       "Team-Home und Warps warten 3 Sekunden und brechen ab, wenn du dich bewegst oder Schaden bekommst. Danach 120 Sekunden Pause. Warps: höchstens 3. Die Endertruhe hat 3 Reihen.",
       "Friendly Fire ist in neuen Teams aus, /team pvp schaltet es um. Verbündete höchstens 4, Feinde höchstens 2. Beim Joinen kann eine Team-Nachricht erscheinen, 5 bis 40 Zeichen. Mit Lunar Client siehst du Teammitglieder auf der Minimap. Java und Bedrock können im selben Team sein.",
@@ -252,87 +253,139 @@ export const FEATURES: Feature[] = [
   },
 ];
 
-export const COMMANDS = [
-  { cmd: "/spawn", text: "Zurück zum Spawn." },
-  { cmd: "/sethome", text: "Speichert einen Punkt für Base, Farm oder Shop." },
-  { cmd: "/home", text: "Kehrt zu deinem gesetzten Home zurück." },
-  { cmd: "/homes", text: "Zeigt deine gespeicherten Homes." },
-  { cmd: "/tpa Spieler", text: "Teleport-Anfrage. Der andere muss annehmen." },
-  { cmd: "/back", text: "Zurück zum letzten Todesort." },
-  { cmd: "/rtp", text: "Zufälliger Teleport in die Welt." },
-  { cmd: "/msg Spieler", text: "Private Nachricht." },
-  { cmd: "/call admin", text: "Ruft das Team, wenn du im Spiel Hilfe brauchst." },
+export type PlayerCommand = { cmd: string; text: string; href?: string; hrefLabel?: string };
+
+export type CommandGroup = {
+  id: string;
+  title: string;
+  note?: string;
+  rows: PlayerCommand[];
+};
+
+/** Bestätigte Spieler-Befehle. Claims stehen absichtlich zuerst. */
+export const COMMAND_GROUPS: CommandGroup[] = [
+  {
+    id: "claims",
+    title: "Claims",
+    note: "Am Anfang ist es am schwierigsten. Nimm eine normale goldene Schaufel. Rechtsklick auf den Boden: ein Diamantblock erscheint. Geh in die andere Ecke und klicke nochmal rechts. Dann steht ein Viereck aus Glowstone und Goldblöcken. Ein Video auf Deutsch kommt. Das englische Video vom Plugin erklärt es nicht gut.",
+    rows: [
+      { cmd: "/abandonclaim", text: "Löscht den Claim, in dem du stehst." },
+      { cmd: "/abandonallclaims", text: "Löscht alle deine Claims." },
+      { cmd: "/trust Spieler", text: "Darf in deinem Claim bauen." },
+      { cmd: "/containertrust Spieler", text: "Darf Kisten, Türen, Knöpfe und Tiere benutzen." },
+      { cmd: "/accesstrust Spieler", text: "Darf Knöpfe, Hebel und Betten benutzen." },
+      { cmd: "/permissiontrust Spieler", text: "Darf Rechte weitergeben." },
+      { cmd: "/untrust Spieler", text: "Nimmt die Rechte in diesem Claim weg." },
+      { cmd: "/untrust all", text: "Nimmt jemandem die Rechte in allen deinen Claims weg." },
+      { cmd: "/trustlist", text: "Zeigt, wer Rechte im Claim hat." },
+      { cmd: "/subdivideclaims", text: "Schaltet die Schaufel auf Unterbereiche." },
+      { cmd: "/restrictsubclaim", text: "Der Unterbereich erbt keine Rechte vom grossen Claim." },
+      { cmd: "/trapped", text: "Holt dich aus einem fremden Claim." },
+      { cmd: "/claimexplosions", text: "Schaltet Explosionen in deinem Claim um." },
+    ],
+  },
+  {
+    id: "homes",
+    title: "Homes",
+    note: "Höchstens 5 Homes.",
+    rows: [
+      { cmd: "/sethome Name", text: "Speichert ein Home an deiner Position." },
+      { cmd: "/home Name", text: "Teleportiert dich zu diesem Home." },
+      { cmd: "/delhome Name", text: "Löscht dieses Home." },
+    ],
+  },
+  {
+    id: "teleport",
+    title: "Teleport",
+    rows: [
+      { cmd: "/spawn", text: "Zurück zum Spawn." },
+      { cmd: "/rtp", text: "Zufälliger Teleport." },
+      { cmd: "/back", text: "Zurück zum letzten Todespunkt." },
+      { cmd: "/warp Name", text: "Teleport zu einem Server-Warp." },
+      { cmd: "/tpa Spieler", text: "Fragt, ob du zu diesem Spieler darfst." },
+      { cmd: "/tpahere Spieler", text: "Bittet diesen Spieler, zu dir zu kommen." },
+      { cmd: "/tpaccept", text: "Nimmt die Teleport-Anfrage an." },
+      { cmd: "/tpdeny", text: "Lehnt die Teleport-Anfrage ab." },
+    ],
+  },
+  {
+    id: "chat",
+    title: "Nachrichten",
+    rows: [
+      { cmd: "/msg Spieler", text: "Private Nachricht." },
+      { cmd: "/w", text: "Antwort auf die letzte private Nachricht." },
+      { cmd: "/mail", text: "Öffnet die Mailbox." },
+      { cmd: "/afk", text: "Setzt dich abwesend. Das passiert auch automatisch." },
+    ],
+  },
+  {
+    id: "teams",
+    title: "Teams",
+    note: "Zuerst /team create Name. Ohne Team gehen Prefix, Team-Home, Warps und Teamchat nicht.",
+    rows: [
+      { cmd: "/team create Name", text: "Legt dein Team an. Danach erst gehen die anderen Team-Befehle." },
+      { cmd: "/team disband", text: "Löst das Team auf. Nur als Owner." },
+      { cmd: "/team leave", text: "Verlässt das Team." },
+      { cmd: "/team invite Spieler", text: "Lädt jemanden ein." },
+      { cmd: "/team join", text: "Nimmt eine Einladung an." },
+      { cmd: "/team kick Spieler", text: "Wirft jemanden aus dem Team." },
+      { cmd: "/team info", text: "Zeigt dein Team." },
+      { cmd: "/team list", text: "Zeigt die Teams auf dem Server." },
+      {
+        cmd: "/team prefix &cAlpen",
+        text: "Setzt Farbe und Kürzel. Geht erst nach /team create.",
+        href: "/prefix",
+        hrefLabel: "Prefix bauen",
+      },
+      { cmd: "/team ally", text: "Verbündet ein Team oder nimmt es weg." },
+      { cmd: "/team enemy", text: "Markiert ein Feind-Team oder nimmt es weg." },
+      { cmd: "/team pvp", text: "Schaltet Friendly Fire um." },
+      { cmd: "/team sethome", text: "Setzt das Team-Home. Nicht dasselbe wie /sethome." },
+      { cmd: "/team home", text: "Teleport zum Team-Home." },
+      { cmd: "/team setwarp Name", text: "Setzt einen Team-Warp." },
+      { cmd: "/team warp", text: "Teleport zu einem Team-Warp." },
+      { cmd: "/team promote Spieler", text: "Macht jemanden zum Manager." },
+      { cmd: "/team demote Spieler", text: "Nimmt den Manager-Rang weg." },
+      { cmd: "/tc Nachricht", text: "Teamchat, nur an dein Team." },
+    ],
+  },
+  {
+    id: "voice",
+    title: "Voice",
+    rows: [
+      { cmd: "/voicechat invite Spieler", text: "Lädt jemanden in deine Voice-Gruppe." },
+      { cmd: "/voicechat join Name", text: "Tritt einer Gruppe bei." },
+      { cmd: "/voicechat leave", text: "Verlässt die Gruppe." },
+      { cmd: "/voicechat help", text: "Listet die Voice-Befehle." },
+    ],
+  },
+  {
+    id: "sonst",
+    title: "Sitz, Hut, Duell",
+    rows: [
+      { cmd: "/sit", text: "Setzt dich hin." },
+      { cmd: "/lay", text: "Legt dich hin." },
+      { cmd: "/spin", text: "Dreht dich." },
+      { cmd: "/crawl", text: "Kriecht durch eine 1-Block-Lücke." },
+      { cmd: "/hat", text: "Setzt den Block oder das Item in der Hand auf den Kopf." },
+      { cmd: "/playtime", text: "Zeigt deine Spielzeit." },
+      { cmd: "/duel Spieler", text: "Fordert jemanden zum Duell." },
+    ],
+  },
 ];
 
-export const BEDROCK_COMMANDS = [
-  { cmd: "/spawn", text: "Zurück zum Spawn. Chat über die Chat-Taste öffnen, nicht mit T." },
-  { cmd: "/sethome", text: "Speichert einen Punkt. Gleicher Befehl, anderer Chat." },
-  { cmd: "/home", text: "Kehrt zu deinem Home zurück." },
-  { cmd: "/homes", text: "Zeigt deine Homes." },
-  { cmd: "/tpa .Spieler", text: "Bedrock-Namen beginnen mit einem Punkt." },
-  { cmd: "/back", text: "Zurück zum letzten Todesort." },
-  { cmd: "/rtp", text: "Zufälliger Teleport." },
-  { cmd: "/msg .Spieler", text: "Private Nachricht an einen Bedrock-Namen mit Punkt." },
-  { cmd: "/call admin", text: "Ruft das Team. Ebenfalls über die Chat-Taste." },
-];
+export const COMMANDS: PlayerCommand[] = COMMAND_GROUPS.flatMap((group) => group.rows);
+
+export const BEDROCK_COMMANDS: PlayerCommand[] = COMMANDS.map((row) => ({
+  ...row,
+  cmd: row.cmd.replaceAll("Spieler", ".Spieler"),
+  text: row.text,
+}));
+
+export const TEAM_COMMANDS = COMMAND_GROUPS.find((group) => group.id === "teams")?.rows ?? [];
 
 /** Spieler-Teams. Ohne /team create gehen die übrigen Team-Befehle nicht. */
 export const TEAM_BLOCKED = ["Gamers", "Rise", "Up"] as const;
-
-export const TEAM_COMMANDS = [
-  {
-    cmd: "/team create Name",
-    text: "Legt dein Team an. Danach erst gehen Prefix, Team-Home, Warps, Endertruhe und Teamchat. Vorher nicht.",
-  },
-  {
-    cmd: "/team invite Spieler",
-    text: "Lädt jemanden ein. Der andere nimmt mit /team join an. Nur aus einem bestehenden Team.",
-  },
-  {
-    cmd: "/team leave",
-    text: "Verlässt das Team. Der Owner löst es mit /team disband auf oder wirft mit /team kick Spieler jemanden raus.",
-  },
-  {
-    cmd: "/team prefix &cAlpen",
-    text: "Setzt den Prefix. Geht nicht, solange kein Team mit /team create existiert.",
-  },
-  {
-    cmd: "/team sethome",
-    text: "Setzt das Team-Home. Nicht dasselbe wie /sethome. 3 Sekunden Wartezeit, Abbruch bei Bewegung oder Schaden.",
-  },
-  {
-    cmd: "/team home",
-    text: "Teleport zum Team-Home. Danach 120 Sekunden Pause. Ohne Team geht der Befehl nicht.",
-  },
-  {
-    cmd: "/team setwarp Name",
-    text: "Setzt einen Team-Warp. Höchstens 3. Dieselbe Wartezeit wie beim Team-Home.",
-  },
-  {
-    cmd: "/team warp",
-    text: "Zeigt die Team-Warps. 3 Sekunden, Abbruch bei Bewegung oder Schaden, danach 120 Sekunden Pause.",
-  },
-  {
-    cmd: "/team echest",
-    text: "Gemeinsame Team-Endertruhe, 3 Reihen. Nur mit Team.",
-  },
-  {
-    cmd: "/tc Nachricht",
-    text: "Teamchat, nur an dein Team. Ally-Chat ist /ac Nachricht. Beides ohne Team tot.",
-  },
-  {
-    cmd: "/team ally add Name",
-    text: "Verbündet ein Team. Höchstens 4. Wegnehmen mit /team ally remove Name.",
-  },
-  {
-    cmd: "/team enemy add Name",
-    text: "Markiert ein Feind-Team. Höchstens 2. Wegnehmen mit /team enemy remove Name.",
-  },
-  {
-    cmd: "/team pvp",
-    text: "Schaltet Friendly Fire um. In einem neuen Team ist es aus. Ohne Team geht der Befehl nicht.",
-  },
-];
 
 export const PILLARS = [
   {
@@ -384,7 +437,7 @@ export const FAQ = [
   },
   {
     q: "Gibt es /home, /tpa und /back?",
-    a: "Ja. Java und Bedrock nutzen dieselben Funktionen, aber nicht denselben Chat. Java: T, dann /tpa Spieler. Bedrock: Chat-Taste, und Namen mit Punkt, also /tpa .Spieler. Dazu /spawn, /sethome, /home, /homes, /back, /rtp, /msg und /call admin.",
+    a: "Ja. Java und Bedrock nutzen dieselben Befehle. Java öffnet den Chat mit T. Bedrock mit der Chat-Taste, und Namen beginnen mit einem Punkt, also /tpa .Spieler. Die gruppierten Befehle stehen im Guide.",
   },
   {
     q: "Was passiert, wenn ich sterbe?",
@@ -517,7 +570,7 @@ export const GUIDE: GuideChapter[] = [
     keywords: "team create prefix home warp echest chat pvp ally",
     blocks: [
       "Team anlegen: /team create Name. 3 bis 10 Buchstaben, nur a bis z, kein Farbcode. Gamers, Rise und Up sind gesperrt. Kostenlos, höchstens 20 Mitglieder.",
-      "Ohne Team gehen /team prefix, /team sethome, /team home, /team setwarp, /team warp, /team echest, /tc, /ac und /team pvp nicht.",
+      "Ohne Team gehen /team prefix, /team home, /team warp und /tc nicht.",
       "Prefix danach: /team prefix &cAlpen. Farbcode und Buchstaben zusammen 3 bis 10 Zeichen. Im Chat folgt ein Leerzeichen.",
       "Team-Home und Warps: 3 Sekunden Wartezeit, Abbruch bei Bewegung oder Schaden, danach 120 Sekunden Pause. Höchstens 3 Warps. Friendly Fire ist in neuen Teams aus.",
     ],
@@ -529,9 +582,9 @@ export const GUIDE: GuideChapter[] = [
     description: "Java und Bedrock, jeweils zum Kopieren.",
     keywords: "spawn home tpa back rtp msg admin java bedrock team prefix",
     blocks: [
-      "Java (Taste T): /spawn · /sethome · /home · /homes · /tpa Spieler · /back · /rtp · /msg Spieler · /call admin",
-      "Bedrock (Chat-Taste): dieselben Befehle, Namen mit Punkt – /tpa .Spieler und /msg .Spieler.",
-      "Spieler-Team zuerst mit /team create Name. Ohne Team gehen /team prefix, /team home, /team warp, /team echest und /tc nicht.",
+      "Claims, Homes, Teleport, Nachrichten, Teams, Voice und Sitz-Befehle stehen unten nach Gruppen. Kopieren geht pro Befehl.",
+      "Claimen: goldene Schaufel, Rechtsklick, andere Ecke, nochmal Rechtsklick.",
+      "Bedrock: dieselben Befehle, Chat-Taste, Namen mit Punkt.",
     ],
   },
 ];

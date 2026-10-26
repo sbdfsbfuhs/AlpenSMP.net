@@ -220,7 +220,7 @@ export function answerQuestion(raw: string): string {
   if (/voice|mikro|sprechen|proximity/.test(q)) {
     return "Simple Voice Chat ist aktiv und nähe-basiert. Für Java brauchst du den Client-Mod (Modrinth), passend zu deiner Minecraft-Version. Ohne Mod kannst du trotzdem joinen.";
   }
-  if (/home|sethome/.test(q)) return "Mit /sethome speicherst du einen Punkt, mit /home kehrst du zurück. /homes listet deine Punkte.";
+  if (/home|sethome|delhome/.test(q)) return "Mit /sethome Name speicherst du ein Home. Höchstens 5. /home Name bringt dich hin, /delhome Name löscht es.";
   if (/tpa|teleport/.test(q)) return "/tpa und der Spielername sendet eine Anfrage. Nach Annahme teleportierst du dich zum anderen.";
   if (/\bback\b|todesort/.test(q)) return "/back bringt dich zum letzten Todesort – praktisch, um Items zu holen.";
   if (/tod|sterben|grab|items/.test(q)) {
@@ -240,7 +240,7 @@ export function answerQuestion(raw: string): string {
     return "Der Team-Prefix ist nicht der Spielername. Er funktioniert nur, wenn schon ein Team mit /team create Name existiert. Sonst geht /team prefix nicht. Der Teamname hat 3 bis 10 Buchstaben, nur a bis z, ohne Farbcode. Gesperrt sind Gamers, Rise und Up. Danach: /team prefix und direkt Farbcode plus Buchstaben, ohne Leerzeichen. Beispiel: /team prefix &cAlpen. Farbcode und Text zusammen 3 bis 10 Zeichen. Im Tab steht der Prefix vor dem Spielernamen, nur dieser Text ist farbig. Im Chat folgt ein Leerzeichen.";
   }
   if (/rtp|spawn|\/msg|call admin|befehl|command/.test(q)) {
-    return "Java (Taste T): /spawn, /sethome, /home, /homes, /tpa Spieler, /back, /rtp, /msg Spieler, /call admin. Bedrock (Chat-Taste): dieselben Befehle, aber Namen mit Punkt, zum Beispiel /tpa .Spieler. Spieler-Team: zuerst /team create Name. Ohne Team gehen /team prefix, /team home, /team warp, /team echest und /tc nicht.";
+    return "Java (Taste T): /spawn, /sethome Name, /home Name, /delhome Name, /tpa Spieler, /tpaccept, /back, /rtp, /warp, /msg, /w, /duel Spieler. Höchstens 5 Homes. Bedrock: dieselben Befehle, Namen mit Punkt. Claimen geht mit einer goldenen Schaufel. Team zuerst mit /team create Name.";
   }
   if (/strafe|bann|ban|kick|verwarn/.test(q)) {
     return "Laut Regel 14 sind je nach Fall Verwarnung, Kick, temporärer oder permanenter Bann sowie weitere Massnahmen möglich. Nicht jeder Verstoss wird gleich bestraft.";
@@ -290,7 +290,7 @@ function knownFacts(q: string): string | null {
   const swiss = /swiss\s*red|swissred|\bswiss\b/.test(q);
   const owner = /owner|serverleitung|gründer|gruender/.test(q);
   const cmds =
-    "Java (Taste T): /spawn, /sethome, /home, /homes, /tpa Spieler, /back, /rtp, /msg Spieler, /call admin. Bedrock (Chat-Taste): dieselben Befehle, Namen mit Punkt, also /tpa .Spieler und /msg .Spieler. Spieler-Team: zuerst /team create Name. Ohne Team gehen /team prefix, /team home und /tc nicht.";
+    "Java (Taste T): /spawn, /sethome Name, /home Name, /tpa Spieler, /tpaccept, /back, /rtp, /msg, /w. Höchstens 5 Homes. Bedrock: dieselben Befehle, Namen mit Punkt. Team: zuerst /team create Name. Die ganze Liste steht im Guide, nach Gruppen.";
 
   if (/passwort|password|\bseed\b|welt.?seed/.test(q)) {
     return `Passwort und Seed sind nicht öffentlich. Die Server-Adresse ist ${SITE.ip}.`;
@@ -344,7 +344,7 @@ function knownFacts(q: string): string | null {
     return "AlpenSMP ist Survival, kein Creative-Server. Fly-Hacks sind laut Regel 3 verboten. Survival-Flug aus dem Spiel selbst, zum Beispiel mit Elytren, ist normales Minecraft.";
   }
   if (/claim.?block|1000|wie viel claim|wieviele claim|claim größe|claimgro/.test(q)) {
-    return "GriefPrevention: pro 1 Stunde online +1000 Claim-Blöcke. Im Claim können Fremde nichts abbauen oder platzieren. Freunde kannst du einladen, den genauen Zusatzbefehl nennt die Seite nicht.";
+    return "GriefPrevention: pro 1 Stunde online +1000 Claim-Blöcke. Claimen mit einer normalen goldenen Schaufel: Rechtsklick, andere Ecke, nochmal Rechtsklick. Freunde lädst du mit /trust ein.";
   }
   if (/\bseed\b|koordinate|spawn.?punkt|wo ist (der )?spawn/.test(q)) {
     return "Spawn-Koordinaten und den Seed gibt die Website nicht raus. Mit /spawn kommst du trotzdem hin.";
@@ -420,7 +420,7 @@ function knownFacts(q: string): string | null {
     return "/call admin ruft das Team, wenn du im Spiel Hilfe brauchst. Auf Bedrock ebenfalls über die Chat-Taste.";
   }
   if (/wie viele homes|home limit|mehrere homes/.test(q)) {
-    return "/sethome speichert einen Punkt, /home bringt dich hin, /homes listet deine Punkte. Ein festes Limit steht auf der Website nicht.";
+    return "/sethome Name speichert ein Home, höchstens 5. /home Name bringt dich hin, /delhome Name löscht es.";
   }
   if (/tod(es)?grab|items weg|lava|stirbt/.test(q)) {
     return "Beim Tod bleiben die Items in einem Todesgrab, solange das Grab erreichbar ist. /back bringt dich zum Todesort.";

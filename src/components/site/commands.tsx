@@ -1,26 +1,28 @@
 import { useEffect, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { CopyBurstButton } from "@/components/site/copy-burst";
-import { BEDROCK_COMMANDS, COMMANDS } from "@/lib/alpen/content";
+import { COMMAND_GROUPS, type PlayerCommand } from "@/lib/alpen/content";
 import { entries, fbGet } from "@/lib/alpen/staff";
 
 type Row = { cmd: string; text: string };
 
 export function PlayerCommands() {
   const [edition, setEdition] = useState<"java" | "bedrock">("java");
-  const [java, setJava] = useState<Row[] | null>(null);
-  const [bedrock, setBedrock] = useState<Row[] | null>(null);
+  const [extra, setExtra] = useState<Row[]>([]);
 
   useEffect(() => {
-    fbGet<Record<string, { cmd?: string; text?: string }>>("playerCommands/java")
-      .then((value) => setJava(entries(value).map(([, item]) => ({ cmd: item.cmd || "", text: item.text || "" })).filter((item) => item.cmd)))
-      .catch(() => setJava([]));
-    fbGet<Record<string, { cmd?: string; text?: string }>>("playerCommands/bedrock")
-      .then((value) => setBedrock(entries(value).map(([, item]) => ({ cmd: item.cmd || "", text: item.text || "" })).filter((item) => item.cmd)))
-      .catch(() => setBedrock([]));
-  }, []);
-
-  const live = edition === "java" ? java : bedrock;
-  const rows = live && live.length ? live : edition === "java" ? COMMANDS : BEDROCK_COMMANDS;
+    const path = edition === "java" ? "playerCommands/java" : "playerCommands/bedrock";
+    const known = new Set(COMMAND_GROUPS.flatMap((group) => group.rows.map((row) => row.cmd)));
+    fbGet<Record<string, { cmd?: string; text?: string }>>(path)
+      .then((value) =>
+        setExtra(
+          entries(value)
+            .map(([, item]) => ({ cmd: item.cmd || "", text: item.text || "" }))
+            .filter((item) => item.cmd && !known.has(item.cmd)),
+        ),
+      )
+      .catch(() => setExtra([]));
+  }, [edition]);
 
   return (
     <section>
@@ -41,23 +43,47 @@ export function PlayerCommands() {
       <p className="mt-3 max-w-2xl text-sm text-muted">
         {edition === "java"
           ? "Chat mit T öffnen, Befehl einfügen, Enter."
-          : "Chat-Taste drücken. Bedrock-Namen beginnen mit einem Punkt."}
+          : "Chat-Taste drücken. Namen beginnen mit einem Punkt, zum Beispiel /tpa .Spieler."}
       </p>
-      <ul key={edition} className="edition-panel mt-4 grid gap-3 md:grid-cols-2">
-        {rows.map((item) => (
-          <CommandRow key={item.cmd} cmd={item.cmd} text={item.text} />
+      <div className="mt-8 space-y-10">
+        {COMMAND_GROUPS.map((group) => (
+          <section key={group.id}>
+            <h3 className="text-xl font-semibold">{group.title}</h3>
+            {group.note ? <p className="mt-2 max-w-3xl text-sm text-muted">{group.note}</p> : null}
+            <ul className="mt-4 grid gap-3 md:grid-cols-2">
+              {group.rows.map((item) => (
+                <CommandRow key={item.cmd} item={item} edition={edition} />
+              ))}
+            </ul>
+          </section>
         ))}
-      </ul>
+        {extra.length ? (
+          <section>
+            <h3 className="text-xl font-semibold">Vom Team ergänzt</h3>
+            <ul className="mt-4 grid gap-3 md:grid-cols-2">
+              {extra.map((item) => (
+                <CommandRow key={item.cmd} item={item} edition={edition} />
+              ))}
+            </ul>
+          </section>
+        ) : null}
+      </div>
     </section>
   );
 }
 
-function CommandRow({ cmd, text }: { cmd: string; text: string }) {
+function CommandRow({ item, edition }: { item: PlayerCommand; edition: "java" | "bedrock" }) {
+  const cmd = edition === "bedrock" ? item.cmd.replaceAll("Spieler", ".Spieler") : item.cmd;
   return (
     <li className="card card-still flex items-center gap-3 p-4">
       <div className="min-w-0 flex-1">
         <code className="font-semibold text-brand">{cmd}</code>
-        <p className="mt-1 text-sm text-muted">{text}</p>
+        <p className="mt-1 text-sm text-muted">{item.text}</p>
+        {item.href ? (
+          <Link to={item.href} className="mt-2 inline-flex text-sm text-brand underline">
+            {item.hrefLabel || "Weiter"}
+          </Link>
+        ) : null}
       </div>
       <CopyBurstButton value={cmd} ariaLabel={`${cmd} kopieren`}>
         Kopieren

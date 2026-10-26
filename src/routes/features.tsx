@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHero, Shell } from "@/components/site/shell";
 import { ModrinthLink } from "@/components/site/guide/mods";
 import { SiteMascot } from "@/components/site/assistant";
-import { COMMANDS, FEATURES, TEAM_COMMANDS } from "@/lib/alpen/content";
+import { COMMAND_GROUPS, FEATURES } from "@/lib/alpen/content";
 import { SITE } from "@/lib/alpen/site";
 
 export const Route = createFileRoute("/features")({
@@ -45,27 +45,23 @@ function FeaturesPage() {
         <div className="shell">
           <p className="kicker">Befehle</p>
           <h2 className="display mt-3 text-4xl">Wichtige Commands</h2>
-          <p className="mt-3 max-w-2xl text-muted">Nur Befehle, die auf AlpenSMP bestätigt sind.</p>
-          <ul className="mt-8 divide-y divide-line overflow-hidden rounded-lg border border-line">
-            {COMMANDS.map((row) => (
-              <li key={row.cmd} className="grid gap-1 bg-surface px-5 py-4 sm:grid-cols-[9rem_1fr] sm:items-center">
-                <code className="font-semibold text-brand">{row.cmd}</code>
-                <span className="text-sm text-muted">{row.text}</span>
-              </li>
+          <p className="mt-3 max-w-2xl text-muted">Nur Befehle, die auf AlpenSMP bestätigt sind. Die gleiche Liste steht im Guide, dort zum Kopieren.</p>
+          <div className="mt-8 space-y-8">
+            {COMMAND_GROUPS.map((group) => (
+              <section key={group.id}>
+                <h3 id={group.id === "teams" ? "teams" : undefined} className={`text-2xl font-semibold ${group.id === "teams" ? "scroll-mt-24" : ""}`}>{group.title}</h3>
+                {group.note ? <p className="mt-2 max-w-2xl text-sm text-muted">{group.note}</p> : null}
+                <ul className="mt-4 divide-y divide-line overflow-hidden rounded-lg border border-line">
+                  {group.rows.map((row) => (
+                    <li key={row.cmd} className="grid gap-1 bg-surface px-5 py-4 sm:grid-cols-[16rem_1fr] sm:items-center">
+                      <code className="font-semibold text-brand">{row.cmd}</code>
+                      <span className="text-sm text-muted">{row.text}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
             ))}
-          </ul>
-          <h3 id="teams" className="mt-12 scroll-mt-24 text-2xl font-semibold">Team-Befehle</h3>
-          <p className="mt-3 max-w-2xl text-muted">
-            Zuerst <code className="text-brand">/team create Name</code>. Ohne dieses Team gehen Prefix, Team-Home, Warps, Endertruhe und Teamchat nicht.
-          </p>
-          <ul className="mt-6 divide-y divide-line overflow-hidden rounded-lg border border-line">
-            {TEAM_COMMANDS.map((row) => (
-              <li key={row.cmd} className="grid gap-1 bg-surface px-5 py-4 sm:grid-cols-[14rem_1fr] sm:items-center">
-                <code className="font-semibold text-brand">{row.cmd}</code>
-                <span className="text-sm text-muted">{row.text}</span>
-              </li>
-            ))}
-          </ul>
+          </div>
           <div className="mt-8 flex flex-wrap gap-3">
             <ModrinthLink href={SITE.voiceMod}>Simple Voice Chat auf Modrinth</ModrinthLink>
             <ModrinthLink href={SITE.modrinthApp}>Modrinth App</ModrinthLink>
