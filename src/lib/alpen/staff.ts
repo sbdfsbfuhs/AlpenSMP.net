@@ -318,23 +318,46 @@ async function claimExisting(name: string, password: string) {
 
 export async function loginStaff(nameOrEmail: string, password: string): Promise<StaffSession> {
   const named = nameOrEmail.trim().toLowerCase();
-  let clean = staffLoginId(named);
-  if (!named.includes("@")) {
-    try {
-      const gate = await fbGet<{ email?: string }>(`staffGate/${staffName(named)}`);
-      if (gate?.email) clean = gate.email;
-    } catch {
-      clean = staffLoginId(named);
-    }
-  }
   if (!password) throw new Error("Name und Passwort");
   const nameOnly = named.includes("@") ? "" : staffName(named);
-  let signed: { email: string; uid: string };
-  try {
-    signed = await signInEmail(clean, password);
-  } catch (err) {
-    if (!nameOnly) throw err;
-    signed = await claimExisting(nameOnly, password);
+  const emails: string[] = [];
+  const addEmail = (value?: string) => {
+    const email = value?.trim().toLowerCase();
+    if (email && !emails.includes(email)) emails.push(email);
+  };
+  if (named.includes("@")) addEmail(named);
+  else {
+    addEmail(staffLoginId(named));
+    try {
+      const gate = await fbGet<{ email?: string }>(`staffGate/${nameOnly}`);
+      addEmail(gate?.email);
+    } catch {
+      /* Ohne Gate bleibt die Standard-Mail. */
+    }
+  }
+  let signed: { email: string; uid: string } | null = null;
+  let lastError: Error | null = null;
+  for (const email of emails) {
+    try {
+      signed = await signInEmail(email, password);
+      break;
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error("Zugang ungültig");
+    }
+  }
+  if (!signed && nameOnly) {
+    try {
+      signed = await claimExisting(nameOnly, password);
+    } catch (err) {
+      if (lastError && !/ungültig|nicht gefunden/i.test(lastError.message)) throw lastError;
+      const claimError = err instanceof Error ? err.message : "";
+      if (claimError && !/ungültig/i.test(claimError)) throw err;
+      throw new Error("Name oder Passwort stimmt nicht. Genau der Team-Name aus der Account-Liste, keine E-Mail, und das zuletzt gesetzte Passwort.");
+    }
+  }
+  if (!signed) {
+    if (lastError && !/ungültig/i.test(lastError.message)) throw lastError;
+    throw new Error("Name oder Passwort stimmt nicht.");
   }
   let link = await fbGet<{ username?: string; role?: string; disabled?: boolean }>(`staffByUid/${signed.uid}`);
   if (!link?.username && nameOnly) {
@@ -367,7 +390,7 @@ export async function loginStaff(nameOrEmail: string, password: string): Promise
   );
   if (!row || row.disabled || link?.disabled) {
     clearFirebaseLogin();
-    throw new Error(row?.disabled || link?.disabled ? "Account ist pausiert" : "Zugang ungültig");
+    throw new Error(row?.disabled || link?.disabled ? "Account ist pausiert" : "Der Account ist nicht vollständig angelegt. Im Staff-Center neu anlegen oder das Passwort zurücksetzen.");
   }
   if (row.ownerUntil && row.ownerUntil <= Date.now() && row.role === "owner") {
     clearFirebaseLogin();

@@ -206,7 +206,7 @@ function Login({ onIn }: { onIn: (user: StaffSession) => void }) {
   return (
     <form className="card card-still panel-in mx-auto max-w-md p-6" onSubmit={submit}>
       <h2 className="text-xl font-semibold">Anmelden</h2>
-      <p className="mt-2 text-sm text-muted">Team-Name und Passwort. Wer schon erfasst ist und noch kein Passwort hat, wählt es hier. Danach kommt man damit rein.</p>
+      <p className="mt-2 text-sm text-muted">Genau der Team-Name aus der Account-Liste, keine E-Mail. Dazu das Passwort, das beim Anlegen oder beim letzten Reset galt.</p>
       <label className="mt-5 block text-sm">
         Name
         <input className="field mt-1" value={name} onChange={(e) => setName(e.target.value)} autoComplete="username" />
