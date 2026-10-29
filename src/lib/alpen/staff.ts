@@ -373,7 +373,7 @@ export async function loginStaff(nameOrEmail: string, password: string): Promise
     clearFirebaseLogin();
     throw new Error("Owner-Zeit abgelaufen");
   }
-  await fbUpdate(`staffUsers/${username}`, { lastLogin: Date.now(), email: signed.email, uid: signed.uid });
+  await fbUpdate(`staffUsers/${username}`, { lastLogin: Date.now(), email: signed.email, uid: signed.uid }).catch(() => undefined);
   void logStaff(username, "Login");
   return { username, role: row.role || link.role || "helper", mustChangePw: Boolean(row.mustChangePw), email: signed.email, uid: signed.uid };
 }

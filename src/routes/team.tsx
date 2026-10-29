@@ -194,7 +194,7 @@ function Login({ onIn }: { onIn: (user: StaffSession) => void }) {
     try {
       const session = await loginStaff(name, password);
       writeSession(session);
-      await fbSet(`presence/${session.username}`, { username: session.username, role: session.role, online: true, lastSeen: Date.now() });
+      void fbSet(`presence/${session.username}`, { username: session.username, role: session.role, online: true, lastSeen: Date.now() }).catch(() => undefined);
       onIn(session);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Zugang ungültig");
@@ -226,15 +226,18 @@ function Login({ onIn }: { onIn: (user: StaffSession) => void }) {
 function ForcePassword({ user, onDone, note }: { user: StaffSession; onDone: (user: StaffSession) => void; note: (text: string) => void }) {
   const [a, setA] = useState("");
   const [b, setB] = useState("");
+  const [error, setError] = useState("");
 
   async function save(event: FormEvent) {
     event.preventDefault();
-    if (!a) return note("Passwort fehlt");
-    if (a !== b) return note("Stimmt nicht überein");
+    setError("");
+    if (!a) return setError("Passwort fehlt");
+    if (a !== b) return setError("Stimmt nicht überein");
+    if (a.length < 6) return setError("Mindestens 6 Zeichen");
     try {
       await savePassword(user.username, a);
     } catch (err) {
-      return note(err instanceof Error ? err.message : "Speichern fehlgeschlagen");
+      return setError(err instanceof Error ? err.message : "Speichern fehlgeschlagen");
     }
     const next = { ...user, mustChangePw: false };
     writeSession(next);
@@ -244,9 +247,11 @@ function ForcePassword({ user, onDone, note }: { user: StaffSession; onDone: (us
 
   return (
     <form className="card card-still mx-auto max-w-md p-6" onSubmit={save}>
-      <h2 className="text-xl font-semibold">Neues Passwort</h2>
+      <h2 className="text-xl font-semibold">Anmeldung hat geklappt</h2>
+      <p className="mt-2 text-sm text-muted">Das Startpasswort gilt nur für diesen Schritt. Danach ein eigenes Passwort setzen, mindestens 6 Zeichen. Erst dann geht das Team-Panel auf.</p>
       <input className="field mt-4" type="password" value={a} onChange={(e) => setA(e.target.value)} placeholder="Neues Passwort" />
       <input className="field mt-3" type="password" value={b} onChange={(e) => setB(e.target.value)} placeholder="Wiederholen" />
+      {error ? <p className="mt-3 text-sm text-ember">{error}</p> : null}
       <button className="btn-brand mt-4" type="submit">Speichern</button>
     </form>
   );
