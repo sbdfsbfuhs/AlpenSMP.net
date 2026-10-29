@@ -69,7 +69,7 @@ function Queue({
           <article key={key} className={`card card-still p-4${freshStamp(item.ts, item.updatedAt) ? " mark-new" : ""}`}>
             <p className="font-semibold">{item.name} {item.rating ? `· ${item.rating}/5` : ""}<Neu ts={item.ts} updatedAt={item.updatedAt} /></p>
             <p className="mt-1 text-sm text-muted">{shots ? item.caption : item.text}</p>
-            {item.imageUrl ? <img src={item.imageUrl} alt="" className="mt-3 max-h-40 rounded-md object-cover" /> : null}
+            {item.imageUrl ? <img src={item.imageUrl} alt={item.name ? `Eingereichtes Bild von ${item.name}` : "Eingereichtes Bild"} className="mt-3 max-h-40 rounded-md object-cover" /> : null}
             <p className="mt-2 text-xs text-faint">{item.status || "offen"} · {formatWhen(item.ts)}</p>
             <div className="mt-3 flex gap-2">
               <button type="button" className="btn-brand" onClick={() => void fbUpdate(`${path}/${key}`, { status: "approved", moderatedBy: user.username, moderatedAt: Date.now(), updatedAt: Date.now() }).then(() => { onStatus(key, "approved"); note("Freigegeben"); })}>Frei</button>

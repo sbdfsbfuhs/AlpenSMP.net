@@ -12,12 +12,16 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ChangelogRouteImport } from './routes/changelog'
 import { Route as CommunityRouteImport } from './routes/community'
+import { Route as DatenschutzRouteImport } from './routes/datenschutz'
+import { Route as ErstattungRouteImport } from './routes/erstattung'
 import { Route as FaqRouteImport } from './routes/faq'
 import { Route as FeaturesRouteImport } from './routes/features'
 import { Route as GuideRouteImport } from './routes/guide'
+import { Route as ImpressumRouteImport } from './routes/impressum'
 import { Route as KarteRouteImport } from './routes/karte'
 import { Route as KiTransparenzRouteImport } from './routes/ki-transparenz'
 import { Route as KontaktRouteImport } from './routes/kontakt'
+import { Route as NutzungRouteImport } from './routes/nutzung'
 import { Route as PrefixRouteImport } from './routes/prefix'
 import { Route as RegelnRouteImport } from './routes/regeln'
 import { Route as ServerRouteImport } from './routes/server'
@@ -38,6 +42,16 @@ const CommunityRoute = CommunityRouteImport.update({
   path: '/community',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DatenschutzRoute = DatenschutzRouteImport.update({
+  id: '/datenschutz',
+  path: '/datenschutz',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ErstattungRoute = ErstattungRouteImport.update({
+  id: '/erstattung',
+  path: '/erstattung',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FaqRoute = FaqRouteImport.update({
   id: '/faq',
   path: '/faq',
@@ -53,6 +67,11 @@ const GuideRoute = GuideRouteImport.update({
   path: '/guide',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ImpressumRoute = ImpressumRouteImport.update({
+  id: '/impressum',
+  path: '/impressum',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const KarteRoute = KarteRouteImport.update({
   id: '/karte',
   path: '/karte',
@@ -66,6 +85,11 @@ const KiTransparenzRoute = KiTransparenzRouteImport.update({
 const KontaktRoute = KontaktRouteImport.update({
   id: '/kontakt',
   path: '/kontakt',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NutzungRoute = NutzungRouteImport.update({
+  id: '/nutzung',
+  path: '/nutzung',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrefixRoute = PrefixRouteImport.update({
@@ -93,12 +117,16 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/changelog': typeof ChangelogRoute
   '/community': typeof CommunityRoute
+  '/datenschutz': typeof DatenschutzRoute
+  '/erstattung': typeof ErstattungRoute
   '/faq': typeof FaqRoute
   '/features': typeof FeaturesRoute
   '/guide': typeof GuideRoute
+  '/impressum': typeof ImpressumRoute
   '/karte': typeof KarteRoute
   '/ki-transparenz': typeof KiTransparenzRoute
   '/kontakt': typeof KontaktRoute
+  '/nutzung': typeof NutzungRoute
   '/prefix': typeof PrefixRoute
   '/regeln': typeof RegelnRoute
   '/server': typeof ServerRoute
@@ -108,12 +136,16 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/changelog': typeof ChangelogRoute
   '/community': typeof CommunityRoute
+  '/datenschutz': typeof DatenschutzRoute
+  '/erstattung': typeof ErstattungRoute
   '/faq': typeof FaqRoute
   '/features': typeof FeaturesRoute
   '/guide': typeof GuideRoute
+  '/impressum': typeof ImpressumRoute
   '/karte': typeof KarteRoute
   '/ki-transparenz': typeof KiTransparenzRoute
   '/kontakt': typeof KontaktRoute
+  '/nutzung': typeof NutzungRoute
   '/prefix': typeof PrefixRoute
   '/regeln': typeof RegelnRoute
   '/server': typeof ServerRoute
@@ -124,12 +156,16 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/changelog': typeof ChangelogRoute
   '/community': typeof CommunityRoute
+  '/datenschutz': typeof DatenschutzRoute
+  '/erstattung': typeof ErstattungRoute
   '/faq': typeof FaqRoute
   '/features': typeof FeaturesRoute
   '/guide': typeof GuideRoute
+  '/impressum': typeof ImpressumRoute
   '/karte': typeof KarteRoute
   '/ki-transparenz': typeof KiTransparenzRoute
   '/kontakt': typeof KontaktRoute
+  '/nutzung': typeof NutzungRoute
   '/prefix': typeof PrefixRoute
   '/regeln': typeof RegelnRoute
   '/server': typeof ServerRoute
@@ -141,12 +177,16 @@ export interface FileRouteTypes {
     | '/'
     | '/changelog'
     | '/community'
+    | '/datenschutz'
+    | '/erstattung'
     | '/faq'
     | '/features'
     | '/guide'
+    | '/impressum'
     | '/karte'
     | '/ki-transparenz'
     | '/kontakt'
+    | '/nutzung'
     | '/prefix'
     | '/regeln'
     | '/server'
@@ -156,12 +196,16 @@ export interface FileRouteTypes {
     | '/'
     | '/changelog'
     | '/community'
+    | '/datenschutz'
+    | '/erstattung'
     | '/faq'
     | '/features'
     | '/guide'
+    | '/impressum'
     | '/karte'
     | '/ki-transparenz'
     | '/kontakt'
+    | '/nutzung'
     | '/prefix'
     | '/regeln'
     | '/server'
@@ -171,12 +215,16 @@ export interface FileRouteTypes {
     | '/'
     | '/changelog'
     | '/community'
+    | '/datenschutz'
+    | '/erstattung'
     | '/faq'
     | '/features'
     | '/guide'
+    | '/impressum'
     | '/karte'
     | '/ki-transparenz'
     | '/kontakt'
+    | '/nutzung'
     | '/prefix'
     | '/regeln'
     | '/server'
@@ -187,12 +235,16 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ChangelogRoute: typeof ChangelogRoute
   CommunityRoute: typeof CommunityRoute
+  DatenschutzRoute: typeof DatenschutzRoute
+  ErstattungRoute: typeof ErstattungRoute
   FaqRoute: typeof FaqRoute
   FeaturesRoute: typeof FeaturesRoute
   GuideRoute: typeof GuideRoute
+  ImpressumRoute: typeof ImpressumRoute
   KarteRoute: typeof KarteRoute
   KiTransparenzRoute: typeof KiTransparenzRoute
   KontaktRoute: typeof KontaktRoute
+  NutzungRoute: typeof NutzungRoute
   PrefixRoute: typeof PrefixRoute
   RegelnRoute: typeof RegelnRoute
   ServerRoute: typeof ServerRoute
@@ -222,6 +274,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CommunityRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/datenschutz': {
+      id: '/datenschutz'
+      path: '/datenschutz'
+      fullPath: '/datenschutz'
+      preLoaderRoute: typeof DatenschutzRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/erstattung': {
+      id: '/erstattung'
+      path: '/erstattung'
+      fullPath: '/erstattung'
+      preLoaderRoute: typeof ErstattungRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/faq': {
       id: '/faq'
       path: '/faq'
@@ -243,6 +309,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuideRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/impressum': {
+      id: '/impressum'
+      path: '/impressum'
+      fullPath: '/impressum'
+      preLoaderRoute: typeof ImpressumRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/karte': {
       id: '/karte'
       path: '/karte'
@@ -262,6 +335,13 @@ declare module '@tanstack/react-router' {
       path: '/kontakt'
       fullPath: '/kontakt'
       preLoaderRoute: typeof KontaktRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/nutzung': {
+      id: '/nutzung'
+      path: '/nutzung'
+      fullPath: '/nutzung'
+      preLoaderRoute: typeof NutzungRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/prefix': {
@@ -299,12 +379,16 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ChangelogRoute: ChangelogRoute,
   CommunityRoute: CommunityRoute,
+  DatenschutzRoute: DatenschutzRoute,
+  ErstattungRoute: ErstattungRoute,
   FaqRoute: FaqRoute,
   FeaturesRoute: FeaturesRoute,
   GuideRoute: GuideRoute,
+  ImpressumRoute: ImpressumRoute,
   KarteRoute: KarteRoute,
   KiTransparenzRoute: KiTransparenzRoute,
   KontaktRoute: KontaktRoute,
+  NutzungRoute: NutzungRoute,
   PrefixRoute: PrefixRoute,
   RegelnRoute: RegelnRoute,
   ServerRoute: ServerRoute,

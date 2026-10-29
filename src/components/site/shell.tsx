@@ -52,7 +52,7 @@ export function Shell({ children }: { children: ReactNode }) {
 }
 
 function Mark() {
-  return <img src="/logo.png" alt="" className="size-11 object-contain" />;
+  return <img src="/logo.png" alt="" aria-hidden="true" className="size-11 object-contain" />;
 }
 
 function Header() {
@@ -169,9 +169,13 @@ function Footer() {
       <div className="border-t border-line">
         <div className={`${frame} flex flex-col gap-2 py-4 text-xs text-faint sm:flex-row sm:justify-between`}>
           <span>© 2026 AlpenSMP</span>
-          <a href="/ki-transparenz" className="hover:text-brand">
-            KI-Transparenz
-          </a>
+          <span className="flex flex-wrap gap-x-3 gap-y-1">
+            <Link to="/impressum" className="hover:text-brand">Impressum</Link>
+            <Link to="/datenschutz" className="hover:text-brand">Datenschutz</Link>
+            <Link to="/nutzung" className="hover:text-brand">Nutzung</Link>
+            <Link to="/erstattung" className="hover:text-brand">Erstattung</Link>
+            <a href="/ki-transparenz" className="hover:text-brand">KI-Transparenz</a>
+          </span>
         </div>
       </div>
     </footer>

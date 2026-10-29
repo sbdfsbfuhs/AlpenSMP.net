@@ -536,7 +536,7 @@ export function GuideEditor({ real, view, note }: { real: string; view: string; 
           <p className="text-xs text-faint">{item.category}</p>
           <p className="font-semibold">{item.title}</p>
           <p className="text-muted">{item.description}</p>
-          {item.image ? <img src={item.image} alt="" className="mt-2 max-h-36 rounded-md object-cover" /> : null}
+          {item.image ? <img src={item.image} alt={item.title || "Bild zum Guide"} className="mt-2 max-h-36 rounded-md object-cover" /> : null}
           {edit ? (
             <button type="button" className="btn-ghost mt-2 px-3" onClick={() => guard(real, "guide", note) && void fbRemove(`guideTopics/${key}`).then(() => note("Thema entfernt"))}>
               Löschen

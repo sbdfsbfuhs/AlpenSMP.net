@@ -32,7 +32,7 @@ function MapPage() {
       />
       <div className="shell py-12">
         <div className="map-hold relative overflow-hidden rounded-lg border border-line">
-          <img src="/media/ridge.jpg" alt="" className="hero-drift tone-red absolute inset-0 h-full w-full object-cover opacity-60" />
+          <img src="/media/ridge.jpg" alt="" aria-hidden="true" className="hero-drift tone-red absolute inset-0 h-full w-full object-cover opacity-60" />
           <div className="red-wash absolute inset-0" />
           <div className="map-grid absolute inset-0" aria-hidden="true" />
           <div className="relative flex min-h-[28rem] items-center justify-center px-6 py-16">

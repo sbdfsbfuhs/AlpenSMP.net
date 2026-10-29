@@ -1,4 +1,13 @@
 @import "tailwindcss";
+@import "@fontsource/manrope/400.css";
+@import "@fontsource/manrope/500.css";
+@import "@fontsource/manrope/600.css";
+@import "@fontsource/manrope/700.css";
+@import "@fontsource/fraunces/500.css";
+@import "@fontsource/fraunces/600.css";
+@import "@fontsource/fraunces/500-italic.css";
+@import "@fontsource/outfit/700.css";
+@import "@fontsource/outfit/800.css";
 
 @font-face {
   font-family: "Minecraft Tab";
@@ -25,7 +34,7 @@
   --color-surface-2: #2c1218;
   --color-fg: #fff6f6;
   --color-muted: #d2b0b4;
-  --color-faint: #8d666c;
+  --color-faint: #c4a4aa;
   --color-brand: #e1062c;
   --color-brand-deep: #9b0c1e;
   --color-star: #f59e0b;

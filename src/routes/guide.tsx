@@ -68,7 +68,7 @@ function GuidePage() {
                 <h2 className="text-xl font-semibold">{topic.title}</h2>
                 <p className="mt-2 text-sm text-muted">{topic.description}</p>
                 {topic.steps ? <p className="mt-2 text-sm whitespace-pre-line text-muted">{topic.steps}</p> : null}
-                {topic.image ? <img src={topic.image} alt="" className="mt-3 max-h-48 rounded-md object-cover" /> : null}
+                {topic.image ? <img src={topic.image} alt={topic.title} className="mt-3 max-h-48 rounded-md object-cover" /> : null}
               </article>
             ))}
           </div>
