@@ -66,23 +66,34 @@ function mergeValue(base: unknown, over: unknown): unknown {
 }
 
 export async function relay(path: string, method: string, body?: unknown): Promise<{ handled: boolean; data: unknown }> {
-  if (!isMoved(path)) return { handled: false, data: null };
+  const result = await relayDetail(path, method, body);
+  return { handled: result.ok, data: result.data };
+}
+
+export async function relayDetail(path: string, method: string, body?: unknown): Promise<{ ok: boolean; status: number; error: string; data: unknown }> {
+  if (!isMoved(path)) return { ok: false, status: 0, error: "nicht vorgesehen", data: null };
   const token = await ensureIdToken().catch(() => null);
+  if (!token) return { ok: false, status: 401, error: "kein Token im Browser", data: null };
   try {
     const res = await fetch(`${BASE}/api/data/${path}`, {
       method,
       headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        Authorization: `Bearer ${token}`,
         ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
       },
       body: body === undefined ? undefined : JSON.stringify(body),
-      signal: AbortSignal.timeout(4000),
+      signal: AbortSignal.timeout(12000),
     });
-    if (!res.ok) return { handled: false, data: null };
-    if (res.status === 204) return { handled: true, data: null };
-    return { handled: true, data: await res.json() };
-  } catch {
-    return { handled: false, data: null };
+    if (res.status === 204) return { ok: true, status: 204, error: "", data: null };
+    const text = await res.text();
+    if (!res.ok) return { ok: false, status: res.status, error: text.slice(0, 140), data: null };
+    try {
+      return { ok: true, status: res.status, error: "", data: text ? JSON.parse(text) : null };
+    } catch {
+      return { ok: true, status: res.status, error: "", data: null };
+    }
+  } catch (err) {
+    return { ok: false, status: 0, error: err instanceof Error ? err.message : "nicht erreichbar", data: null };
   }
 }
 

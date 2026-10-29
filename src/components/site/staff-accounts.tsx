@@ -14,7 +14,7 @@ import {
   type ModItem,
   type StaffSession,
 } from "@/lib/alpen/staff";
-import { relay } from "@/lib/alpen/security";
+import { relayDetail } from "@/lib/alpen/security";
 
 export function Accounts({ note, actor }: { note: (text: string) => void; actor: StaffSession }) {
   const users = useLive<{ role?: string; mustChangePw?: boolean; uid?: string; disabled?: boolean; lastLogin?: number }>("staffUsers");
@@ -142,26 +142,36 @@ const COPY_ROOTS: [string, string][] = [
 
 const KEY = /^[A-Za-z0-9_-]{1,80}$/;
 
-async function putTree(path: string, value: unknown, depth: number): Promise<{ ok: number; fail: number }> {
-  if (value == null || depth > 6) return { ok: 0, fail: value == null ? 0 : 1 };
+async function putTree(path: string, value: unknown, depth: number): Promise<{ ok: number; fail: number; status: number; error: string }> {
+  if (value == null || depth > 6) return { ok: 0, fail: value == null ? 0 : 1, status: 0, error: value == null ? "" : "zu tief" };
   const json = JSON.stringify(value);
-  if (json.length <= 30000) {
-    const saved = await relay(path, "PUT", value);
-    return saved.handled ? { ok: 1, fail: 0 } : { ok: 0, fail: 1 };
+  const asMap = typeof value === "object" && !Array.isArray(value) && json.length > 30000;
+  if (!asMap) {
+    let saved = await relayDetail(path, "PUT", value);
+    if (!saved.ok && (saved.status === 404 || saved.status === 405)) saved = await relayDetail(path, "PATCH", value);
+    if (saved.ok) return { ok: 1, fail: 0, status: saved.status, error: "" };
+    return { ok: 0, fail: 1, status: saved.status, error: saved.error };
   }
-  if (typeof value !== "object" || Array.isArray(value)) return { ok: 0, fail: 1 };
   let ok = 0;
   let fail = 0;
+  let status = 0;
+  let error = "";
   for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
     if (!KEY.test(key)) {
       fail += 1;
+      status = 0;
+      error = "ungültiger Name";
       continue;
     }
     const part = await putTree(`${path}/${key}`, child, depth + 1);
     ok += part.ok;
     fail += part.fail;
+    if (part.fail && !error) {
+      status = part.status;
+      error = part.error;
+    }
   }
-  return { ok, fail };
+  return { ok, fail, status, error };
 }
 
 async function copyInternal() {
@@ -173,7 +183,8 @@ async function copyInternal() {
       continue;
     }
     const result = await putTree(path, data, 1);
-    lines.push(`${label}: ${result.ok} gespeichert${result.fail ? `, ${result.fail} nicht` : ""}`);
+    const problem = result.fail ? `, ${result.fail} nicht (${result.status} ${result.error})` : "";
+    lines.push(`${label}: ${result.ok} gespeichert${problem}`);
   }
   return lines.join(" · ");
 }
