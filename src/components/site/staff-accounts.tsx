@@ -3,6 +3,7 @@ import { useLive } from "@/components/site/staff-live";
 import {
   createStaffAccount,
   entries,
+  fbGet,
   fbSet,
   fbUpdate,
   formatWhen,
@@ -13,6 +14,7 @@ import {
   type ModItem,
   type StaffSession,
 } from "@/lib/alpen/staff";
+import { relay } from "@/lib/alpen/security";
 
 export function Accounts({ note, actor }: { note: (text: string) => void; actor: StaffSession }) {
   const users = useLive<{ role?: string; mustChangePw?: boolean; uid?: string; disabled?: boolean; lastLogin?: number }>("staffUsers");
@@ -25,6 +27,8 @@ export function Accounts({ note, actor }: { note: (text: string) => void; actor:
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("helper");
   const [formError, setFormError] = useState("");
+  const [copying, setCopying] = useState(false);
+  const [copyResult, setCopyResult] = useState("");
 
   useEffect(() => {
     if (actor.role !== "owner") return;
@@ -66,6 +70,28 @@ export function Accounts({ note, actor }: { note: (text: string) => void; actor:
         {formError ? <p className="mt-3 text-sm text-ember">{formError}</p> : null}
         <button className="btn-brand mt-3" type="submit">Anlegen</button>
       </form>
+      {actor.role === "owner" ? (
+        <section className="card card-still p-5">
+          <h2 className="text-lg font-semibold">Interne Daten übernehmen</h2>
+          <p className="mt-2 text-sm text-muted">Kopiert Bans, Verwarnungen, Notizen, Tickets, Hilfe, Commands, Aufgaben, Abwesenheiten, interne Regeln, Einstellungen und Live auf den neuen Server. Firebase bleibt als Reserve. Einmal drücken, während du angemeldet bist.</p>
+          <button
+            type="button"
+            className="btn-brand mt-3"
+            disabled={copying}
+            onClick={() => {
+              setCopying(true);
+              setCopyResult("");
+              void copyInternal()
+                .then((text) => setCopyResult(text))
+                .catch((err) => setCopyResult(err instanceof Error ? err.message : "Kopieren fehlgeschlagen"))
+                .finally(() => setCopying(false));
+            }}
+          >
+            {copying ? "Kopiere…" : "Jetzt kopieren"}
+          </button>
+          {copyResult ? <p className="mt-3 text-sm text-muted">{copyResult}</p> : null}
+        </section>
+      ) : null}
       <StreamerAccount note={note} actor={actor} />
       <ul className="space-y-3">
         {entries(users).map(([name, item]) => (
@@ -95,6 +121,61 @@ export function Accounts({ note, actor }: { note: (text: string) => void; actor:
       </ul>
     </div>
   );
+}
+
+const COPY_ROOTS: [string, string][] = [
+  ["bans", "Bans"],
+  ["warns", "Verwarnungen"],
+  ["notes", "Notizen"],
+  ["helpRequests", "Hilfe"],
+  ["tickets", "Tickets"],
+  ["commands", "Commands"],
+  ["banGuide", "Bann-Leitfaden"],
+  ["tasks", "Aufgaben"],
+  ["absences", "Abwesenheiten"],
+  ["rulesStaff", "Interne Regeln"],
+  ["guideTopics", "Guide"],
+  ["site_copy", "Texte"],
+  ["site_settings", "Einstellungen"],
+  ["live_streams", "Live"],
+];
+
+const KEY = /^[A-Za-z0-9_-]{1,80}$/;
+
+async function putTree(path: string, value: unknown, depth: number): Promise<{ ok: number; fail: number }> {
+  if (value == null || depth > 6) return { ok: 0, fail: value == null ? 0 : 1 };
+  const json = JSON.stringify(value);
+  if (json.length <= 30000) {
+    const saved = await relay(path, "PUT", value);
+    return saved.handled ? { ok: 1, fail: 0 } : { ok: 0, fail: 1 };
+  }
+  if (typeof value !== "object" || Array.isArray(value)) return { ok: 0, fail: 1 };
+  let ok = 0;
+  let fail = 0;
+  for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+    if (!KEY.test(key)) {
+      fail += 1;
+      continue;
+    }
+    const part = await putTree(`${path}/${key}`, child, depth + 1);
+    ok += part.ok;
+    fail += part.fail;
+  }
+  return { ok, fail };
+}
+
+async function copyInternal() {
+  const lines: string[] = [];
+  for (const [path, label] of COPY_ROOTS) {
+    const data = await fbGet<unknown>(path).catch(() => null);
+    if (data == null) {
+      lines.push(`${label}: leer`);
+      continue;
+    }
+    const result = await putTree(path, data, 1);
+    lines.push(`${label}: ${result.ok} gespeichert${result.fail ? `, ${result.fail} nicht` : ""}`);
+  }
+  return lines.join(" · ");
 }
 
 function StreamerAccount({ note, actor }: { note: (text: string) => void; actor: StaffSession }) {
