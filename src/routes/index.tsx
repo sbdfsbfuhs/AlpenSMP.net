@@ -5,7 +5,8 @@ import { DiscordLink, Shell, TikTokLink } from "@/components/site/shell";
 import { ModrinthLink } from "@/components/site/guide/mods";
 import { SiteMascot } from "@/components/site/assistant";
 import { CopyIp, MotdNotice, PlayerChart, SiteBanner, StatStrip, StatusCard } from "@/components/site/live";
-import { FEATURES, PILLARS, REVIEWS } from "@/lib/alpen/content";
+import { FEATURES, PILLARS } from "@/lib/alpen/content";
+import { fetchReviews, type LiveReview } from "@/lib/alpen/live";
 import { SITE } from "@/lib/alpen/site";
 
 export const Route = createFileRoute("/")({
@@ -347,17 +348,34 @@ function Home() {
               Alle Rezensionen
             </Link>
           </div>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {REVIEWS.slice(0, 3).map((review) => (
-              <blockquote key={review.name + review.text.slice(0, 12)} className="card p-5">
-                <p className="text-star">{"★".repeat(review.rating)}</p>
-                <p className="mt-3 text-sm whitespace-pre-line text-fg">{review.text}</p>
-                <footer className="mt-4 text-sm text-faint">{review.name}</footer>
-              </blockquote>
-            ))}
-          </div>
+          <HomeReviews />
         </div>
       </section>
     </Shell>
+  );
+}
+
+function HomeReviews() {
+  const [reviews, setReviews] = useState<LiveReview[] | null>(null);
+  useEffect(() => {
+    fetchReviews()
+      .then(setReviews)
+      .catch(() => setReviews([]));
+  }, []);
+  const shown = (reviews ?? []).slice(0, 3);
+  if (reviews === null) return <p className="mt-8 text-sm text-muted">Freigegebene Stimmen werden geladen.</p>;
+  if (!shown.length) {
+    return <p className="mt-8 text-sm text-muted">Noch keine freigegebene Stimme. Erst einreichen, dann gibt das Team sie frei.</p>;
+  }
+  return (
+    <div className="mt-8 grid gap-4 md:grid-cols-3">
+      {shown.map((review) => (
+        <blockquote key={review.ts + review.name} className="card p-5">
+          <p className="text-star">{"★".repeat(review.rating)}</p>
+          <p className="mt-3 text-sm whitespace-pre-line text-fg">{review.text}</p>
+          <footer className="mt-4 text-sm text-faint">{review.name}</footer>
+        </blockquote>
+      ))}
+    </div>
   );
 }

@@ -5,8 +5,7 @@ import { DiscordMark, PageHero, Shell, TikTokMark } from "@/components/site/shel
 import { CommunityChannels } from "@/components/site/channels";
 import { SiteMascot } from "@/components/site/assistant";
 import { ReviewForm } from "@/components/site/forms";
-import { REVIEWS, type Review } from "@/lib/alpen/content";
-import { fetchReviews, fetchShots, type Shot } from "@/lib/alpen/live";
+import { fetchReviews, fetchShots, type LiveReview, type Shot } from "@/lib/alpen/live";
 import { SITE } from "@/lib/alpen/site";
 
 export const Route = createFileRoute("/community")({
@@ -23,7 +22,7 @@ export const Route = createFileRoute("/community")({
 });
 
 function CommunityPage() {
-  const [reviews, setReviews] = useState<Review[]>(REVIEWS);
+  const [reviews, setReviews] = useState<LiveReview[] | null>(null);
   const [shots, setShots] = useState<Shot[] | null>(null);
   const [active, setActive] = useState<Shot | null>(null);
 
@@ -38,16 +37,12 @@ function CommunityPage() {
 
   useEffect(() => {
     fetchReviews()
-      .then((rows) => {
-        if (rows.length) setReviews(rows.map(({ name, rating, text }) => ({ name, rating, text })));
-      })
-      .catch(() => {});
+      .then((rows) => setReviews(rows))
+      .catch(() => setReviews([]));
     fetchShots()
       .then(setShots)
       .catch(() => setShots([]));
   }, []);
-
-  const avg = (reviews.reduce((sum, row) => sum + row.rating, 0) / reviews.length).toFixed(1);
 
   return (
     <Shell>
@@ -122,11 +117,15 @@ function CommunityPage() {
           <p className="kicker">Stimmen</p>
           <h2 className="display mt-3 text-4xl">Was die Community sagt</h2>
           <p className="mt-3 text-muted">
-            {reviews.length} Stimmen · Schnitt {avg}
-            <span className="text-star">★</span>
+            {reviews === null
+              ? "Freigegebene Stimmen werden geladen."
+              : reviews.length === 0
+                ? "Noch keine freigegebene Stimme. Erst einreichen, dann gibt das Team sie frei."
+                : `${reviews.length} Stimmen · Schnitt ${(reviews.reduce((sum, row) => sum + row.rating, 0) / reviews.length).toFixed(1)}`}
+            {reviews && reviews.length > 0 ? <span className="text-star"> ★</span> : null}
           </p>
           <div className="mt-6 space-y-3">
-            {reviews.map((review) => (
+            {(reviews ?? []).map((review) => (
               <blockquote key={review.name + review.text.slice(0, 24)} className="card p-5">
                 <p className="text-sm">
                   <span className="text-star">{"★".repeat(review.rating)}</span>
