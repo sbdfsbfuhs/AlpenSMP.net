@@ -1,4 +1,5 @@
 import { SITE } from "@/lib/alpen/site";
+import { loadPath, relay } from "@/lib/alpen/security";
 
 export type ServerStatus = {
   online: boolean;
@@ -115,41 +116,45 @@ export async function pruneOldHistory() {
 }
 
 export async function fetchReviews(): Promise<LiveReview[]> {
-  const res = await fetch(`${SITE.fb}/community_reviews.json`);
-  if (!res.ok) return [];
-  const data = (await res.json()) as Record<
-    string,
-    { status?: string; name?: string; rating?: number; text?: string; ts?: number }
-  > | null;
-  if (!data) return [];
-  return Object.values(data)
-    .filter((row) => row && row.status === "approved" && row.text)
-    .map((row) => ({
-      name: row.name || "Spieler",
-      rating: Number(row.rating) || 5,
-      text: String(row.text),
-      ts: Number(row.ts) || 0,
-    }))
-    .sort((a, b) => b.ts - a.ts);
+  try {
+    const data = (await loadPath("community_reviews")) as Record<
+      string,
+      { status?: string; name?: string; rating?: number; text?: string; ts?: number }
+    > | null;
+    if (!data) return [];
+    return Object.values(data)
+      .filter((row) => row && row.status === "approved" && row.text)
+      .map((row) => ({
+        name: row.name || "Spieler",
+        rating: Number(row.rating) || 5,
+        text: String(row.text),
+        ts: Number(row.ts) || 0,
+      }))
+      .sort((a, b) => b.ts - a.ts);
+  } catch {
+    return [];
+  }
 }
 
 export async function fetchShots(): Promise<Shot[]> {
-  const res = await fetch(`${SITE.fb}/community_images.json`);
-  if (!res.ok) return [];
-  const data = (await res.json()) as Record<
-    string,
-    { status?: string; name?: string; caption?: string; imageUrl?: string; ts?: number }
-  > | null;
-  if (!data) return [];
-  return Object.values(data)
-    .filter((row) => row && row.status === "approved" && row.imageUrl)
-    .map((row) => ({
-      name: row.name || "Community",
-      caption: row.caption || "",
-      imageUrl: row.imageUrl as string,
-      ts: Number(row.ts) || 0,
-    }))
-    .sort((a, b) => b.ts - a.ts);
+  try {
+    const data = (await loadPath("community_images")) as Record<
+      string,
+      { status?: string; name?: string; caption?: string; imageUrl?: string; ts?: number }
+    > | null;
+    if (!data) return [];
+    return Object.values(data)
+      .filter((row) => row && row.status === "approved" && row.imageUrl)
+      .map((row) => ({
+        name: row.name || "Community",
+        caption: row.caption || "",
+        imageUrl: row.imageUrl as string,
+        ts: Number(row.ts) || 0,
+      }))
+      .sort((a, b) => b.ts - a.ts);
+  } catch {
+    return [];
+  }
 }
 
 export async function submitCommunity(body: {
@@ -170,59 +175,84 @@ export async function submitCommunity(body: {
     source: "website",
   };
   if (body.kind === "review" || body.kind === "both") {
-    const res = await fetch(`${SITE.fb}/community_reviews.json`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(base),
-    });
-    if (!res.ok) throw new Error("Rezension konnte nicht gespeichert werden.");
+    const moved = await relay("community_reviews", "POST", base);
+    if (!moved.handled) {
+      const res = await fetch(`${SITE.fb}/community_reviews.json`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(base),
+      });
+      if (!res.ok) throw new Error("Rezension konnte nicht gespeichert werden.");
+    }
   }
   if ((body.kind === "image" || body.kind === "both") && body.imageUrl) {
-    const res = await fetch(`${SITE.fb}/community_images.json`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: body.name,
-        caption: body.text.slice(0, 120),
-        imageUrl: body.imageUrl,
-        status: "pending",
-        ts: Date.now(),
-      }),
-    });
-    if (!res.ok) throw new Error("Bild konnte nicht gespeichert werden.");
+    const image = {
+      name: body.name,
+      caption: body.text.slice(0, 120),
+      imageUrl: body.imageUrl,
+      status: "pending",
+      ts: Date.now(),
+    };
+    const moved = await relay("community_images", "POST", image);
+    if (!moved.handled) {
+      const res = await fetch(`${SITE.fb}/community_images.json`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(image),
+      });
+      if (!res.ok) throw new Error("Bild konnte nicht gespeichert werden.");
+    }
   }
 }
 
 export async function submitTicket(input: { name: string; topic: string; msg: string }) {
   const code = "ALP-" + Math.random().toString(36).slice(2, 6).toUpperCase();
-  const help = await fetch(`${SITE.fb}/helpRequests.json`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      by: input.name,
-      msg: (input.topic ? `[${input.topic}] ` : "") + input.msg,
-      ts: Date.now(),
-      source: "website",
-      replies: {},
-      ticketCode: code,
-    }),
+  const helpMoved = await relay("helpRequests", "POST", {
+    by: input.name,
+    msg: (input.topic ? `[${input.topic}] ` : "") + input.msg,
+    ts: Date.now(),
+    source: "website",
+    replies: {},
+    ticketCode: code,
   });
-  if (!help.ok) throw new Error("Ticket konnte nicht gesendet werden.");
-  const pushed = (await help.json()) as { name?: string };
-  const saved = await fetch(`${SITE.fb}/tickets/${code}.json`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      name: input.name,
-      topic: input.topic,
-      msg: input.msg,
-      ts: Date.now(),
-      replies: {},
-      status: "offen",
-      helpKey: pushed.name || "",
-    }),
-  });
-  if (!saved.ok) throw new Error("Ticket-Code konnte nicht angelegt werden.");
+  let helpKey = "";
+  if (helpMoved.handled) {
+    helpKey = String((helpMoved.data as { name?: string } | null)?.name || "");
+  } else {
+    const help = await fetch(`${SITE.fb}/helpRequests.json`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        by: input.name,
+        msg: (input.topic ? `[${input.topic}] ` : "") + input.msg,
+        ts: Date.now(),
+        source: "website",
+        replies: {},
+        ticketCode: code,
+      }),
+    });
+    if (!help.ok) throw new Error("Ticket konnte nicht gesendet werden.");
+    const pushed = (await help.json()) as { name?: string };
+    helpKey = pushed.name || "";
+  }
+  const ticket = {
+    name: input.name,
+    topic: input.topic,
+    msg: input.msg,
+    ts: Date.now(),
+    replies: {},
+    status: "offen",
+    helpKey,
+  };
+  const saved = await relay(`tickets/${code}`, "PUT", ticket);
+  if (!saved.handled) {
+    const res = await fetch(`${SITE.fb}/tickets/${code}.json`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(ticket),
+    });
+    if (!res.ok) throw new Error("Ticket-Code konnte nicht angelegt werden.");
+  }
   return code;
 }
 
@@ -236,14 +266,18 @@ export type TicketView = {
 
 export async function lookupTicket(code: string): Promise<TicketView | null> {
   const clean = code.trim().toUpperCase();
-  const res = await fetch(`${SITE.fb}/tickets/${encodeURIComponent(clean)}.json`);
-  if (!res.ok) return null;
-  const data = (await res.json()) as {
+  type TicketRow = {
     status?: string;
     topic?: string;
     msg?: string;
     replies?: Record<string, { by?: string; text?: string; msg?: string; ts?: number }> | null;
-  } | null;
+  };
+  let data: TicketRow | null = null;
+  try {
+    data = (await loadPath(`tickets/${encodeURIComponent(clean)}`)) as TicketRow | null;
+  } catch {
+    return null;
+  }
   if (!data) return null;
   const replies = data.replies
     ? Object.values(data.replies).map((row) => ({

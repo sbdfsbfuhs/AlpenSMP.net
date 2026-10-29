@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { SITE } from "@/lib/alpen/site";
+import { isMoved, loadPath } from "@/lib/alpen/security";
 
 export type NewsCategory = "Update" | "Regel" | "Command" | "Event" | "Wartung" | "Neu";
 
@@ -79,8 +80,8 @@ export function fbListen(path: string, onValue: (data: unknown) => void) {
     onValue(root);
   };
   const pull = () => {
-    fetch(url)
-      .then((res) => res.json())
+    const job = isMoved(path) ? loadPath(path) : fetch(url).then((res) => res.json());
+    job
       .then((data) => {
         if (closed || (data && typeof data === "object" && "error" in data)) return;
         root = data;
@@ -90,17 +91,22 @@ export function fbListen(path: string, onValue: (data: unknown) => void) {
   };
   pull();
   let source: EventSource | null = null;
-  try {
-    source = new EventSource(url);
-    source.addEventListener("put", (event) => apply("put", (event as MessageEvent).data));
-    source.addEventListener("patch", (event) => apply("patch", (event as MessageEvent).data));
-  } catch {
-    source = null;
+  if (!isMoved(path)) {
+    try {
+      source = new EventSource(url);
+      source.addEventListener("put", (event) => apply("put", (event as MessageEvent).data));
+      source.addEventListener("patch", (event) => apply("patch", (event as MessageEvent).data));
+    } catch {
+      source = null;
+    }
   }
-  const poll = window.setInterval(() => {
-    if (document.hidden) return;
-    pull();
-  }, 3 * 60 * 1000);
+  const poll = window.setInterval(
+    () => {
+      if (document.hidden) return;
+      pull();
+    },
+    isMoved(path) ? 20000 : 3 * 60 * 1000,
+  );
   return () => {
     closed = true;
     source?.close();

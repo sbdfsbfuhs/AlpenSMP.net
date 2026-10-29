@@ -1,9 +1,38 @@
 import { ensureIdToken } from "@/lib/alpen/fb-auth";
+import { SITE } from "@/lib/alpen/site";
 
 const BASE = "https://panel.alpensmp.net/alpen-sicherheit";
 
+const MOVED = new Set([
+  "bans",
+  "warns",
+  "notes",
+  "helpRequests",
+  "tickets",
+  "commands",
+  "playerCommands",
+  "banGuide",
+  "tasks",
+  "absences",
+  "guideTopics",
+  "rulesPublic",
+  "rulesStaff",
+  "site_copy",
+  "mascotSettings",
+  "changelog",
+  "live_streams",
+  "community_reviews",
+  "community_images",
+  "season",
+  "site_settings",
+]);
+
 export class SecurityDown extends Error {}
 export class SecurityDenied extends Error {}
+
+export function isMoved(path: string) {
+  return MOVED.has(path.split("/").filter(Boolean)[0] || "");
+}
 
 export async function securityJson<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = await ensureIdToken();
@@ -26,4 +55,55 @@ export async function securityJson<T>(path: string, init: RequestInit = {}): Pro
   if (!res.ok) throw new SecurityDown(String(res.status));
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
+}
+
+function mergeValue(base: unknown, over: unknown): unknown {
+  if (over == null) return base ?? null;
+  if (base == null || typeof base !== "object" || typeof over !== "object" || Array.isArray(base) || Array.isArray(over)) return over;
+  const out: Record<string, unknown> = { ...(base as Record<string, unknown>) };
+  for (const [key, value] of Object.entries(over as Record<string, unknown>)) out[key] = mergeValue(out[key], value);
+  return out;
+}
+
+export async function relay(path: string, method: string, body?: unknown): Promise<{ handled: boolean; data: unknown }> {
+  if (!isMoved(path)) return { handled: false, data: null };
+  const token = await ensureIdToken().catch(() => null);
+  try {
+    const res = await fetch(`${BASE}/api/data/${path}`, {
+      method,
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal: AbortSignal.timeout(4000),
+    });
+    if (!res.ok) return { handled: false, data: null };
+    if (res.status === 204) return { handled: true, data: null };
+    return { handled: true, data: await res.json() };
+  } catch {
+    return { handled: false, data: null };
+  }
+}
+
+async function firebaseGet(path: string) {
+  const token = await ensureIdToken().catch(() => null);
+  const url = new URL(`${SITE.fb}/${path}.json`);
+  if (token) url.searchParams.set("auth", token);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(String(res.status));
+  return res.json();
+}
+
+export async function loadPath(path: string) {
+  const [fb, moved] = await Promise.all([
+    firebaseGet(path).then((data) => ({ ok: true as const, data })).catch(() => ({ ok: false as const, data: null })),
+    isMoved(path) ? relay(path, "GET") : Promise.resolve({ handled: false, data: null }),
+  ]);
+  if (moved.handled) {
+    if (!fb.ok || fb.data == null) return moved.data;
+    return mergeValue(fb.data, moved.data);
+  }
+  if (!fb.ok) throw new Error("Laden fehlgeschlagen");
+  return fb.data;
 }

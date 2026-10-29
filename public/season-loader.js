@@ -5,6 +5,7 @@
 */
 (function () {
   var FB = "https://alpensmp-ad844-default-rtdb.europe-west1.firebasedatabase.app/season.json";
+  var API = "https://panel.alpensmp.net/alpen-sicherheit/api/data/season";
   var allowed = {
     default: 1, spring: 1, summer: 1, autumn: 1, halloween: 1,
     winter: 1, christmas: 1, easter: 1, newyear: 1,
@@ -78,7 +79,7 @@
       .catch(function () { apply("auto"); });
   }
 
-  function pull() {
+  function pullFirebase() {
     fetch(FB, { cache: "no-store" })
       .then(function (res) { return res.json(); })
       .then(function (data) {
@@ -86,6 +87,16 @@
         apply(data.active);
       })
       .catch(function () { fromFile(); });
+  }
+
+  function pull() {
+    fetch(API, { cache: "no-store" })
+      .then(function (res) { return res.ok ? res.json() : null; })
+      .then(function (data) {
+        if (!data || data.error || !data.active) return pullFirebase();
+        apply(data.active);
+      })
+      .catch(function () { pullFirebase(); });
   }
 
   window.addEventListener("alpen-season-pick", function (event) {

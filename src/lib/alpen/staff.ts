@@ -1,5 +1,6 @@
 import { SITE } from "@/lib/alpen/site";
 import { changeOwnPassword, clearFirebaseLogin, createFirebaseUser, ensureIdToken, signInEmail } from "@/lib/alpen/fb-auth";
+import { isMoved, loadPath, relay } from "@/lib/alpen/security";
 
 const ROOT = SITE.fb;
 
@@ -58,6 +59,18 @@ export type CommunityItem = {
 type MapOf<T> = Record<string, T>;
 
 async function request(path: string, method: string, body?: unknown) {
+  if (method === "GET" && isMoved(path)) return loadPath(path);
+  if (method !== "GET" && isMoved(path)) {
+    const moved = await relay(path, method, body);
+    if (moved.handled) {
+      if (method === "DELETE") await firebaseRaw(path, "DELETE").catch(() => null);
+      return moved.data;
+    }
+  }
+  return firebaseRaw(path, method, body);
+}
+
+async function firebaseRaw(path: string, method: string, body?: unknown) {
   const token = await ensureIdToken();
   const url = new URL(`${ROOT}/${path}.json`);
   if (token) url.searchParams.set("auth", token);
