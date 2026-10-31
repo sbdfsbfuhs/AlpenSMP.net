@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLive } from "@/components/site/staff-live";
+import { ensureIdToken } from "@/lib/alpen/fb-auth";
+import { SITE } from "@/lib/alpen/site";
 import {
   createStaffAccount,
   entries,
@@ -11,6 +13,7 @@ import {
   resetStaffPassword,
   setStaffPaused,
   setStaffRole,
+  fbRemove,
   type ModItem,
   type StaffSession,
 } from "@/lib/alpen/staff";
@@ -29,6 +32,8 @@ export function Accounts({ note, actor }: { note: (text: string) => void; actor:
   const [formError, setFormError] = useState("");
   const [copying, setCopying] = useState(false);
   const [copyResult, setCopyResult] = useState("");
+  const [wiping, setWiping] = useState(false);
+  const [wipeResult, setWipeResult] = useState("");
 
   useEffect(() => {
     if (actor.role !== "owner") return;
@@ -90,6 +95,25 @@ export function Accounts({ note, actor }: { note: (text: string) => void; actor:
             {copying ? "Kopiere…" : "Jetzt kopieren"}
           </button>
           {copyResult ? <p className="mt-3 text-sm text-muted">{copyResult}</p> : null}
+          <h2 className="mt-6 text-lg font-semibold">Firebase-Kopien löschen</h2>
+          <p className="mt-2 text-sm text-muted">Löscht Bilder, Rezensionen und die anderen kopierten Inhalte nur in Firebase. Nur wenn der neue Server sie schon hat. Anmeldung, Online-Status und Server-down bleiben.</p>
+          <button
+            type="button"
+            className="btn-ghost mt-3"
+            disabled={wiping}
+            onClick={() => {
+              if (!window.confirm("Kopien in Firebase löschen? Der neue Server behält sie.")) return;
+              setWiping(true);
+              setWipeResult("");
+              void wipeFirebaseCopies()
+                .then((text) => setWipeResult(text))
+                .catch((err) => setWipeResult(err instanceof Error ? err.message : "Löschen fehlgeschlagen"))
+                .finally(() => setWiping(false));
+            }}
+          >
+            {wiping ? "Lösche…" : "Kopien in Firebase löschen"}
+          </button>
+          {wipeResult ? <p className="mt-3 text-sm text-muted">{wipeResult}</p> : null}
         </section>
       ) : null}
       <StreamerAccount note={note} actor={actor} />
@@ -185,6 +209,78 @@ async function copyInternal() {
     const result = await putTree(path, data, 1);
     const problem = result.fail ? `, ${result.fail} nicht (${result.status} ${result.error})` : "";
     lines.push(`${label}: ${result.ok} gespeichert${problem}`);
+  }
+  return lines.join(" · ");
+}
+
+async function firebaseNode(path: string) {
+  const token = await ensureIdToken().catch(() => null);
+  const url = new URL(`${SITE.fb}/${path}.json`);
+  if (token) url.searchParams.set("auth", token);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(String(res.status));
+  return res.json();
+}
+
+const WIPE_ROOTS: [string, string][] = [
+  ["community_images", "Bilder"],
+  ["community_reviews", "Rezensionen"],
+  ["changelog", "News"],
+  ["season", "Saison"],
+  ["mascotSettings", "Maskottchen"],
+  ["playerCommands", "Spieler-Commands"],
+  ["bans", "Bans"],
+  ["warns", "Verwarnungen"],
+  ["notes", "Notizen"],
+  ["helpRequests", "Hilfe"],
+  ["tickets", "Tickets"],
+  ["commands", "Commands"],
+  ["banGuide", "Bann-Leitfaden"],
+  ["tasks", "Aufgaben"],
+  ["absences", "Abwesenheiten"],
+  ["site_copy", "Texte"],
+  ["site_settings", "Einstellungen"],
+];
+
+async function wipeFirebaseCopies() {
+  const lines: string[] = [];
+  for (const [path, label] of WIPE_ROOTS) {
+    const remote = await relayDetail(path, "GET");
+    if (!remote.ok || remote.data == null) {
+      lines.push(`${label}: bleibt, neuer Server leer`);
+      continue;
+    }
+    let local: unknown;
+    try {
+      local = await firebaseNode(path);
+    } catch {
+      lines.push(`${label}: Firebase nicht lesbar`);
+      continue;
+    }
+    if (local == null) {
+      lines.push(`${label}: in Firebase schon leer`);
+      continue;
+    }
+    const keys = typeof local === "object" && !Array.isArray(local) ? Object.keys(local).filter((key) => KEY.test(key)) : [];
+    let gone = 0;
+    let fail = 0;
+    for (const key of keys) {
+      try {
+        await fbRemove(`${path}/${key}`);
+        gone += 1;
+      } catch {
+        fail += 1;
+      }
+    }
+    if (!keys.length) {
+      try {
+        await fbRemove(path);
+        gone = 1;
+      } catch {
+        fail = 1;
+      }
+    }
+    lines.push(fail ? `${label}: ${gone} gelöscht, ${fail} nicht` : `${label}: ${gone} gelöscht`);
   }
   return lines.join(" · ");
 }
