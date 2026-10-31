@@ -1,6 +1,6 @@
 import { SITE } from "@/lib/alpen/site";
 import { changeOwnPassword, clearFirebaseLogin, createFirebaseUser, ensureIdToken, signInEmail } from "@/lib/alpen/fb-auth";
-import { isMoved, loadPath, relay } from "@/lib/alpen/security";
+import { isMoved, loadPath, relayDetail } from "@/lib/alpen/security";
 
 const ROOT = SITE.fb;
 
@@ -61,11 +61,19 @@ type MapOf<T> = Record<string, T>;
 async function request(path: string, method: string, body?: unknown) {
   if (method === "GET" && isMoved(path)) return loadPath(path);
   if (method !== "GET" && isMoved(path)) {
-    const moved = await relay(path, method, body);
-    if (moved.handled) {
+    const moved = await relayDetail(path, method, body);
+    if (moved.ok) {
       if (method === "DELETE") await firebaseRaw(path, "DELETE").catch(() => null);
       return moved.data;
     }
+    if (moved.status === 0 || moved.status >= 500) {
+      try {
+        return await firebaseRaw(path, method, body);
+      } catch {
+        throw new Error(moved.error || "Speichern fehlgeschlagen");
+      }
+    }
+    throw new Error(moved.error || "Speichern abgelehnt");
   }
   return firebaseRaw(path, method, body);
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Neu } from "@/components/site/staff-shared";
-import { entries, fbGet, fbUpdate, formatWhen, freshStamp, type CommunityItem, type StaffSession } from "@/lib/alpen/staff";
+import { entries, fbGet, fbSet, fbUpdate, formatWhen, freshStamp, type CommunityItem, type StaffSession } from "@/lib/alpen/staff";
 
 export function Community({ user, note }: { user: StaffSession; note: (text: string) => void }) {
   const [reviews, setReviews] = useState<Record<string, CommunityItem>>({});
@@ -61,6 +61,22 @@ function Queue({
   onStatus: (key: string, status: string) => void;
 }) {
   const rows = items.filter(([, item]) => matches(item.status, filter));
+  async function decide(key: string, item: CommunityItem, status: "approved" | "rejected") {
+    const next = { ...item, status, moderatedBy: user.username, moderatedAt: Date.now(), updatedAt: Date.now() };
+    try {
+      await fbSet(`${path}/${key}`, next);
+    } catch (first) {
+      try {
+        await fbUpdate(`${path}/${key}`, { status, moderatedBy: next.moderatedBy, moderatedAt: next.moderatedAt, updatedAt: next.updatedAt });
+      } catch (second) {
+        const message = second instanceof Error ? second.message : first instanceof Error ? first.message : "Speichern fehlgeschlagen";
+        note(message);
+        return;
+      }
+    }
+    onStatus(key, status);
+    note(status === "approved" ? "Freigegeben" : "Abgelehnt");
+  }
   return (
     <section>
       <h2 className="text-lg font-semibold">{title}</h2>
@@ -72,8 +88,8 @@ function Queue({
             {item.imageUrl ? <img src={item.imageUrl} alt={item.name ? `Eingereichtes Bild von ${item.name}` : "Eingereichtes Bild"} className="mt-3 max-h-40 rounded-md object-cover" /> : null}
             <p className="mt-2 text-xs text-faint">{item.status || "offen"} · {formatWhen(item.ts)}</p>
             <div className="mt-3 flex gap-2">
-              <button type="button" className="btn-brand" onClick={() => void fbUpdate(`${path}/${key}`, { status: "approved", moderatedBy: user.username, moderatedAt: Date.now(), updatedAt: Date.now() }).then(() => { onStatus(key, "approved"); note("Freigegeben"); })}>Frei</button>
-              <button type="button" className="btn-ghost" onClick={() => void fbUpdate(`${path}/${key}`, { status: "rejected", moderatedBy: user.username, moderatedAt: Date.now(), updatedAt: Date.now() }).then(() => { onStatus(key, "rejected"); note("Abgelehnt"); })}>Ablehnen</button>
+              <button type="button" className="btn-brand" onClick={() => void decide(key, item, "approved")}>Frei</button>
+              <button type="button" className="btn-ghost" onClick={() => void decide(key, item, "rejected")}>Ablehnen</button>
             </div>
           </article>
         ))}
