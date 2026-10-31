@@ -21,6 +21,32 @@ export function Shell({ children }: { children: ReactNode }) {
     document.addEventListener("click", onClick);
     return () => document.removeEventListener("click", onClick);
   }, []);
+  useEffect(() => {
+    if (path.startsWith("/team")) return;
+    const root = document.getElementById("main");
+    if (!root || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const nodes = Array.from(root.querySelectorAll<HTMLElement>("section, article.card")).filter((node) => {
+      if (node.classList.contains("hero-sky") || node.closest(".hero-sky")) return false;
+      if (node.tagName === "SECTION" && node.parentElement?.closest("section")) return false;
+      if (node.tagName === "ARTICLE" && node.parentElement?.closest("article")) return false;
+      return true;
+    });
+    const seen = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          entry.target.classList.add("risen");
+          seen.unobserve(entry.target);
+        }
+      },
+      { rootMargin: "0px 0px -10% 0px", threshold: 0.08 },
+    );
+    for (const node of nodes) {
+      node.classList.add("rise");
+      seen.observe(node);
+    }
+    return () => seen.disconnect();
+  }, [path]);
   const locked = Boolean(
     notice?.is_active && notice.lockdown && !path.startsWith("/team") && path !== "/ki-transparenz",
   );
@@ -44,7 +70,7 @@ export function Shell({ children }: { children: ReactNode }) {
       <Header />
       <ServerStatusBanner />
       {path === "/" ? <LiveHero /> : <LiveDock />}
-      <main id="main" key={path} className="page-enter">{children}</main>
+      <main id="main" key={path} className={path.startsWith("/team") ? undefined : "page-enter"}>{children}</main>
       <Footer />
       </div>
     </div>

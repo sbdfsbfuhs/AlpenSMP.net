@@ -22,14 +22,47 @@ export function Moderation({ user, note, ban, writeNotes }: { user: StaffSession
   const bans = useLive<ModItem>("bans");
   const warns = useLive<ModItem>("warns");
   const notes = useLive<ModItem>("notes");
+  const [kind, setKind] = useState<"bans" | "warns" | "notes">("bans");
+  const modes = [
+    ["bans", "Bans"],
+    ["warns", "Warnungen"],
+    ["notes", "Notizen"],
+  ] as const;
+  const active = modes.some(([id]) => id === kind) ? kind : modes[0]?.[0] || "notes";
+  const items = active === "bans" ? entries(bans) : active === "warns" ? entries(warns) : entries(notes);
   return (
     <div className="space-y-4">
-      {ban ? <ModForm title="Ban" path="bans" user={user} note={note} withDuration presets={["1h", "1d", "7d", "30d", "Permanent"]} /> : null}
-      <List title="Bans" path="bans" items={entries(bans)} user={user} note={note} timed write={ban} />
-      {ban ? <ModForm title="Warnung" path="warns" user={user} note={note} withDuration presets={["1d", "7d", "30d"]} /> : null}
-      <List title="Warnungen" path="warns" items={entries(warns)} user={user} note={note} timed write={ban} />
-      {writeNotes ? <NoteForm user={user} note={note} /> : null}
-      <List title="Notizen" path="notes" items={entries(notes)} user={user} note={note} notes write={writeNotes} />
+      {modes.length > 1 ? (
+        <div className="flex flex-wrap gap-2">
+          {modes.map(([id, label]) => (
+            <button key={id} type="button" className={id === active ? "btn-brand px-3" : "btn-ghost px-3"} onClick={() => setKind(id)}>
+              {label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      {active === "notes" ? (
+        writeNotes ? <NoteForm user={user} note={note} /> : null
+      ) : ban ? (
+        <ModForm
+          title={active === "bans" ? "Ban" : "Warnung"}
+          path={active}
+          user={user}
+          note={note}
+          withDuration
+          presets={active === "bans" ? ["1h", "1d", "7d", "30d", "Permanent"] : ["1d", "7d", "30d"]}
+        />
+      ) : null}
+      <List
+        title={active === "bans" ? "Bans" : active === "warns" ? "Warnungen" : "Notizen"}
+        path={active}
+        items={items}
+        user={user}
+        note={note}
+        timed={active !== "notes"}
+        notes={active === "notes"}
+        write={active === "notes" ? writeNotes : ban}
+      />
     </div>
   );
 }

@@ -18,6 +18,7 @@ import { Settings } from "@/components/site/staff-settings";
 import { shallowCount, useLive } from "@/components/site/staff-live";
 import { Website } from "@/components/site/staff-website";
 import { can, roleLabel, ROLES, asRole, type Role } from "@/lib/alpen/roles";
+import { latestStaffBackup, rememberStaffBackup, downloadStaffBackup, type StaffBackup } from "@/lib/alpen/backup";
 import {
   fbGet,
   fbPush,
@@ -309,10 +310,28 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
       });
     }
   }, [banRows, warnRows, real]);
-  const [tab, setTab] = useState<Tab>("roster");
+  const [tab, setTab] = useState<Tab>(() => {
+    if (typeof window === "undefined") return "roster";
+    const saved = window.sessionStorage.getItem("alpen-team-tab");
+    return (saved as Tab) || "roster";
+  });
   const [chatOpen, setChatOpen] = useState(false);
   const safeTab = tabs.some((item) => item.id === tab) ? tab : tabs[0]?.id;
   const activeTab = tabs.find((item) => item.id === safeTab);
+  useEffect(() => {
+    if (safeTab) window.sessionStorage.setItem("alpen-team-tab", safeTab);
+  }, [safeTab]);
+  useEffect(() => {
+    const y = Number(window.sessionStorage.getItem("alpen-team-scroll") || 0);
+    if (!y) return;
+    const id = window.requestAnimationFrame(() => window.scrollTo(0, y));
+    return () => window.cancelAnimationFrame(id);
+  }, []);
+  useEffect(() => {
+    const onScroll = () => window.sessionStorage.setItem("alpen-team-scroll", String(window.scrollY));
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
   const tabGroups = TAB_GROUPS.map((group) => ({
     group,
     items: tabs.filter((item) => item.group === group),
@@ -417,10 +436,11 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
           </div>
         </div>
       ) : null}
-      {real === "owner" || real === "admin" ? <LiveNotices note={note} /> : null}
+        {real === "owner" ? <StaffBackup /> : null}
+        {real === "owner" || real === "admin" ? <LiveNotices note={note} /> : null}
       {shown === "streamer" ? null : <PlayerSearch />}
       {real === "owner" ? <CheckInBanner /> : null}
-      <div className={`mt-6 grid min-w-0 items-start gap-5 ${showChat ? "lg:grid-cols-[16rem_minmax(0,1fr)_22rem]" : "lg:grid-cols-[16rem_minmax(0,1fr)]"}`}>
+      <div className={`mt-6 grid min-w-0 items-start gap-5 ${showChat ? "xl:grid-cols-[15rem_minmax(0,1fr)_26rem]" : "lg:grid-cols-[16rem_minmax(0,1fr)]"}`}>
         <nav
           className="card card-still min-w-0 p-2 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto"
           aria-label="Team-Bereiche"
@@ -531,18 +551,18 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
           </div>
         </section>
         {showChat ? (
-          <div className="sticky top-24 hidden h-[min(72vh,680px)] min-w-0 lg:block">
+          <div className="sticky top-20 hidden h-[calc(100vh-6rem)] min-w-0 xl:block">
             <StaffChat user={user} team={seeTeamChat} builder={seeBuilderChat} dock />
           </div>
         ) : null}
       </div>
       {showChat ? (
         <>
-          <button type="button" className="btn-brand fixed bottom-24 right-3 z-40 lg:hidden" onClick={() => setChatOpen(true)}>
+          <button type="button" className="btn-brand fixed bottom-24 right-3 z-40 xl:hidden" onClick={() => setChatOpen(true)}>
             Chat
           </button>
           {chatOpen ? (
-            <div className="fixed inset-3 z-50 flex flex-col lg:hidden">
+            <div className="fixed inset-3 z-50 flex flex-col xl:hidden">
               <button type="button" className="btn-ghost mb-2 self-end" onClick={() => setChatOpen(false)}>Schliessen</button>
               <div className="min-h-0 flex-1">
                 <StaffChat user={user} team={seeTeamChat} builder={seeBuilderChat} dock />
@@ -552,6 +572,49 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
         </>
       ) : null}
     </div>
+  );
+}
+
+function StaffBackup() {
+  const [snap, setSnap] = useState<StaffBackup | null>(null);
+  const [state, setState] = useState("Sicherung läuft…");
+  useEffect(() => {
+    let stop = false;
+    void rememberStaffBackup()
+      .then((next) => {
+        if (stop) return;
+        setSnap(next);
+        setState(`Gesichert ${new Date(next.at).toLocaleTimeString("de-CH", { hour: "2-digit", minute: "2-digit" })}`);
+      })
+      .catch(() => {
+        if (!stop) setState("Sicherung fehlgeschlagen");
+      });
+    return () => {
+      stop = true;
+    };
+  }, []);
+  return (
+    <section className="card card-still mb-4 flex flex-wrap items-center justify-between gap-3 p-4">
+      <div>
+        <h2 className="font-semibold">Sicherung</h2>
+        <p className="mt-1 text-sm text-muted">Beim Öffnen wird eine Kopie in diesem Browser behalten. Lade sie zusätzlich als Datei herunter, damit sie nicht nur hier liegt.</p>
+      </div>
+      <div className="flex items-center gap-2">
+        <p className="text-xs text-faint">{state}</p>
+        <button
+          type="button"
+          className="btn-ghost"
+          onClick={() => {
+            const run = snap ? Promise.resolve(snap) : latestStaffBackup();
+            void run.then((row) => {
+              if (row) downloadStaffBackup(row);
+            });
+          }}
+        >
+          Datei speichern
+        </button>
+      </div>
+    </section>
   );
 }
 

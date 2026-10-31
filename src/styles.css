@@ -1091,6 +1091,26 @@
   to { opacity: 1; transform: none; }
 }
 
+.rise {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 640ms ease, transform 640ms ease;
+  will-change: opacity, transform;
+}
+
+.rise.risen {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
 @keyframes btn-sheen {
   0%, 70% { transform: translateX(-130%); }
   100% { transform: translateX(130%); }
