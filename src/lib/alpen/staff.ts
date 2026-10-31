@@ -107,6 +107,10 @@ export function fbRemove(path: string) {
   return request(path, "DELETE");
 }
 
+export function fbRemoveLocal(path: string) {
+  return firebaseRaw(path, "DELETE");
+}
+
 export function entries<T>(value: MapOf<T> | null | undefined): [string, T][] {
   return Object.entries(value ?? {}).reverse();
 }

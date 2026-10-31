@@ -13,7 +13,7 @@ import {
   resetStaffPassword,
   setStaffPaused,
   setStaffRole,
-  fbRemove,
+  fbRemoveLocal,
   type ModItem,
   type StaffSession,
 } from "@/lib/alpen/staff";
@@ -266,7 +266,7 @@ async function wipeFirebaseCopies() {
     let fail = 0;
     for (const key of keys) {
       try {
-        await fbRemove(`${path}/${key}`);
+        await fbRemoveLocal(`${path}/${key}`);
         gone += 1;
       } catch {
         fail += 1;
@@ -274,7 +274,7 @@ async function wipeFirebaseCopies() {
     }
     if (!keys.length) {
       try {
-        await fbRemove(path);
+        await fbRemoveLocal(path);
         gone = 1;
       } catch {
         fail = 1;
