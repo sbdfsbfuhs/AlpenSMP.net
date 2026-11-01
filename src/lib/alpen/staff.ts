@@ -101,7 +101,30 @@ export function fbGet<T>(path: string): Promise<T | null> {
   return request(path, "GET") as Promise<T | null>;
 }
 
-export function fbUpdate(path: string, body: unknown) {
+export async function fbUpdate(path: string, body: unknown) {
+  if (!isMoved(path) || !body || typeof body !== "object" || Array.isArray(body)) {
+    return request(path, "PATCH", body);
+  }
+  const patch = body as Record<string, unknown>;
+  const current = await fbGet<Record<string, unknown>>(path).catch(() => null);
+  const entry = current && typeof current === "object" && !Array.isArray(current) && ("name" in current || "reason" in current || "text" in current || "msg" in current || "by" in current || "status" in current || "archived" in current);
+  if (entry && current) {
+    try {
+      return await request(path, "PUT", { ...current, ...patch });
+    } catch {
+      /* Der Eintrag liegt vielleicht nur in der Liste darüber. */
+    }
+  }
+  const parts = path.split("/").filter(Boolean);
+  if (parts.length > 1) {
+    const key = parts[parts.length - 1];
+    const parent = parts.slice(0, -1).join("/");
+    const tree = await fbGet<Record<string, unknown>>(parent).catch(() => null);
+    const prev = tree && typeof tree[key] === "object" && tree[key] && !Array.isArray(tree[key]) ? (tree[key] as Record<string, unknown>) : {};
+    if (tree && typeof tree === "object" && !Array.isArray(tree)) {
+      return request(parent, "PUT", { ...tree, [key]: { ...prev, ...patch } });
+    }
+  }
   return request(path, "PATCH", body);
 }
 

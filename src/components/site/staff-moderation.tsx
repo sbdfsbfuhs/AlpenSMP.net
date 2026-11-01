@@ -110,7 +110,11 @@ function ModForm({
         body.pending = true;
       }
     }
-    await fbPush(path, body);
+    try {
+      await fbPush(path, body);
+    } catch (err) {
+      return note(err instanceof Error ? err.message : "Speichern fehlgeschlagen");
+    }
     void logStaff(user.username, title, `${name.trim()} · ${reason.trim() || "–"}`);
     setName("");
     setReason("");
@@ -253,7 +257,7 @@ function List({
             {perm && !waiting ? <p className="text-xs font-semibold text-red-300">{permLeft(item.confirmedAt || item.ts)}</p> : null}
             <div className="mt-2 flex flex-wrap gap-2">
               {waiting && user.role === "owner" ? (
-                <button type="button" className="btn-brand px-3" onClick={() => void fbUpdate(`${path}/${key}`, { pending: false, confirmedBy: user.username, confirmedAt: Date.now(), updatedAt: Date.now() }).then(() => note("Ban gilt jetzt"))}>
+                <button type="button" className="btn-brand px-3" onClick={() => void fbUpdate(`${path}/${key}`, { pending: false, confirmedBy: user.username, confirmedAt: Date.now(), updatedAt: Date.now() }).then(() => note("Ban gilt jetzt")).catch((err) => note(err instanceof Error ? err.message : "Bestätigen fehlgeschlagen"))}>
                   Bestätigen
                 </button>
               ) : null}

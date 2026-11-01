@@ -40,12 +40,26 @@ export function useLive<T>(path: string) {
 export async function archive(path: string, key: string, user: StaffSession, note: (text: string) => void) {
   const reason = window.prompt("Begründung") || "";
   if (user.role !== "owner" && reason.trim().length < 3) return note("Begründung Pflicht");
-  await fbUpdate(`${path}/${key}`, { archived: true, archivedBy: user.username, archivedAt: Date.now(), archiveReason: reason || "Owner" });
-  note("Im Archiv");
+  try {
+    await fbUpdate(`${path}/${key}`, {
+      archived: true,
+      archivedBy: user.username,
+      archivedAt: Date.now(),
+      archiveReason: reason || "Owner",
+      updatedAt: Date.now(),
+    });
+    note("Im Archiv");
+  } catch (err) {
+    note(err instanceof Error ? err.message : "Archivieren fehlgeschlagen");
+  }
 }
 
 export async function wipe(path: string, key: string, note: (text: string) => void) {
   if (!window.confirm("Endgültig löschen?")) return;
-  await fbRemove(`${path}/${key}`);
-  note("Gelöscht");
+  try {
+    await fbRemove(`${path}/${key}`);
+    note("Gelöscht");
+  } catch (err) {
+    note(err instanceof Error ? err.message : "Löschen fehlgeschlagen");
+  }
 }
