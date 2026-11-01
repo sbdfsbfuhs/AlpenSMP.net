@@ -33,6 +33,12 @@ function RootDocument() {
     <html lang="de" suppressHydrationWarning>
       <head>
         <HeadContent />
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "window.addEventListener('vite:preloadError',function(e){e.preventDefault();var k='alpen-chunk-reload';if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');location.reload()});window.addEventListener('unhandledrejection',function(e){var m=String(e.reason&&(e.reason.message||e.reason));if(m.indexOf('dynamically imported module')<0)return;var k='alpen-chunk-reload';if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');location.reload()});",
+          }}
+        />
         <script src="/season-loader.js" />
       </head>
       <body>
