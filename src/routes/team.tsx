@@ -1,23 +1,33 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, type FormEvent } from "react";
+import { lazy, Suspense, useEffect, useState, type FormEvent } from "react";
 import { PageHero, Shell } from "@/components/site/shell";
 import { SiteMascot } from "@/components/site/assistant";
-import { AbsenceBoard, BanGuideEditor, GuideEditor, PlayerCommandEditor, RulesEditor, TasksBoard } from "@/components/site/staff-extra";
-import { LiveNotices, NewsEditor, SeasonDesk, StatusDesk, StreamDesk } from "@/components/site/staff-broadcast";
-import { Accounts } from "@/components/site/staff-accounts";
-import { Archive } from "@/components/site/staff-archive";
 import { StaffChat } from "@/components/site/staff-chat";
-import { ChannelsDesk } from "@/components/site/staff-channels";
-import { Commands } from "@/components/site/staff-commands";
-import { Community } from "@/components/site/staff-community";
-import { HelpDesk } from "@/components/site/staff-help";
-import { Moderation } from "@/components/site/staff-moderation";
-import { Roster } from "@/components/site/staff-roster";
 import { CheckInBanner, PlayerSearch } from "@/components/site/staff-search";
-import { Settings } from "@/components/site/staff-settings";
 import { shallowCount, useLive } from "@/components/site/staff-live";
-import { Website } from "@/components/site/staff-website";
 import { can, roleLabel, ROLES, asRole, type Role } from "@/lib/alpen/roles";
+
+const AbsenceBoard = lazy(() => import("@/components/site/staff-extra").then((m) => ({ default: m.AbsenceBoard })));
+const BanGuideEditor = lazy(() => import("@/components/site/staff-extra").then((m) => ({ default: m.BanGuideEditor })));
+const GuideEditor = lazy(() => import("@/components/site/staff-extra").then((m) => ({ default: m.GuideEditor })));
+const PlayerCommandEditor = lazy(() => import("@/components/site/staff-extra").then((m) => ({ default: m.PlayerCommandEditor })));
+const RulesEditor = lazy(() => import("@/components/site/staff-extra").then((m) => ({ default: m.RulesEditor })));
+const TasksBoard = lazy(() => import("@/components/site/staff-extra").then((m) => ({ default: m.TasksBoard })));
+const LiveNotices = lazy(() => import("@/components/site/staff-broadcast").then((m) => ({ default: m.LiveNotices })));
+const NewsEditor = lazy(() => import("@/components/site/staff-broadcast").then((m) => ({ default: m.NewsEditor })));
+const SeasonDesk = lazy(() => import("@/components/site/staff-broadcast").then((m) => ({ default: m.SeasonDesk })));
+const StatusDesk = lazy(() => import("@/components/site/staff-broadcast").then((m) => ({ default: m.StatusDesk })));
+const StreamDesk = lazy(() => import("@/components/site/staff-broadcast").then((m) => ({ default: m.StreamDesk })));
+const Accounts = lazy(() => import("@/components/site/staff-accounts").then((m) => ({ default: m.Accounts })));
+const Archive = lazy(() => import("@/components/site/staff-archive").then((m) => ({ default: m.Archive })));
+const ChannelsDesk = lazy(() => import("@/components/site/staff-channels").then((m) => ({ default: m.ChannelsDesk })));
+const Commands = lazy(() => import("@/components/site/staff-commands").then((m) => ({ default: m.Commands })));
+const Community = lazy(() => import("@/components/site/staff-community").then((m) => ({ default: m.Community })));
+const HelpDesk = lazy(() => import("@/components/site/staff-help").then((m) => ({ default: m.HelpDesk })));
+const Moderation = lazy(() => import("@/components/site/staff-moderation").then((m) => ({ default: m.Moderation })));
+const Roster = lazy(() => import("@/components/site/staff-roster").then((m) => ({ default: m.Roster })));
+const Settings = lazy(() => import("@/components/site/staff-settings").then((m) => ({ default: m.Settings })));
+const Website = lazy(() => import("@/components/site/staff-website").then((m) => ({ default: m.Website })));
 import { latestStaffBackup, rememberStaffBackup, downloadStaffBackup, type StaffBackup } from "@/lib/alpen/backup";
 import {
   fbGet,
@@ -337,8 +347,21 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
     items: tabs.filter((item) => item.group === group),
   })).filter((group) => group.items.length > 0);
   const helpRows = useLive<ModItem>("helpRequests");
-  const helpOpen = Object.values(helpRows).filter((item) => item && !item.archived && item.status !== "erledigt").length;
-  const badges: Partial<Record<Tab, number>> = { help: helpOpen };
+  const absenceRows = useLive<ModItem>("absences");
+  const seen = readSeen(user.username);
+  const fresh = (rows: Record<string, ModItem>, since: number) =>
+    Object.values(rows).filter((item) => item && !item.archived && (item.ts || item.updatedAt || 0) > since).length;
+  const badges: Partial<Record<Tab, number>> = {
+    moderation: safeTab === "moderation" ? 0 : fresh(banRows, seen.moderation || 0),
+    absence: safeTab === "absence" ? 0 : fresh(absenceRows, seen.absence || 0),
+    help: safeTab === "help" ? 0 : fresh(helpRows, seen.help || 0),
+  };
+  useEffect(() => {
+    if (safeTab !== "moderation" && safeTab !== "absence" && safeTab !== "help") return;
+    const next = readSeen(user.username);
+    next[safeTab] = Date.now();
+    window.localStorage.setItem(seenKey(user.username), JSON.stringify(next));
+  }, [safeTab, user.username]);
 
   useEffect(() => {
     const beat = (writing = false) => {
@@ -437,7 +460,11 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
         </div>
       ) : null}
         {real === "owner" ? <StaffBackup /> : null}
-        {real === "owner" || real === "admin" ? <LiveNotices note={note} /> : null}
+        {real === "owner" || real === "admin" ? (
+          <Suspense fallback={null}>
+            <LiveNotices note={note} />
+          </Suspense>
+        ) : null}
       {shown === "streamer" ? null : <PlayerSearch />}
       {real === "owner" ? <CheckInBanner /> : null}
       <div className={`mt-6 grid min-w-0 items-start gap-5 ${showChat ? "xl:grid-cols-[15rem_minmax(0,1fr)_26rem]" : "lg:grid-cols-[16rem_minmax(0,1fr)]"}`}>
@@ -498,6 +525,7 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
               </p>
             </header>
           ) : null}
+          <Suspense fallback={<p className="text-sm text-muted">Lade Bereich…</p>}>
           <div className="panel-in min-w-0 px-1" key={safeTab}>
             {safeTab === "moderation" ? (
               <Moderation
@@ -549,6 +577,7 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
             {safeTab === "archive" ? <Archive user={user} note={note} /> : null}
             {safeTab === "users" ? <Accounts note={note} actor={user} /> : null}
           </div>
+          </Suspense>
         </section>
         {showChat ? (
           <div className="sticky top-20 hidden h-[calc(100vh-6rem)] min-w-0 xl:block">
@@ -573,6 +602,18 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
       ) : null}
     </div>
   );
+}
+
+function seenKey(username: string) {
+  return `alpen-seen:${username}`;
+}
+
+function readSeen(username: string): Partial<Record<"moderation" | "absence" | "help", number>> {
+  try {
+    return JSON.parse(window.localStorage.getItem(seenKey(username)) || "{}") as Partial<Record<"moderation" | "absence" | "help", number>>;
+  } catch {
+    return {};
+  }
 }
 
 function StaffBackup() {

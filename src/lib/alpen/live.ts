@@ -205,16 +205,27 @@ export async function submitCommunity(body: {
   }
 }
 
-export async function submitTicket(input: { name: string; topic: string; msg: string }) {
+export async function submitTicket(input: { name: string; topic: string; msg: string; category?: string }) {
+  const name = input.name.trim().slice(0, 32);
+  const category = ["Bug", "Frage", "Beschwerde", "Sonstiges"].includes(input.category || "") ? input.category || "Sonstiges" : "Sonstiges";
+  const topic = input.topic.trim().slice(0, 80);
+  const msg = input.msg.trim().slice(0, 800);
+  if (name.length < 2 || topic.length < 3 || msg.length < 8) throw new Error("Name, Betreff und Beschreibung prüfen.");
+  const last = Number(window.localStorage.getItem("alpen-ticket-at") || 0);
+  if (Date.now() - last < 60_000) throw new Error("Bitte eine Minute warten, bevor du ein weiteres Ticket sendest.");
   const code = "ALP-" + Math.random().toString(36).slice(2, 6).toUpperCase();
-  const helpMoved = await relay("helpRequests", "POST", {
-    by: input.name,
-    msg: (input.topic ? `[${input.topic}] ` : "") + input.msg,
+  const helpBody = {
+    by: name,
+    msg,
+    topic,
+    category,
     ts: Date.now(),
     source: "website",
     replies: {},
     ticketCode: code,
-  });
+    status: "offen",
+  };
+  const helpMoved = await relay("helpRequests", "POST", helpBody);
   let helpKey = "";
   if (helpMoved.handled) {
     helpKey = String((helpMoved.data as { name?: string } | null)?.name || "");
@@ -222,23 +233,17 @@ export async function submitTicket(input: { name: string; topic: string; msg: st
     const help = await fetch(`${SITE.fb}/helpRequests.json`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        by: input.name,
-        msg: (input.topic ? `[${input.topic}] ` : "") + input.msg,
-        ts: Date.now(),
-        source: "website",
-        replies: {},
-        ticketCode: code,
-      }),
+      body: JSON.stringify(helpBody),
     });
     if (!help.ok) throw new Error("Ticket konnte nicht gesendet werden.");
     const pushed = (await help.json()) as { name?: string };
     helpKey = pushed.name || "";
   }
   const ticket = {
-    name: input.name,
-    topic: input.topic,
-    msg: input.msg,
+    name,
+    topic,
+    category,
+    msg,
     ts: Date.now(),
     replies: {},
     status: "offen",
@@ -253,6 +258,7 @@ export async function submitTicket(input: { name: string; topic: string; msg: st
     });
     if (!res.ok) throw new Error("Ticket-Code konnte nicht angelegt werden.");
   }
+  window.localStorage.setItem("alpen-ticket-at", String(Date.now()));
   return code;
 }
 
@@ -260,6 +266,7 @@ export type TicketView = {
   code: string;
   status: string;
   topic: string;
+  category: string;
   msg: string;
   replies: { by: string; text: string; ts: number }[];
 };
@@ -269,6 +276,7 @@ export async function lookupTicket(code: string): Promise<TicketView | null> {
   type TicketRow = {
     status?: string;
     topic?: string;
+    category?: string;
     msg?: string;
     replies?: Record<string, { by?: string; text?: string; msg?: string; ts?: number }> | null;
   };
@@ -290,6 +298,7 @@ export async function lookupTicket(code: string): Promise<TicketView | null> {
     code: clean,
     status: data.status || "offen",
     topic: data.topic || "",
+    category: data.category || "",
     msg: data.msg || "",
     replies: replies.filter((row) => row.text),
   };

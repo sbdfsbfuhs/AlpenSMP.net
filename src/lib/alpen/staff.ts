@@ -27,6 +27,8 @@ export type ModItem = {
   msg?: string;
   replies?: Record<string, { by?: string; text?: string; ts?: number }>;
   ticketCode?: string;
+  topic?: string;
+  category?: string;
   status?: string;
   updatedAt?: number;
   proof?: string;

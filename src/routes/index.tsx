@@ -273,7 +273,7 @@ function Home() {
 
       <section id="join" className="shell scroll-mt-24 grid gap-4 pb-16 lg:grid-cols-3">
         <article className="card overflow-hidden lg:col-span-2">
-          <img src="/media/lichen.jpg" alt="Fichten und Flechten im Alpenwald" className="tone-red h-44 w-full object-cover" />
+          <img src="/media/lichen.jpg" alt="Fichten und Flechten im Alpenwald" className="tone-red h-44 w-full object-cover" loading="lazy" decoding="async" />
           <div className="grid gap-6 p-6 md:grid-cols-2">
             <div>
               <div className="flex items-center gap-2 text-brand">

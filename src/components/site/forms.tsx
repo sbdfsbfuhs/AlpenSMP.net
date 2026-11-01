@@ -171,6 +171,7 @@ async function compressImage(file: File) {
 
 export function TicketForm() {
   const [name, setName] = useState("");
+  const [category, setCategory] = useState("Frage");
   const [topic, setTopic] = useState("");
   const [msg, setMsg] = useState("");
   const [company, setCompany] = useState("");
@@ -178,6 +179,7 @@ export function TicketForm() {
   const [busy, setBusy] = useState(false);
   const [consent, setConsent] = useState(false);
   const [code, setCode] = useState("");
+  const [sent, setSent] = useState("");
   const [found, setFound] = useState<TicketView | null>(null);
 
   async function onSubmit(e: FormEvent) {
@@ -187,19 +189,17 @@ export function TicketForm() {
       setNote("Bitte die Datenschutz-Einwilligung anhaken.");
       return;
     }
-    if (name.trim().length < 2 || msg.trim().length < 8) {
-      setNote("Name und etwas mehr Text bitte.");
-      return;
-    }
     setBusy(true);
     try {
       const next = await submitTicket({
-        name: name.trim().slice(0, 32),
-        topic: topic.trim().slice(0, 80),
-        msg: msg.trim().slice(0, 800),
+        name: name.trim(),
+        topic: topic.trim(),
+        msg: msg.trim(),
+        category,
       });
+      setSent(next);
       setCode(next);
-      setNote(`Ticket-Code: ${next} — merken, damit du die Antwort lesen kannst.`);
+      setNote("");
       setName("");
       setTopic("");
       setMsg("");
@@ -212,20 +212,31 @@ export function TicketForm() {
 
   return (
     <div className="card p-5">
+      {sent ? (
+        <div className="mb-6 rounded-md border border-brand/40 bg-brand/10 p-4">
+          <p className="font-semibold">Ticket gesendet</p>
+          <p className="mt-1 text-sm text-muted">Merke dir die Nummer. Damit kannst du den Status unten prüfen.</p>
+          <p className="mt-2 font-mono text-lg">{sent}</p>
+        </div>
+      ) : null}
       <form className="space-y-3" onSubmit={onSubmit}>
-        <p className="text-sm text-muted">
-          Ticket hier oder auf Discord. Du bekommst einen Code und kannst die Antwort unten nachlesen.
-        </p>
+        <p className="text-sm text-muted">Beschreibe das Problem. Du bekommst eine Ticket-Nummer und kannst den Status später nachlesen.</p>
         <label className="block text-sm" htmlFor="ticket-name">
-          Name oder Ingame-Name
-          <input id="ticket-name" className="field mt-1" name="name" autoComplete="nickname" placeholder="Name / Ingame" value={name} maxLength={32} required onChange={(e) => setName(e.target.value)} />
+          Minecraft-Name
+          <input id="ticket-name" className="field mt-1" name="name" autoComplete="nickname" placeholder="Dein Ingame-Name" value={name} maxLength={32} required onChange={(e) => setName(e.target.value)} />
+        </label>
+        <label className="block text-sm" htmlFor="ticket-category">
+          Kategorie
+          <select id="ticket-category" className="field mt-1" value={category} onChange={(e) => setCategory(e.target.value)}>
+            {["Bug", "Frage", "Beschwerde", "Sonstiges"].map((item) => <option key={item}>{item}</option>)}
+          </select>
         </label>
         <label className="block text-sm" htmlFor="ticket-topic">
-          Thema
-          <input id="ticket-topic" className="field mt-1" name="topic" placeholder="z. B. Join-Problem" value={topic} maxLength={80} onChange={(e) => setTopic(e.target.value)} />
+          Betreff
+          <input id="ticket-topic" className="field mt-1" name="topic" placeholder="Worum geht es?" value={topic} maxLength={80} required onChange={(e) => setTopic(e.target.value)} />
         </label>
         <label className="block text-sm" htmlFor="ticket-msg">
-          Nachricht
+          Beschreibung
           <textarea id="ticket-msg" className="field mt-1 min-h-32" name="message" placeholder="Was ist passiert?" value={msg} maxLength={800} required onChange={(e) => setMsg(e.target.value)} />
         </label>
         <input className="hidden" tabIndex={-1} autoComplete="off" value={company} onChange={(e) => setCompany(e.target.value)} aria-hidden="true" />
@@ -242,10 +253,10 @@ export function TicketForm() {
         {note ? <p className="text-sm text-ice">{note}</p> : null}
       </form>
       <div className="mt-6 border-t border-line pt-5">
-        <h3 className="font-semibold">Antwort prüfen</h3>
-        <p className="mt-1 text-sm text-muted">Code eingeben, den du nach dem Senden bekommen hast.</p>
+        <h3 className="font-semibold">Status prüfen</h3>
+        <p className="mt-1 text-sm text-muted">Ticket-Nummer eingeben. Ein Login ist nicht nötig.</p>
         <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-          <label className="sr-only" htmlFor="ticket-code">Ticket-Code</label>
+          <label className="sr-only" htmlFor="ticket-code">Ticket-Nummer</label>
           <input id="ticket-code" className="field" placeholder="z. B. ALP-4K2P" value={code} maxLength={16} onChange={(e) => setCode(e.target.value)} />
           <button
             type="button"
@@ -253,10 +264,10 @@ export function TicketForm() {
             onClick={async () => {
               const row = await lookupTicket(code);
               setFound(row);
-              if (!row) setNote("Kein Ticket unter diesem Code.");
+              if (!row) setNote("Kein Ticket unter dieser Nummer.");
             }}
           >
-            Antwort laden
+            Status laden
           </button>
         </div>
         {found ? (
@@ -264,6 +275,7 @@ export function TicketForm() {
             <p>
               <span className="text-faint">Status: </span>
               {found.status}
+              {found.category ? ` · ${found.category}` : ""}
               {found.topic ? ` · ${found.topic}` : ""}
             </p>
             <p className="text-muted">{found.msg}</p>

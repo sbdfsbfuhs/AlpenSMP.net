@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Neu } from "@/components/site/staff-shared";
-import { entries, fbGet, fbSet, fbUpdate, formatWhen, freshStamp, type CommunityItem, type StaffSession } from "@/lib/alpen/staff";
+import { entries, fbGet, fbRemove, fbSet, fbUpdate, formatWhen, freshStamp, type CommunityItem, type StaffSession } from "@/lib/alpen/staff";
 
 export function Community({ user, note }: { user: StaffSession; note: (text: string) => void }) {
   const [reviews, setReviews] = useState<Record<string, CommunityItem>>({});
@@ -17,6 +17,14 @@ export function Community({ user, note }: { user: StaffSession; note: (text: str
     const set = kind === "reviews" ? setReviews : setImages;
     set((prev) => ({ ...prev, [key]: { ...prev[key], status } }));
   };
+  const drop = (kind: "reviews" | "images", key: string) => {
+    const set = kind === "reviews" ? setReviews : setImages;
+    set((prev) => {
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  };
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap gap-2">
@@ -29,8 +37,8 @@ export function Community({ user, note }: { user: StaffSession; note: (text: str
           Neu laden
         </button>
       </div>
-      <Queue title="Rezensionen" path="community_reviews" items={entries(reviews)} filter={filter} user={user} note={note} onStatus={(key, status) => mark("reviews", key, status)} />
-      <Queue title="Screenshots" path="community_images" items={entries(images)} filter={filter} user={user} note={note} shots onStatus={(key, status) => mark("images", key, status)} />
+      <Queue title="Rezensionen" path="community_reviews" items={entries(reviews)} filter={filter} user={user} note={note} canDelete={user.role === "owner" || user.role === "admin"} onStatus={(key, status) => mark("reviews", key, status)} onDelete={(key) => drop("reviews", key)} />
+      <Queue title="Screenshots" path="community_images" items={entries(images)} filter={filter} user={user} note={note} shots onStatus={(key, status) => mark("images", key, status)} onDelete={() => undefined} />
     </div>
   );
 }
@@ -49,7 +57,9 @@ function Queue({
   user,
   note,
   shots,
+  canDelete,
   onStatus,
+  onDelete,
 }: {
   title: string;
   path: string;
@@ -58,9 +68,12 @@ function Queue({
   user: StaffSession;
   note: (text: string) => void;
   shots?: boolean;
+  canDelete?: boolean;
   onStatus: (key: string, status: string) => void;
+  onDelete: (key: string) => void;
 }) {
   const rows = items.filter(([, item]) => matches(item.status, filter));
+  const [ask, setAsk] = useState<string | null>(null);
   async function decide(key: string, item: CommunityItem, status: "approved" | "rejected") {
     const next = { ...item, status, moderatedBy: user.username, moderatedAt: Date.now(), updatedAt: Date.now() };
     try {
@@ -85,11 +98,36 @@ function Queue({
           <article key={key} className={`card card-still p-4${freshStamp(item.ts, item.updatedAt) ? " mark-new" : ""}`}>
             <p className="font-semibold">{item.name} {item.rating ? `· ${item.rating}/5` : ""}<Neu ts={item.ts} updatedAt={item.updatedAt} /></p>
             <p className="mt-1 text-sm text-muted">{shots ? item.caption : item.text}</p>
-            {item.imageUrl ? <img src={item.imageUrl} alt={item.name ? `Eingereichtes Bild von ${item.name}` : "Eingereichtes Bild"} className="mt-3 max-h-40 rounded-md object-cover" /> : null}
+            {item.imageUrl ? <img src={item.imageUrl} alt={item.name ? `Eingereichtes Bild von ${item.name}` : "Eingereichtes Bild"} className="mt-3 max-h-40 rounded-md object-cover" loading="lazy" decoding="async" /> : null}
             <p className="mt-2 text-xs text-faint">{item.status || "offen"} · {formatWhen(item.ts)}</p>
-            <div className="mt-3 flex gap-2">
+            <div className="mt-3 flex flex-wrap gap-2">
               <button type="button" className="btn-brand" onClick={() => void decide(key, item, "approved")}>Frei</button>
               <button type="button" className="btn-ghost" onClick={() => void decide(key, item, "rejected")}>Ablehnen</button>
+              {canDelete ? (
+                ask === key ? (
+                  <>
+                    <span className="self-center text-sm text-muted">Rezension wirklich löschen?</span>
+                    <button
+                      type="button"
+                      className="btn-ghost border-red-500 text-red-300"
+                      onClick={() => {
+                        void fbRemove(`${path}/${key}`)
+                          .then(() => {
+                            onDelete(key);
+                            setAsk(null);
+                            note("Gelöscht");
+                          })
+                          .catch((err) => note(err instanceof Error ? err.message : "Löschen fehlgeschlagen"));
+                      }}
+                    >
+                      Ja, löschen
+                    </button>
+                    <button type="button" className="btn-ghost" onClick={() => setAsk(null)}>Nein</button>
+                  </>
+                ) : (
+                  <button type="button" className="btn-ghost border-red-500 text-red-300" onClick={() => setAsk(key)}>Löschen</button>
+                )
+              ) : null}
             </div>
           </article>
         ))}

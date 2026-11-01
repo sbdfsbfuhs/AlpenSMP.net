@@ -100,7 +100,7 @@ function CommunityPage() {
                   className="card cursor-zoom-in overflow-hidden text-left"
                   onClick={() => setActive(shot)}
                 >
-                  <img src={shot.imageUrl} alt={shot.caption || shot.name} className="aspect-square w-full object-cover" />
+                  <img src={shot.imageUrl} alt={shot.caption || shot.name} className="aspect-square w-full object-cover" loading="lazy" decoding="async" />
                   <p className="px-3 py-2 text-xs text-muted">
                     {shot.name}
                     {shot.caption ? ` · ${shot.caption}` : ""}
