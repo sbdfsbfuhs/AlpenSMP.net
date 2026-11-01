@@ -1,0 +1,1 @@
+import{T as e}from"./assistant-CVNN94Pe.js";import{h as t}from"./index-DC_FmDtl.js";var n=t();function r({ts:t,updatedAt:r}){return e(t,r)?(0,n.jsx)(`span`,{className:`ml-2 rounded bg-emerald-500 px-1.5 py-0.5 text-[10px] font-bold uppercase text-black`,children:`Neu`}):null}export{r as t};
