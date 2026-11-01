@@ -67,8 +67,8 @@ export function StatusCard() {
         </span>
       </div>
       <p className="display mt-4 text-4xl text-fg">
-        {status ? `${status.players}` : "–"}
-        <span className="text-xl text-muted"> / {status ? status.max : "–"}</span>
+        {status ? <CountUp value={status.players} /> : "–"}
+        <span className="text-xl text-muted"> / {status ? <CountUp value={status.max} /> : "–"}</span>
       </p>
       <p className="mt-1 text-sm text-muted">Spieler gerade auf dem Server</p>
       <dl className="mt-5 grid grid-cols-2 gap-3 text-sm">
@@ -231,17 +231,74 @@ export function StatStrip() {
 }
 
 function CountUp({ value, suffix = "" }: { value: number | null; suffix?: string }) {
-  const shown = useCount(value);
-  if (value == null) return "–";
-  return `${shown}${suffix}`;
+  const ref = useRef<HTMLSpanElement>(null);
+  const [ready, setReady] = useState(false);
+  const shown = useCount(value, ready);
+  const celebrated = useRef<number | null>(null);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setReady(true);
+      return;
+    }
+    const seen = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return;
+        setReady(true);
+        seen.disconnect();
+      },
+      { threshold: 0.45 },
+    );
+    seen.observe(node);
+    return () => seen.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!ready || value == null || value < 1000 || value % 1000 !== 0) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const node = ref.current;
+    if (!node) return;
+    const timer = window.setTimeout(() => {
+      if (celebrated.current === value) return;
+      celebrated.current = value;
+      const box = node.getBoundingClientRect();
+      void import("canvas-confetti").then(({ default: confetti }) => {
+        void confetti({
+          particleCount: 36,
+          spread: 48,
+          startVelocity: 16,
+          ticks: 64,
+          gravity: 1.15,
+          scalar: 0.65,
+          origin: {
+            x: (box.left + box.width / 2) / window.innerWidth,
+            y: (box.top + box.height / 2) / window.innerHeight,
+          },
+          colors: ["#E1062C", "#ffffff", "#e8e8e8", "#9a9a9a"],
+          disableForReducedMotion: true,
+        });
+      });
+    }, 1700);
+    return () => window.clearTimeout(timer);
+  }, [ready, value]);
+
+  if (value == null) return <span ref={ref}>–</span>;
+  return (
+    <span ref={ref}>
+      {shown}
+      {suffix}
+    </span>
+  );
 }
 
-function useCount(target: number | null, ms = 800) {
+function useCount(target: number | null, run: boolean, ms = 1700) {
   const [shown, setShown] = useState(0);
   const from = useRef(0);
 
   useEffect(() => {
-    if (target == null) return;
+    if (target == null || !run) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduce) {
       from.current = target;
@@ -261,7 +318,7 @@ function useCount(target: number | null, ms = 800) {
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [target, ms]);
+  }, [target, run, ms]);
 
   return shown;
 }
