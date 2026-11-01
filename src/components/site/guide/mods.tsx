@@ -1,14 +1,16 @@
-import { Download, Keyboard, Mic, Package, Radio } from "lucide-react";
-import { MOD_CATEGORIES, MOD_FORBIDDEN, VOICE_STEPS } from "@/lib/alpen/content";
+import { Download, Keyboard, Mic, Package, Play, Search } from "lucide-react";
+import { MOD_CATEGORIES, MOD_FORBIDDEN, MODRINTH_STEPS, VOICE_EXAMPLE } from "@/lib/alpen/content";
 import { SITE } from "@/lib/alpen/site";
 import { DiscordLink } from "@/components/site/shell";
 
 const STEP_ICON = {
-  what: Mic,
   app: Download,
-  install: Package,
-  use: Keyboard,
-  where: Radio,
+  profile: Package,
+  install: Search,
+  start: Play,
+  search: Search,
+  add: Package,
+  talk: Keyboard,
 } as const;
 
 export function ModrinthMark() {
@@ -34,23 +36,22 @@ export function ModsGuide() {
       <div>
         <p className="kicker">Java</p>
         <h2 id="mods-title" className="display mt-2 text-4xl">Mods und Voice</h2>
-        <p className="mt-3 max-w-2xl text-muted">Zwei Teile. Zuerst sprechen, danach welche Mods erlaubt sind. Ohne Mods kannst du trotzdem joinen.</p>
+        <p className="mt-3 max-w-2xl text-muted">Zuerst die Modrinth App. Simple Voice Chat zeigt danach, wie eine Mod installiert wird. Ohne Mods kannst du trotzdem joinen.</p>
       </div>
 
-      <section className="card card-still p-5 sm:p-6" aria-labelledby="voice-title">
+      <section className="card card-still p-5 sm:p-6" aria-labelledby="modrinth-title">
         <div className="flex items-center gap-3">
           <span className="grid size-11 shrink-0 place-items-center rounded-md bg-brand/15 text-brand" aria-hidden="true">
-            <Mic className="size-5" />
+            <Download className="size-5" />
           </span>
           <div>
-            <p className="kicker">Block 1</p>
-            <h3 id="voice-title" className="text-2xl font-semibold">Simple Voice Chat</h3>
+            <p className="kicker">Zuerst</p>
+            <h3 id="modrinth-title" className="text-2xl font-semibold">Modrinth App</h3>
           </div>
         </div>
         <ol className="mt-5 space-y-4">
-          {VOICE_STEPS.map((step, index) => {
-            const Icon = STEP_ICON[step.id as keyof typeof STEP_ICON] ?? Mic;
-            const href = step.href === "app" ? SITE.modrinthApp : step.href === "voice" ? SITE.voiceClient : "";
+          {MODRINTH_STEPS.map((step, index) => {
+            const Icon = STEP_ICON[step.id as keyof typeof STEP_ICON] ?? Package;
             return (
               <li key={step.id} className="card card-still guide-step p-5 sm:p-6">
                 <span className="guide-step-no" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
@@ -62,14 +63,46 @@ export function ModsGuide() {
                     <h4 className="text-xl font-semibold">{step.title}</h4>
                   </div>
                   <p className="mt-3 max-w-xl text-muted">{step.text}</p>
-                  {step.id === "install" ? (
-                    <p className="chip-note warn mt-3">Empfohlen: Minecraft {SITE.version}</p>
+                  {step.id === "profile" ? (
+                    <p className="chip-note warn mt-3">Server-Version: Minecraft {SITE.version}</p>
                   ) : null}
-                  {href ? (
+                  {"href" in step && step.href === "app" ? (
                     <div className="mt-4">
-                      <ModrinthLink href={href}>{step.hrefLabel || "Öffnen"}</ModrinthLink>
+                      <ModrinthLink href={SITE.modrinthApp}>{step.hrefLabel || "Öffnen"}</ModrinthLink>
                     </div>
                   ) : null}
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      </section>
+
+      <section className="card card-still p-5 sm:p-6" aria-labelledby="voice-title">
+        <div className="flex items-center gap-3">
+          <span className="grid size-11 shrink-0 place-items-center rounded-md bg-brand/15 text-brand" aria-hidden="true">
+            <Mic className="size-5" />
+          </span>
+          <div>
+            <p className="kicker">Beispiel</p>
+            <h3 id="voice-title" className="text-2xl font-semibold">Simple Voice Chat</h3>
+          </div>
+        </div>
+        <p className="mt-4 max-w-2xl text-muted">Dieselbe App, dieselbe Reihenfolge. Nur die gesuchte Mod ist eine andere.</p>
+        <ol className="mt-5 space-y-4">
+          {VOICE_EXAMPLE.map((step, index) => {
+            const Icon = STEP_ICON[step.id as keyof typeof STEP_ICON] ?? Mic;
+            return (
+              <li key={step.id} className="card card-still guide-step p-5 sm:p-6">
+                <span className="guide-step-no" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+                <div className="guide-step-body">
+                  <div className="flex items-center gap-3">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-md border border-line text-brand" aria-hidden="true">
+                      <Icon className="size-4" />
+                    </span>
+                    <h4 className="text-xl font-semibold">{step.title}</h4>
+                  </div>
+                  <p className="mt-3 max-w-xl text-muted">{step.text}</p>
                 </div>
               </li>
             );
@@ -83,7 +116,7 @@ export function ModsGuide() {
             <Package className="size-5" />
           </span>
           <div>
-            <p className="kicker">Block 2</p>
+            <p className="kicker">Erlaubt</p>
             <h3 id="allowed-title" className="text-2xl font-semibold">Erlaubte Mods</h3>
           </div>
         </div>

@@ -159,7 +159,7 @@ function Choice({ onPick }: { onPick: (track: Track) => void }) {
       </button>
       <button type="button" className="card p-6 text-left" onClick={() => onPick("mods")}>
         <h2 className="text-2xl font-semibold">🔧 Mods & Voice Chat</h2>
-        <p className="mt-2 text-muted">Modrinth App, Voice Chat und die erlaubten Mods.</p>
+        <p className="mt-2 text-muted">Modrinth App, danach Simple Voice Chat als Beispiel.</p>
         <span className="btn-modrinth mt-6">Zur Anleitung</span>
       </button>
     </div>

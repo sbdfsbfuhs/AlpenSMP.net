@@ -473,35 +473,46 @@ export const FAQ = [
   },
 ];
 
-export const VOICE_STEPS = [
-  {
-    id: "what",
-    title: "Was das ist",
-    text: "Damit kannst du mit anderen Spielern direkt im Spiel sprechen, wie ein Walkie-Talkie. Je näher, desto lauter.",
-  },
+export const MODRINTH_STEPS = [
   {
     id: "app",
-    title: "Modrinth App holen",
-    text: "Die Modrinth App ist ein kostenloses Programm, das Mods für dich installiert. Du musst nichts von Hand in Ordner schieben.",
+    title: "App herunterladen",
+    text: "Die Modrinth App ist ein kostenloser Mod-Manager für Minecraft. Sie installiert Mods für dich. Du musst nichts von Hand in Ordner schieben.",
     href: "app" as const,
     hrefLabel: "Modrinth App herunterladen",
   },
   {
+    id: "profile",
+    title: "Profil anlegen",
+    text: "App öffnen und ein Minecraft-Profil anlegen. Fabric oder Quilt wählen. Die Version muss zum Server passen.",
+  },
+  {
     id: "install",
-    title: "Voice Chat einbauen",
-    text: "In der App nach „Simple Voice Chat“ suchen. Der Autor heißt henkelmax. Die Version muss zu deiner Minecraft-Version passen.",
-    href: "voice" as const,
-    hrefLabel: "Simple Voice Chat auf Modrinth",
+    title: "Mod installieren",
+    text: "Die Mod in der App suchen und mit einem Klick installieren.",
   },
   {
-    id: "use",
-    title: "Im Spiel benutzen",
-    text: "Taste V öffnet die Einstellungen. Sprechen geht mit gedrückter Taste. Standard ist Caps Lock.",
+    id: "start",
+    title: "Profil starten",
+    text: "Das Profil starten. Minecraft öffnet sich mit den Mods aus diesem Profil.",
+  },
+];
+
+export const VOICE_EXAMPLE = [
+  {
+    id: "search",
+    title: "Suchen",
+    text: "In der Modrinth App nach „Simple Voice Chat“ suchen.",
   },
   {
-    id: "where",
-    title: "Nur auf dem Server",
-    text: "Der Voice Chat läuft nur, während du auf AlpenSMP bist. Im Hauptmenü oder auf einem anderen Server hörst du niemanden.",
+    id: "add",
+    title: "Installieren",
+    text: "Installieren und das Profil starten.",
+  },
+  {
+    id: "talk",
+    title: "Im Spiel",
+    text: "V zum Reden. /voicechat help listet die Befehle. Hören geht nur, solange du auf AlpenSMP bist.",
   },
 ];
 
