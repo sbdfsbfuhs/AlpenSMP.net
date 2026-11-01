@@ -90,7 +90,8 @@ async function firebaseRaw(path: string, method: string, body?: unknown) {
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   if (!res.ok) {
-    if (res.status === 401 || res.status === 403) throw new Error("Die Datenbank lässt das noch nicht zu. Regeln prüfen.");
+    if (!token || res.status === 401) throw new Error("Bitte neu anmelden. Die Sitzung ist abgelaufen.");
+    if (res.status === 403) throw new Error("Die Datenbank lässt das noch nicht zu. Regeln prüfen.");
     throw new Error("Speichern fehlgeschlagen");
   }
   if (res.status === 204) return null;

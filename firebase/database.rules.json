@@ -79,14 +79,14 @@
       ".read": "auth != null && root.child('staffByUid').child(auth.uid).exists() && root.child('staffByUid').child(auth.uid).child('role').val() != 'streamer'",
       "$uid": {
         ".read": "auth != null && (auth.uid == $uid || root.child('staffByUid').child(auth.uid).exists())",
-        ".write": "(auth != null && auth.uid == $uid && auth.token.email == 'passtu09@gmail.com' && newData.child('role').val() == 'owner') || (auth != null && (auth.token.email == 'passtu09@gmail.com' || root.child('staffByUid').child(auth.uid).child('role').val() == 'owner')) || (auth != null && auth.uid == $uid && root.child('staffOpen').child(newData.child('username').val()).child('open').val() == true && newData.child('role').val() == root.child('staffOpen').child(newData.child('username').val()).child('role').val())"
+        ".write": "auth != null && (auth.token.email == 'passtu09@gmail.com' || root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('username').val() == 'owner' || root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('role').val() == 'owner' || (auth.uid == $uid && root.child('staffOpen').child(newData.child('username').val()).child('open').val() == true && newData.child('role').val() == root.child('staffOpen').child(newData.child('username').val()).child('role').val()))"
       }
     },
     "staffUsers": {
       ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('role').val() != 'streamer' && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
       "$name": {
         ".read": "auth != null && (root.child('staffUsers').child($name).child('uid').val() == auth.uid || (root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('role').val() != 'streamer'))",
-        ".write": "(auth != null && (auth.token.email == 'passtu09@gmail.com' || (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' && root.child('staffByUid').child(auth.uid).child('disabled').val() != true))) || (auth != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && data.child('uid').val() == auth.uid && newData.child('role').val() == data.child('role').val() && newData.child('uid').val() == data.child('uid').val()) || (auth != null && root.child('staffOpen').child($name).child('open').val() == true && auth.token.email == $name + '@staff.alpensmp.net' && newData.child('uid').val() == auth.uid && newData.child('role').val() == data.child('role').val())"
+        ".write": "auth != null && ((auth.token.email == 'passtu09@gmail.com' || root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('username').val() == 'owner' || root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('role').val() == 'owner') && root.child('staffByUid').child(auth.uid).child('disabled').val() != true || (root.child('staffByUid').child(auth.uid).child('disabled').val() != true && data.child('uid').val() == auth.uid && newData.child('role').val() == data.child('role').val() && newData.child('uid').val() == data.child('uid').val()) || (root.child('staffOpen').child($name).child('open').val() == true && auth.token.email == $name + '@staff.alpensmp.net' && newData.child('uid').val() == auth.uid && newData.child('role').val() == data.child('role').val()))"
       }
     },
     "staffAuth": {
@@ -96,13 +96,13 @@
     "staffGate": {
       "$name": {
         ".read": true,
-        ".write": "auth != null && (auth.token.email == 'passtu09@gmail.com' || (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' && root.child('staffByUid').child(auth.uid).child('disabled').val() != true) || (root.child('staffOpen').child($name).child('open').val() == true && auth.token.email == $name + '@staff.alpensmp.net'))"
+        ".write": "auth != null && (auth.token.email == 'passtu09@gmail.com' || root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('username').val() == 'owner' || root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('role').val() == 'owner' || (root.child('staffOpen').child($name).child('open').val() == true && auth.token.email == $name + '@staff.alpensmp.net'))"
       }
     },
     "staffOpen": {
       "$name": {
         ".read": true,
-        ".write": "auth != null && (auth.token.email == 'passtu09@gmail.com' || root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || auth.uid == root.child('staffUsers').child($name).child('uid').val())"
+        ".write": "auth != null && (auth.token.email == 'passtu09@gmail.com' || root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('username').val() == 'owner' || root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('role').val() == 'owner' || auth.uid == root.child('staffUsers').child($name).child('uid').val())"
       }
     },
     "staffLog": {
