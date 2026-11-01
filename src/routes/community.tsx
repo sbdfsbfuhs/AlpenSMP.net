@@ -95,7 +95,7 @@ function CommunityPage() {
             <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-3">
               {shots.map((shot) => (
                 <button
-                  key={shot.imageUrl.slice(0, 48) + shot.ts}
+                  key={`${shot.ts}-${shot.name}`}
                   type="button"
                   className="card cursor-zoom-in overflow-hidden text-left"
                   onClick={() => setActive(shot)}

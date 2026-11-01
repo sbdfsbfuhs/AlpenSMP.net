@@ -1,6 +1,6 @@
 import { Copy } from "lucide-react";
 import { CopyTick, useCopyBurst } from "@/components/site/copy-burst";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { fetchDiscordCount, fetchHistory, fetchSiteStats, fetchStatus, pruneOldHistory, recordPlayerSample, type HistoryPoint, type ServerStatus } from "@/lib/alpen/live";
 import { SITE } from "@/lib/alpen/site";
@@ -384,23 +384,38 @@ export function PlayerChart() {
         </div>
       </div>
       <div className="mt-4 h-56 min-w-0">
-        {rows.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={rows}>
-              <CartesianGrid stroke="var(--color-line)" vertical={false} />
-              <XAxis dataKey="label" hide />
-              <YAxis allowDecimals={false} width={28} stroke="var(--color-faint)" fontSize={12} />
-              <Tooltip
-                contentStyle={{ background: "var(--color-surface)", border: "1px solid var(--color-line)", borderRadius: 12, color: "var(--color-fg)" }}
-                labelStyle={{ color: "var(--color-muted)" }}
-              />
-              <Line type="monotone" dataKey="spieler" stroke="var(--color-brand)" strokeWidth={2} dot={rows.length < 30} />
-            </LineChart>
-          </ResponsiveContainer>
-        ) : (
-          <p className="text-sm text-muted">In diesem Zeitraum gibt es noch keine Messung.</p>
-        )}
+        <ChartGuard>
+          {rows.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%" minWidth={1}>
+              <LineChart data={rows}>
+                <CartesianGrid stroke="var(--color-line)" vertical={false} />
+                <XAxis dataKey="label" hide />
+                <YAxis allowDecimals={false} width={28} stroke="var(--color-faint)" fontSize={12} />
+                <Tooltip
+                  contentStyle={{ background: "var(--color-surface)", border: "1px solid var(--color-line)", borderRadius: 12, color: "var(--color-fg)" }}
+                  labelStyle={{ color: "var(--color-muted)" }}
+                />
+                <Line type="monotone" dataKey="spieler" stroke="var(--color-brand)" strokeWidth={2} dot={rows.length < 30} />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="text-sm text-muted">In diesem Zeitraum gibt es noch keine Messung.</p>
+          )}
+        </ChartGuard>
       </div>
     </div>
   );
+}
+
+class ChartGuard extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  render() {
+    if (this.state.failed) return <p className="text-sm text-muted">Der Verlauf kann gerade nicht gezeichnet werden.</p>;
+    return this.props.children;
+  }
 }

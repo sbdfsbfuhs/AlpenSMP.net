@@ -1,5 +1,5 @@
 import { SITE } from "@/lib/alpen/site";
-import { loadPath, relay } from "@/lib/alpen/security";
+import { loadPath, relayDetail } from "@/lib/alpen/security";
 
 export type ServerStatus = {
   online: boolean;
@@ -185,14 +185,14 @@ export async function submitCommunity(body: {
     source: "website",
   };
   if (body.kind === "review" || body.kind === "both") {
-    const moved = await relay("community_reviews", "POST", base);
-    if (!moved.handled) {
+    const moved = await relayDetail("community_reviews", "POST", base);
+    if (!moved.ok) {
       const res = await fetch(`${SITE.fb}/community_reviews.json`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(base),
       });
-      if (!res.ok) throw new Error("Rezension konnte nicht gespeichert werden.");
+      if (!res.ok) throw new Error(moved.error || "Rezension konnte nicht gespeichert werden.");
     }
   }
   if ((body.kind === "image" || body.kind === "both") && body.imageUrl) {
@@ -203,14 +203,14 @@ export async function submitCommunity(body: {
       status: "pending",
       ts: Date.now(),
     };
-    const moved = await relay("community_images", "POST", image);
-    if (!moved.handled) {
+    const moved = await relayDetail("community_images", "POST", image);
+    if (!moved.ok) {
       const res = await fetch(`${SITE.fb}/community_images.json`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(image),
       });
-      if (!res.ok) throw new Error("Bild konnte nicht gespeichert werden.");
+      if (!res.ok) throw new Error(moved.error || "Bild konnte nicht gespeichert werden.");
     }
   }
 }
@@ -235,9 +235,9 @@ export async function submitTicket(input: { name: string; topic: string; msg: st
     ticketCode: code,
     status: "offen",
   };
-  const helpMoved = await relay("helpRequests", "POST", helpBody);
+  const helpMoved = await relayDetail("helpRequests", "POST", helpBody);
   let helpKey = "";
-  if (helpMoved.handled) {
+  if (helpMoved.ok) {
     helpKey = String((helpMoved.data as { name?: string } | null)?.name || "");
   } else {
     const help = await fetch(`${SITE.fb}/helpRequests.json`, {
@@ -245,7 +245,7 @@ export async function submitTicket(input: { name: string; topic: string; msg: st
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(helpBody),
     });
-    if (!help.ok) throw new Error("Ticket konnte nicht gesendet werden.");
+    if (!help.ok) throw new Error(helpMoved.error || "Ticket konnte nicht gesendet werden.");
     const pushed = (await help.json()) as { name?: string };
     helpKey = pushed.name || "";
   }
@@ -259,14 +259,14 @@ export async function submitTicket(input: { name: string; topic: string; msg: st
     status: "offen",
     helpKey,
   };
-  const saved = await relay(`tickets/${code}`, "PUT", ticket);
-  if (!saved.handled) {
+  const saved = await relayDetail(`tickets/${code}`, "PUT", ticket);
+  if (!saved.ok) {
     const res = await fetch(`${SITE.fb}/tickets/${code}.json`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(ticket),
     });
-    if (!res.ok) throw new Error("Ticket-Code konnte nicht angelegt werden.");
+    if (!res.ok) throw new Error(saved.error || "Ticket-Code konnte nicht angelegt werden.");
   }
   window.localStorage.setItem("alpen-ticket-at", String(Date.now()));
   return code;

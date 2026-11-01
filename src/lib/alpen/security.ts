@@ -73,20 +73,23 @@ export async function relay(path: string, method: string, body?: unknown): Promi
 export async function relayDetail(path: string, method: string, body?: unknown): Promise<{ ok: boolean; status: number; error: string; data: unknown }> {
   if (!isMoved(path)) return { ok: false, status: 0, error: "nicht vorgesehen", data: null };
   const token = await ensureIdToken().catch(() => null);
-  if (!token) return { ok: false, status: 401, error: "kein Token im Browser", data: null };
-  try {
-    const res = await fetch(`${BASE}/api/data/${path}`, {
+  const send = async (auth: string | null) => {
+    const headers: Record<string, string> = {};
+    if (auth) headers.Authorization = `Bearer ${auth}`;
+    if (body !== undefined) headers["Content-Type"] = "application/json";
+    return fetch(`${BASE}/api/data/${path}`, {
       method,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
-      },
+      headers,
       body: body === undefined ? undefined : JSON.stringify(body),
       signal: AbortSignal.timeout(12000),
     });
+  };
+  try {
+    let res = await send(token);
+    if (token && res.status === 401 && method === "GET") res = await send(null);
     if (res.status === 204) return { ok: true, status: 204, error: "", data: null };
     const text = await res.text();
-    if (!res.ok) return { ok: false, status: res.status, error: text.slice(0, 140), data: null };
+    if (!res.ok) return { ok: false, status: res.status, error: text.slice(0, 180) || "Speichern abgelehnt", data: null };
     try {
       return { ok: true, status: res.status, error: "", data: text ? JSON.parse(text) : null };
     } catch {

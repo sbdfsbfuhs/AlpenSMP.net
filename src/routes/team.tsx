@@ -307,7 +307,7 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
         archivedAt: now,
         archiveReason: "Permanent, automatisch nach 24 Stunden",
         updatedAt: now,
-      });
+      }).catch(() => undefined);
     }
     for (const [key, item] of Object.entries(warnRows)) {
       if (item.archived || !item.endsAt || item.endsAt > now) continue;
@@ -317,7 +317,7 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
         archivedAt: now,
         archiveReason: "Warnung abgelaufen",
         updatedAt: now,
-      });
+      }).catch(() => undefined);
     }
   }, [banRows, warnRows, real]);
   const [tab, setTab] = useState<Tab>(() => {
