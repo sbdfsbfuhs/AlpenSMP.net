@@ -53,16 +53,21 @@ export async function fetchSiteStats(): Promise<{ total: number | null; listed: 
   };
 }
 
+type HistoryRow = { t?: number; n?: number; by?: string; total_players_ever?: number };
+
+function isPlayerSample(row: HistoryRow | null | undefined): row is HistoryRow {
+  return Boolean(row) && !row?.by && typeof row?.total_players_ever !== "number" && Number(row?.t) > 0;
+}
+
 export async function fetchHistory(limit = 120): Promise<HistoryPoint[]> {
   const cap = Math.max(20, Math.min(700, limit));
   const res = await fetch(`${SITE.fb}/site_stats_history.json?orderBy="$key"&limitToLast=${cap}`);
   if (!res.ok) return [];
-  const data = (await res.json()) as Record<string, { t?: number; n?: number; by?: string }> | null;
+  const data = (await res.json()) as Record<string, HistoryRow> | null;
   if (!data) return [];
   return Object.values(data)
-    .filter((row) => row && !row.by)
+    .filter(isPlayerSample)
     .map((row) => ({ t: Number(row.t) || 0, n: Number(row.n) || 0 }))
-    .filter((row) => row.t > 0)
     .sort((a, b) => a.t - b.t);
 }
 
@@ -74,10 +79,15 @@ export async function recordPlayerSample(players: number) {
   const key = "alpensmp_sample_at";
   const last = Number(localStorage.getItem(key) || 0);
   if (Date.now() - last < SAMPLE_GAP) return;
-  const peek = await fetch(`${SITE.fb}/site_stats_history.json?orderBy="$key"&limitToLast=1`);
+  const peek = await fetch(`${SITE.fb}/site_stats_history.json?orderBy="$key"&limitToLast=30`);
   if (peek.ok) {
-    const latest = (await peek.json()) as Record<string, { t?: number }> | null;
-    const row = latest ? Object.values(latest)[0] : null;
+    const latest = (await peek.json()) as Record<string, HistoryRow> | null;
+    const row = latest
+      ? Object.values(latest)
+          .filter(isPlayerSample)
+          .sort((a, b) => Number(a.t) - Number(b.t))
+          .at(-1)
+      : null;
     if (row?.t && Date.now() - row.t < SAMPLE_GAP) {
       localStorage.setItem(key, String(row.t));
       return;

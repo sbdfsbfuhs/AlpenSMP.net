@@ -324,6 +324,7 @@ function useCount(target: number | null, run: boolean, ms = 1700) {
 }
 
 export function PlayerChart() {
+  const { status } = useServerStatus();
   const [range, setRange] = useState<"1h" | "5h" | "24h" | "7d">("24h");
   const [points, setPoints] = useState<HistoryPoint[]>([]);
 
@@ -352,13 +353,15 @@ export function PlayerChart() {
   const rows = useMemo(() => {
     const span = range === "1h" ? 3600000 : range === "5h" ? 18000000 : range === "24h" ? 86400000 : 7 * 86400000;
     const now = Date.now();
-    return points
+    const series = [...points];
+    if (status && Number.isFinite(status.players)) series.push({ t: now, n: status.players });
+    return series
       .filter((p) => p.t <= now + 60000 && now - p.t <= span)
       .map((p) => ({
         label: new Date(p.t).toLocaleString("de-CH", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }),
         spieler: p.n,
       }));
-  }, [points, range]);
+  }, [points, range, status]);
 
   return (
     <div className="card p-5">
