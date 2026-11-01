@@ -242,25 +242,50 @@ export async function createStaffAccount(input: { username: string; password: st
   if (input.password.length < 6) throw new Error("Firebase lässt unter 6 Zeichen nicht zu. Kürzer geht nicht.");
   const name = staffName(input.username);
   const email = `${name}${STAFF_MAIL}`;
-  const existing = await fbGet<{ uid?: string }>(`staffUsers/${name}`);
-  if (existing?.uid) throw new Error("Existiert schon");
-  const created = await createFirebaseUser(email, input.password);
-  await fbSet(`staffByUid/${created.uid}`, { username: name, email, role: input.role, disabled: false });
-  await fbSet(`staffUsers/${name}`, {
-    role: input.role,
-    email,
-    uid: created.uid,
-    mustChangePw: true,
-    disabled: false,
-    createdAt: Date.now(),
-    createdBy: input.createdBy,
-  });
+  const token = await ensureIdToken();
+  if (!token) throw new Error("Bitte neu anmelden. Die Sitzung ist abgelaufen.");
+  const who = await describeLogin(token);
+  const keep = window.sessionStorage.getItem("alpen-fb-token");
   try {
-    await fbSet(`staffGate/${name}`, { email });
-  } catch {
-    /* Erste Anmeldung nutzt den Namen, bis die Gate-Regel da ist. */
+    const existing = await fbGet<{ uid?: string }>(`staffUsers/${name}`).catch(() => null);
+    if (existing?.uid) throw new Error("Existiert schon");
+    const created = await createFirebaseUser(email, input.password);
+    if (keep) window.sessionStorage.setItem("alpen-fb-token", keep);
+    await fbSet(`staffByUid/${created.uid}`, { username: name, email, role: input.role, disabled: false });
+    await fbSet(`staffUsers/${name}`, {
+      role: input.role,
+      email,
+      uid: created.uid,
+      mustChangePw: true,
+      disabled: false,
+      createdAt: Date.now(),
+      createdBy: input.createdBy,
+    });
+    try {
+      await fbSet(`staffGate/${name}`, { email });
+    } catch {
+      /* Erste Anmeldung nutzt den Namen, bis die Gate-Regel da ist. */
+    }
+    await logStaff(input.createdBy, "Account angelegt", `${name} · ${input.role}`);
+  } catch (err) {
+    if (keep) window.sessionStorage.setItem("alpen-fb-token", keep);
+    const message = err instanceof Error ? err.message : "Anlegen fehlgeschlagen";
+    if (message === "Existiert schon") throw new Error(message);
+    throw new Error(`${message} ${who}`);
   }
-  await logStaff(input.createdBy, "Account angelegt", `${name} · ${input.role}`);
+}
+
+async function describeLogin(token: string) {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))) as { user_id?: string; sub?: string; email?: string };
+    const uid = payload.user_id || payload.sub || "";
+    const link = uid ? await fbGet<{ role?: string; username?: string }>(`staffByUid/${uid}`).catch(() => null) : null;
+    const owner = await fbGet<{ uid?: string; role?: string }>("staffUsers/owner").catch(() => null);
+    const same = owner?.uid && uid && owner.uid === uid ? "UID ist Owner" : "UID ist nicht Owner";
+    return `(${payload.email || "ohne E-Mail"}, Rang ${link?.role || "leer"}, Name ${link?.username || "leer"}, ${same}.)`;
+  } catch {
+    return "(Login konnte nicht gelesen werden.)";
+  }
 }
 
 export async function logStaff(by: string, action: string, detail = "") {

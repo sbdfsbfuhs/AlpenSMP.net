@@ -61,7 +61,7 @@ export function Accounts({ note, actor }: { note: (text: string) => void; actor:
         }}
       >
         <h2 className="text-lg font-semibold">Account anlegen</h2>
-        <p className="mt-2 text-sm text-muted">Nur Team-Name und Startpasswort. Keine private E-Mail. Ein gesetztes Passwort kann später niemand ansehen, auch du nicht. Du siehst es nur, während du es eintippst.</p>
+        <p className="mt-2 text-sm text-muted">Stand 3. Nur Team-Name und Startpasswort. Keine private E-Mail. Ein gesetztes Passwort kann später niemand ansehen, auch du nicht. Du siehst es nur, während du es eintippst.</p>
         <input className="field mt-3" placeholder="Name im Team" value={username} onChange={(e) => setUsername(e.target.value)} />
         <input className="field mt-2" type="text" placeholder="Startpasswort" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
         <select className="field mt-2" value={role} onChange={(e) => setRole(e.target.value)}>
