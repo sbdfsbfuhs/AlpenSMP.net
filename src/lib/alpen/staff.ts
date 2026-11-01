@@ -91,7 +91,7 @@ async function firebaseRaw(path: string, method: string, body?: unknown) {
   });
   if (!res.ok) {
     if (!token || res.status === 401) throw new Error("Bitte neu anmelden. Die Sitzung ist abgelaufen.");
-    if (res.status === 403) throw new Error("Die Datenbank lässt das noch nicht zu. Regeln prüfen.");
+    if (res.status === 403) throw new Error(`Firebase blockt ${method} ${path}. Regeln sind noch nicht die neuen, oder dieser Login ist nicht als Owner-UID gespeichert.`);
     throw new Error("Speichern fehlgeschlagen");
   }
   if (res.status === 204) return null;
