@@ -129,11 +129,11 @@ export function BeginnerGuide() {
       <p className="max-w-2xl text-sm text-muted">
         Zuerst das Spiel. Survival, die erste Nacht, Essen, Crafting, Zaubern, Dörfer, Nether und End. Danach kommt AlpenSMP.
       </p>
-      <div className="divide-y divide-line overflow-hidden rounded-lg border border-line">
+      <section className="divide-y divide-line overflow-hidden rounded-lg border border-line">
         {LESSONS.map((lesson, index) => {
           const isOpen = open === lesson.id;
           return (
-            <article key={lesson.id} className="faq-row rise bg-surface" data-open={isOpen}>
+            <article key={lesson.id} className="faq-row bg-surface" data-open={isOpen}>
               <button
                 type="button"
                 className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left font-semibold"
@@ -179,7 +179,7 @@ export function BeginnerGuide() {
             </article>
           );
         })}
-      </div>
+      </section>
     </div>
   );
 }
