@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { PlayerCommands } from "@/components/site/commands";
 import { SiteMascot } from "@/components/site/assistant";
 import { ModsGuide } from "@/components/site/guide/mods";
+import { BeginnerGuide } from "@/components/site/guide/beginner";
 import { PageHero, Shell } from "@/components/site/shell";
 import { GUIDE, type GuideChapter } from "@/lib/alpen/content";
 import { entries, fbGet } from "@/lib/alpen/staff";
@@ -13,22 +14,27 @@ export const Route = createFileRoute("/guide")({
       { title: "Spieler-Guide · AlpenSMP" },
       {
         name: "description",
-        content: "Start auf AlpenSMP: Minecraft-Grundlagen, Mods, Simple Voice Chat und die aktuellen Befehle.",
+        content: "Zuerst Minecraft verstehen, danach AlpenSMP: Befehle, Mods und Voice Chat.",
       },
     ],
   }),
   component: GuidePage,
 });
 
+type Layer = "basics" | "server";
 type Track = "mc" | "alpen" | "mods";
 
 function GuidePage() {
+  const [layer, setLayer] = useState<Layer>("basics");
   const [track, setTrack] = useState<Track | null>(null);
   const [query, setQuery] = useState("");
   const [topics, setTopics] = useState<{ title?: string; description?: string; category?: string; steps?: string; image?: string }[]>([]);
 
   useEffect(() => {
-    if (window.location.hash === "#mods") setTrack("mods");
+    if (window.location.hash === "#mods") {
+      setLayer("server");
+      setTrack("mods");
+    }
   }, []);
 
   useEffect(() => {
@@ -56,9 +62,19 @@ function GuidePage() {
       <PageHero
         kicker="Spieler-Guide"
         title="Alles für den Start."
-        lede="Drei Wege rein. Mods und Voice Chat haben einen eigenen Bereich. Darunter die Befehle zum Kopieren."
+        lede="Zuerst Minecraft, danach der Server. Mods, Voice Chat und die Befehle bleiben im zweiten Schritt."
       />
       <div id="start" className="shell scroll-mt-24 py-12">
+        <LayerTabs layer={layer} onPick={setLayer} />
+        {layer === "basics" ? (
+          <div className="space-y-8">
+            <BeginnerGuide />
+            <button type="button" className="btn-brand" onClick={() => setLayer("server")}>
+              Weiter zu AlpenSMP
+            </button>
+          </div>
+        ) : (
+          <>
         <GuideTabs track={track} onPick={setTrack} />
         {topics.length ? (
           <div className="mb-10 space-y-3">
@@ -116,8 +132,32 @@ function GuidePage() {
         <div className="mt-16">
           <PlayerCommands />
         </div>
+          </>
+        )}
       </div>
     </Shell>
+  );
+}
+
+function LayerTabs({ layer, onPick }: { layer: Layer; onPick: (layer: Layer) => void }) {
+  const tabs: { id: Layer; label: string }[] = [
+    { id: "basics", label: "Neu bei Minecraft" },
+    { id: "server", label: "Neu auf AlpenSMP" },
+  ];
+  return (
+    <nav className="guide-tabs mb-8" aria-label="Guide-Stufe">
+      {tabs.map((tab) => (
+        <button
+          key={tab.id}
+          type="button"
+          className={layer === tab.id ? "btn-brand" : "btn-ghost"}
+          aria-current={layer === tab.id ? "page" : undefined}
+          onClick={() => onPick(tab.id)}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </nav>
   );
 }
 
