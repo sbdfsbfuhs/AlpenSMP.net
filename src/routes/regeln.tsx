@@ -38,6 +38,27 @@ function RulesPage() {
         <span className="rounded-full border border-line px-3 py-1">Java & Bedrock</span>
         <span className="rounded-full border border-line px-3 py-1">Kein Pay-to-Win</span>
       </div>
+      <div className="shell pb-8">
+        <section className="card p-6 sm:p-8">
+          <p className="kicker">Kurz</p>
+          <h2 className="display mt-2 text-4xl sm:text-5xl">Kein Bock, Regeln zu lesen?</h2>
+          <p className="mt-3 max-w-2xl text-muted">Hier die 3 wichtigsten. Der Rest gilt trotzdem.</p>
+          <ol className="mt-6 grid gap-3 sm:grid-cols-3">
+            <li className="rounded-md border border-line bg-surface p-4">
+              <span className="display text-3xl text-brand">1</span>
+              <p className="mt-2 text-lg font-semibold">Grundlos töten ist nicht erlaubt.</p>
+            </li>
+            <li className="rounded-md border border-line bg-surface p-4">
+              <span className="display text-3xl text-brand">2</span>
+              <p className="mt-2 text-lg font-semibold">Nichts klauen.</p>
+            </li>
+            <li className="rounded-md border border-line bg-surface p-4">
+              <span className="display text-3xl text-brand">3</span>
+              <p className="mt-2 text-lg font-semibold">Keine Cheats. Respekt.</p>
+            </li>
+          </ol>
+        </section>
+      </div>
       <SiteMascot home="regeln" bias="sit" align="end" line="Unsicher bei einem Mod? Frag mich, bevor du joinest." />
       {extra.length ? (
         <div className="shell mb-8 space-y-2">

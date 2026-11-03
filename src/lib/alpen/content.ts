@@ -68,7 +68,10 @@ export const RULES: Rule[] = [
     title: "Bauen & Claims",
     highlight: true,
     paragraphs: [
-      "Fremde Bauwerke dürfen nicht ohne Erlaubnis verändert, beschädigt oder zerstört werden. Ungeclaimte Bauten dürfen nicht unnötig zerstört werden. Keine Claims blockieren, absichtlich Wege versperren oder andere Spieler durch Bauten gezielt stören.",
+      "Das Stehlen, Entwenden oder unerlaubte Aneignen fremder Gegenstände und Ressourcen ist grundsätzlich verboten. Das gilt innerhalb und ausserhalb von Claims.",
+      "Fremde Bauwerke dürfen nicht ohne Erlaubnis verändert, beschädigt oder zerstört werden. Ungeclaimte Bauten dürfen ebenfalls nicht unnötig zerstört werden.",
+      "Keine Claims blockieren, absichtlich Wege versperren oder andere Spieler durch Bauten gezielt stören.",
+      "Ein fehlender Claim bedeutet nicht, dass fremdes Eigentum frei verfügbar ist. Bei Diebstahl entscheidet das Team anhand der Beweislage über Rückgabe, mögliche Entschädigung und Strafen.",
     ],
     note: "Bauwerke mit sexuellen, pornografischen, extremistischen, rassistischen, diskriminierenden oder anderweitig anstössigen Inhalten sind verboten. Dies gilt auch für entsprechende Pixelarts, Schilder, Karten, Skins oder andere Darstellungen.",
   },
