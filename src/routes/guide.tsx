@@ -62,10 +62,13 @@ function GuidePage() {
       <PageHero
         kicker="Spieler-Guide"
         title="Alles für den Start."
-        lede="Zuerst Minecraft, danach der Server. Mods, Voice Chat und die Befehle bleiben im zweiten Schritt."
+        lede="Zuerst Minecraft, danach der Server. Die Befehle für Java und Bedrock stehen direkt darunter."
       />
       <div id="start" className="shell scroll-mt-24 py-12">
         <LayerTabs layer={layer} onPick={setLayer} />
+        <div id="befehle" className="mb-16 scroll-mt-24">
+          <PlayerCommands />
+        </div>
         {layer === "basics" ? (
           <div className="space-y-8">
             <BeginnerGuide />
@@ -129,9 +132,6 @@ function GuidePage() {
           </div>
         ) : null}
         <SiteMascot home="guide" bias="look" inset line="Die Befehle kann ich dir auch erklären." />
-        <div className="mt-16">
-          <PlayerCommands />
-        </div>
           </>
         )}
       </div>
