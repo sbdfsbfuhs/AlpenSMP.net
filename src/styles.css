@@ -2568,17 +2568,87 @@ html[data-season="autumn"] .aurora {
 }
 
 html[data-season="winter"] {
-  --color-brand: #9fd7e8;
-  --color-brand-deep: #4f8ea0;
+  --color-brand: #d7eef6;
+  --color-brand-deep: #8fb8c6;
   --color-ice: #e7f6fb;
-  --color-bg: #0c1418;
-  --color-bg-raised: #122028;
+  --color-ember: #c5e4ef;
+  --color-bg: #0a0d14;
+  --color-bg-raised: #101820;
+  --color-surface: #141c26;
+  --color-surface-2: #1c2834;
+  --color-fg: #f7fbfd;
+  --color-muted: #c5d4dc;
+  --color-faint: #9eb0bb;
+  --color-line: #2c3d4a;
 }
 
 html[data-season="winter"] .aurora {
   background:
-    radial-gradient(circle at 16% 10%, rgb(159 215 232 / 0.28), transparent 34%),
-    radial-gradient(circle at 84% 8%, rgb(255 255 255 / 0.12), transparent 28%);
+    radial-gradient(circle at 16% 10%, rgb(159 215 232 / 0.22), transparent 34%),
+    radial-gradient(circle at 84% 8%, rgb(255 255 255 / 0.08), transparent 28%);
+}
+
+html[data-season="winter"] .btn-brand {
+  background: #16485c;
+  color: #fff;
+  border: 1px solid #a8d8ea;
+  box-shadow: 0 8px 18px rgb(10 20 28 / 0.35);
+}
+
+html[data-season="winter"] .btn-brand::after {
+  display: none;
+}
+
+html[data-season="winter"] .btn-brand:hover {
+  background: #1d6280;
+  color: #fff;
+}
+
+html[data-season="winter"] .btn-ghost {
+  background: #121820;
+  color: #f4fbfe;
+  border-color: #a8d8ea;
+}
+
+html[data-season="winter"] .btn-ghost:hover {
+  background: #1a2833;
+  color: #fff;
+  border-color: #d7eef6;
+}
+
+html[data-season="winter"] .bg-brand {
+  background-color: #16485c;
+}
+
+html[data-season="winter"] .hero-sky {
+  background: #0a0d14;
+}
+
+html[data-season="winter"] .hero-sky .tone-red {
+  filter: grayscale(0.45) saturate(0.4) brightness(0.62);
+}
+
+html[data-season="winter"] .hero-sky::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, transparent 58%, rgb(10 13 20 / 0.78)),
+    radial-gradient(ellipse at 50% 100%, rgb(168 216 234 / 0.16), transparent 46%);
+}
+
+html[data-season="winter"] body::after {
+  content: "";
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 4;
+  height: 56px;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgb(168 216 234 / 0.12));
 }
 
 html[data-season="halloween"] {
@@ -2797,6 +2867,19 @@ html[data-season="halloween"] {
 .snow-2 { left: 41%; animation-duration: 30s; animation-delay: -12s; opacity: 0.7; }
 .snow-3 { left: 63%; width: 5px; height: 5px; animation-duration: 26s; animation-delay: -4s; }
 .snow-4 { left: 84%; animation-duration: 34s; animation-delay: -16s; opacity: 0.4; }
+.flake {
+  position: absolute;
+  top: -12%;
+  left: var(--left);
+  color: #f4fbff;
+  font-size: var(--size);
+  line-height: 1;
+  opacity: var(--opacity);
+  will-change: transform;
+  pointer-events: none;
+  animation: flake-fall var(--duration) linear infinite;
+  animation-delay: var(--delay);
+}
 .twinkle { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: #fff; animation: bulb-glow 4s ease-in-out infinite alternate; }
 .t1 { top: 12%; left: 18%; }
 .t2 { top: 20%; left: 46%; animation-delay: 1.2s; }
@@ -2859,14 +2942,49 @@ html[data-season="halloween"] {
 }
 @keyframes bulb-glow { from { opacity: 0.35; } to { opacity: 1; } }
 @keyframes snow-calm { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(12px, 110vh, 0); } }
+@keyframes flake-fall { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(var(--drift), 115vh, 0); } }
 @keyframes fog-slide { from { transform: translateX(0); } to { transform: translateX(18vw); } }
 @keyframes leaf-fall { from { transform: translate3d(0, 0, 0) rotate(0deg); } to { transform: translate3d(24px, 110vh, 0) rotate(40deg); } }
 @keyframes bird-glide { from { transform: translateX(-10vw); } to { transform: translateX(110vw); } }
 @keyframes sun-spin { to { transform: rotate(360deg); } }
 @keyframes burst-pop { 0%, 70%, 100% { opacity: 0; transform: scale(0.4); } 80%, 90% { opacity: 0.9; transform: scale(1); } }
 
+@media (max-width: 767px) {
+  .flake:nth-child(n + 16) { display: none; }
+}
+
+.snowman {
+  position: absolute;
+  z-index: 2;
+  right: 6%;
+  bottom: 4%;
+  width: 108px;
+  height: auto;
+  pointer-events: none;
+}
+
+.snowman-scarf {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: scarf-sway 3.6s ease-in-out infinite alternate;
+}
+
+@keyframes scarf-sway {
+  from { transform: rotate(-6deg); }
+  to { transform: rotate(8deg); }
+}
+
+@media (max-width: 767px) {
+  .snowman { right: 4%; bottom: 8px; width: 68px; opacity: 0.9; }
+}
+
+@media (min-width: 1024px) {
+  .snowman { right: auto; left: 46%; bottom: 6%; width: 120px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .season-scene * { animation: none; }
+  .snowman-scarf { animation: none; }
 }
 
 

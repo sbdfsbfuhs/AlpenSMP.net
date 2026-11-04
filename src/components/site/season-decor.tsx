@@ -48,12 +48,49 @@ function Christmas() {
 }
 
 function Winter() {
+  const flakes = [
+    [6, 18, 22, 0, 0.55, 24],
+    [14, 11, 16, -4, 0.35, -18],
+    [22, 16, 26, -9, 0.7, 30],
+    [31, 9, 14, -2, 0.4, -12],
+    [39, 20, 28, -14, 0.5, 16],
+    [47, 12, 18, -7, 0.8, -22],
+    [55, 15, 24, -11, 0.45, 20],
+    [63, 8, 13, -1, 0.3, -10],
+    [71, 18, 21, -16, 0.6, 28],
+    [79, 13, 17, -6, 0.5, -16],
+    [88, 10, 15, -12, 0.35, 14],
+    [94, 17, 27, -3, 0.65, -26],
+    [11, 14, 19, -18, 0.4, 12],
+    [27, 19, 30, -8, 0.55, -20],
+    [43, 8, 12, -20, 0.3, 8],
+    [58, 16, 23, -5, 0.75, 22],
+    [74, 12, 20, -15, 0.45, -14],
+    [86, 20, 32, -10, 0.5, 18],
+    [18, 9, 15, -13, 0.35, -8],
+    [67, 15, 25, -19, 0.6, 26],
+  ];
   return (
     <>
       <span className="twinkle t1" />
       <span className="twinkle t2" />
       <span className="twinkle t3" />
-      <Snow count={10} />
+      {flakes.map(([left, size, duration, delay, opacity, drift]) => (
+        <span
+          key={`${left}-${delay}`}
+          className="flake"
+          style={{
+            ["--left" as string]: `${left}%`,
+            ["--size" as string]: `${size}px`,
+            ["--duration" as string]: `${duration}s`,
+            ["--delay" as string]: `${delay}s`,
+            ["--opacity" as string]: String(opacity),
+            ["--drift" as string]: `${drift}px`,
+          }}
+        >
+          ❄
+        </span>
+      ))}
     </>
   );
 }

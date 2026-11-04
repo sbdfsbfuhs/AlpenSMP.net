@@ -8,6 +8,7 @@ import { CopyIp, MotdNotice, PlayerChart, SiteBanner, StatStrip, StatusCard } fr
 import { FEATURES, PILLARS } from "@/lib/alpen/content";
 import { fetchReviews, type LiveReview } from "@/lib/alpen/live";
 import { SITE } from "@/lib/alpen/site";
+import { useSeason } from "@/lib/alpen/seasons";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -110,6 +111,29 @@ function useTorch(ref: RefObject<HTMLElement | null>) {
   }, [ref]);
 }
 
+function Snowman() {
+  const season = useSeason();
+  if (season !== "winter") return null;
+  return (
+    <svg className="snowman" viewBox="0 0 120 168" aria-hidden="true">
+      <ellipse cx="60" cy="160" rx="36" ry="6" fill="#000" opacity="0.28" />
+      <circle cx="60" cy="124" r="28" fill="#f4f7f8" />
+      <circle cx="60" cy="80" r="20" fill="#f7fafb" />
+      <circle cx="60" cy="48" r="14" fill="#fff" />
+      <rect x="44" y="26" width="32" height="7" rx="2" fill="#141c24" />
+      <rect x="50" y="10" width="20" height="18" rx="2" fill="#141c24" />
+      <circle cx="54" cy="46" r="1.7" fill="#141c24" />
+      <circle cx="66" cy="46" r="1.7" fill="#141c24" />
+      <path d="M57 52 q3 3 6 0" fill="none" stroke="#141c24" strokeWidth="1.2" strokeLinecap="round" />
+      <path d="M42 60 h36 l-6 8 H48 Z" fill="#c10522" />
+      <path className="snowman-scarf" d="M74 62 q18 10 8 28" fill="none" stroke="#c10522" strokeWidth="4" strokeLinecap="round" />
+      <circle cx="60" cy="108" r="2.2" fill="#141c24" />
+      <circle cx="60" cy="120" r="2.2" fill="#141c24" />
+      <circle cx="60" cy="132" r="2.2" fill="#141c24" />
+    </svg>
+  );
+}
+
 function SeasonBadge() {
   const [label, setLabel] = useState("");
   useEffect(() => {
@@ -157,6 +181,7 @@ function Home() {
           ))}
         </div>
         <div className="hero-read" />
+        <Snowman />
         <div className="shell relative z-[3] hero-layout">
           <div>
             <p className="kicker">Deutschsprachiger Minecraft Survival Server</p>
