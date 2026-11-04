@@ -174,25 +174,24 @@ export async function submitCommunity(body: {
   kind: "review" | "image" | "both";
   imageUrl: string;
 }) {
-  const base = {
-    name: body.name,
-    text: body.text,
-    rating: body.rating,
-    kind: body.kind,
-    imageUrl: body.imageUrl,
-    status: "pending",
-    ts: Date.now(),
-    source: "website",
-  };
   if (body.kind === "review" || body.kind === "both") {
-    const moved = await relayDetail("community_reviews", "POST", base);
+    const review = {
+      name: body.name,
+      text: body.text,
+      rating: body.rating,
+      kind: body.kind,
+      status: "pending",
+      ts: Date.now(),
+      source: "website",
+    };
+    const moved = await relayDetail("community_reviews", "POST", review);
     if (!moved.ok) {
       const res = await fetch(`${SITE.fb}/community_reviews.json`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(base),
+        body: JSON.stringify(review),
       });
-      if (!res.ok) throw new Error(moved.error || "Rezension konnte nicht gespeichert werden.");
+      if (!res.ok) throw new Error(readableRelayError(moved.error, "Rezension konnte nicht gespeichert werden."));
     }
   }
   if ((body.kind === "image" || body.kind === "both") && body.imageUrl) {
@@ -210,9 +209,20 @@ export async function submitCommunity(body: {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(image),
       });
-      if (!res.ok) throw new Error(moved.error || "Bild konnte nicht gespeichert werden.");
+      if (!res.ok) throw new Error(readableRelayError(moved.error, "Bild konnte nicht gespeichert werden."));
     }
   }
+}
+
+function readableRelayError(raw: string, fallback: string) {
+  if (raw.includes("payload_too_large")) return "Das Bild ist für den Server zu gross. Bitte ein kleineres Foto oder nur die Rezension senden.";
+  try {
+    const parsed = JSON.parse(raw) as { error?: string };
+    if (parsed.error && parsed.error !== "payload_too_large") return parsed.error;
+  } catch {
+    /* Rohtext */
+  }
+  return raw && !raw.startsWith("{") ? raw : fallback;
 }
 
 export async function submitTicket(input: { name: string; topic: string; msg: string; category?: string }) {
