@@ -159,6 +159,8 @@ function Home() {
             src="/media/ridge.jpg"
             alt="Abendlicht über einem Alpenkamm und Fichtenwald"
             className="hero-drift tone-red absolute inset-0 h-full w-full object-cover opacity-55"
+            fetchPriority="high"
+            decoding="async"
           />
           <div className="sky-wash" />
           {sky === "night" ? (

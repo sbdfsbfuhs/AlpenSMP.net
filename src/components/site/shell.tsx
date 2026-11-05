@@ -6,17 +6,12 @@ import { CautionTape, useSiteNotice } from "@/components/site/live";
 import { LiveDock, LiveHero, ServerStatusBanner } from "@/components/site/broadcast";
 import { LockScreen } from "@/components/site/offline-run";
 import { MORE, NAV, SITE } from "@/lib/alpen/site";
-import { resetLenis } from "@/components/site/smooth-scroll";
 
 export function Shell({ children }: { children: ReactNode }) {
   const path = useRouterState({ select: (state) => state.location.pathname });
   const notice = useSiteNotice();
   const typed = notice?.type || notice?.status_type;
   const customBanner = Boolean(notice?.is_active && typed && typed !== "online" && !notice.lockdown);
-  useEffect(() => {
-    if (path.startsWith("/team")) return;
-    resetLenis();
-  }, [path]);
   useEffect(() => {
     const onClick = (event: MouseEvent) => {
       const el = event.target instanceof Element ? event.target.closest("button, a, summary") : null;

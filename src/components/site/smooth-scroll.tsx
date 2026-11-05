@@ -1,7 +1,12 @@
 import { useEffect } from "react";
+import { useRouter } from "@tanstack/react-router";
 import Lenis from "lenis";
 
 let current: Lenis | null = null;
+
+function publicPath(pathname: string) {
+  return !pathname.startsWith("/team");
+}
 
 export function resetLenis() {
   const lenis = current;
@@ -11,10 +16,10 @@ export function resetLenis() {
   }
   lenis.stop();
   lenis.scrollTo(0, { immediate: true, force: true });
-  lenis.start();
 }
 
 export function SmoothScroll() {
+  const router = useRouter();
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
     const coarse = window.matchMedia("(pointer: coarse)");
@@ -33,5 +38,24 @@ export function SmoothScroll() {
       lenis.destroy();
     };
   }, []);
+  useEffect(() => {
+    const stop = router.subscribe("onBeforeNavigate", (event) => {
+      if (!event.pathChanged || !publicPath(event.toLocation.pathname)) return;
+      current?.stop();
+    });
+    const zero = router.subscribe("onBeforeRouteMount", (event) => {
+      if (!event.pathChanged || !publicPath(event.toLocation.pathname)) return;
+      resetLenis();
+    });
+    const go = router.subscribe("onRendered", (event) => {
+      if (!event.pathChanged || !publicPath(event.toLocation.pathname)) return;
+      window.requestAnimationFrame(() => current?.start());
+    });
+    return () => {
+      stop();
+      zero();
+      go();
+    };
+  }, [router]);
   return null;
 }
