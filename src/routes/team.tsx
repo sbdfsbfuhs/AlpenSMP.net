@@ -37,9 +37,11 @@ import {
   fbUpdate,
   isPermanentBan,
   loginStaff,
+  fetchMinecraftBans,
   readSession,
   savePassword,
   writeSession,
+  type MinecraftBan,
   type ModItem,
   type StaffSession,
 } from "@/lib/alpen/staff";
@@ -528,12 +530,15 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
           <Suspense fallback={<p className="text-sm text-muted">Lade Bereich…</p>}>
           <div className="panel-in min-w-0 px-1" key={safeTab}>
             {safeTab === "moderation" ? (
-              <Moderation
-                user={user}
-                note={note}
-                ban={can(shown, "moderation") && can(real, "moderation")}
-                writeNotes={can(shown, "notes") && can(real, "notes")}
-              />
+              <>
+                {can(shown, "moderationRead") && can(real, "moderationRead") ? <MinecraftBanList /> : null}
+                <Moderation
+                  user={user}
+                  note={note}
+                  ban={can(shown, "moderation") && can(real, "moderation")}
+                  writeNotes={can(shown, "notes") && can(real, "notes")}
+                />
+              </>
             ) : null}
             {safeTab === "help" ? (
               <HelpDesk
@@ -601,6 +606,43 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
         </>
       ) : null}
     </div>
+  );
+}
+
+function MinecraftBanList() {
+  const [rows, setRows] = useState<MinecraftBan[] | null>(null);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    let stop = false;
+    fetchMinecraftBans()
+      .then((list) => {
+        if (!stop) setRows(list);
+      })
+      .catch((err: unknown) => {
+        if (!stop) setError(err instanceof Error ? err.message : "Bannliste nicht erreichbar.");
+      });
+    return () => {
+      stop = true;
+    };
+  }, []);
+  return (
+    <section className="card card-still mb-4 p-4 text-sm">
+      <h3 className="font-semibold">Minecraft-Bannliste</h3>
+      <p className="mt-1 text-xs text-muted">Direkt vom Server. Nur mit Team-Anmeldung, nicht öffentlich.</p>
+      {error ? <p className="mt-3 text-ember">{error}</p> : null}
+      {!error && rows === null ? <p className="mt-3 text-muted">Wird geladen.</p> : null}
+      {rows && rows.length === 0 ? <p className="mt-3 text-muted">Keine Bans auf dem Minecraft-Server.</p> : null}
+      {rows && rows.length > 0 ? (
+        <ul className="mt-3 space-y-2">
+          {rows.map((row) => (
+            <li key={`${row.uuid}-${row.name}`}>
+              <span className="font-semibold">{row.name}</span>
+              <span className="text-muted"> · {row.reason} · {row.until}</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </section>
   );
 }
 

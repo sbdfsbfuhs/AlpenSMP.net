@@ -18,6 +18,7 @@ export const SITE = {
   rulesPage: "https://alpensmp.net/regeln/",
   fb: "https://alpensmp-ad844-default-rtdb.europe-west1.firebasedatabase.app",
   fbKey: "AIzaSyBugFF4T6y_XEhCYde99bwpSyYZOuKbJHc",
+  securityApi: "https://panel.alpensmp.net/alpen-sicherheit",
 } as const;
 
 export const NAV = [
