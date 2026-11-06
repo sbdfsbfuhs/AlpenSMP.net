@@ -5,6 +5,7 @@ import { DiscordMark, PageHero, Shell, TikTokMark } from "@/components/site/shel
 import { CommunityChannels } from "@/components/site/channels";
 import { SiteMascot } from "@/components/site/assistant";
 import { ReviewForm } from "@/components/site/forms";
+import { ReviewCard } from "@/components/site/reviews";
 import { fetchReviews, fetchShots, type LiveReview, type Shot } from "@/lib/alpen/live";
 import { SITE } from "@/lib/alpen/site";
 
@@ -124,16 +125,9 @@ function CommunityPage() {
                 : `${reviews.length} Stimmen · Schnitt ${(reviews.reduce((sum, row) => sum + row.rating, 0) / reviews.length).toFixed(1)}`}
             {reviews && reviews.length > 0 ? <span className="text-star"> ★</span> : null}
           </p>
-          <div className="mt-6 space-y-3">
+          <div className="mt-6 grid gap-3">
             {(reviews ?? []).map((review) => (
-              <blockquote key={review.name + review.text.slice(0, 24)} className="card p-5">
-                <p className="text-sm">
-                  <span className="text-star">{"★".repeat(review.rating)}</span>
-                  <span className="text-faint">{"☆".repeat(Math.max(0, 5 - review.rating))}</span>
-                </p>
-                <p className="mt-2 text-sm whitespace-pre-line">{review.text}</p>
-                <footer className="mt-3 text-xs text-faint">{review.name}</footer>
-              </blockquote>
+              <ReviewCard key={review.name + review.ts} review={review} />
             ))}
           </div>
         </div>

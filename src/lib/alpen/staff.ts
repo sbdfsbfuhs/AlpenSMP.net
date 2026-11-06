@@ -223,6 +223,12 @@ export function freshStamp(ts?: number, updatedAt?: number) {
   return (typeof ts === "number" && now - ts < day) || (typeof updatedAt === "number" && now - updatedAt < day);
 }
 
+export function lateDays(value: unknown) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 3;
+  return Math.min(30, Math.max(1, Math.round(n)));
+}
+
 export function staffLoginId(value: string) {
   const raw = value.trim().toLowerCase();
   if (!raw) throw new Error("Name und Passwort");

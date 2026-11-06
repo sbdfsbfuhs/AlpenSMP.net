@@ -156,27 +156,17 @@ export function ReviewForm() {
 
 async function compressImage(file: File) {
   const bmp = await createImageBitmap(file);
-  let edge = 720;
-  let quality = 0.62;
-  let url = "";
-  for (let attempt = 0; attempt < 8; attempt += 1) {
-    const scale = Math.min(1, edge / Math.max(bmp.width, bmp.height));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(bmp.width * scale));
-    canvas.height = Math.max(1, Math.round(bmp.height * scale));
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Bild konnte nicht vorbereitet werden.");
-    ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
-    url = canvas.toDataURL("image/jpeg", quality);
-    if (url.length <= 24_000) return url;
-    quality -= 0.08;
-    if (quality < 0.36) {
-      quality = 0.42;
-      edge = Math.round(edge * 0.7);
-    }
-    if (edge < 280) break;
-  }
-  throw new Error("Das Bild ist für den Server zu gross. Bitte ein kleineres Foto oder nur die Rezension senden.");
+  const edge = 1600;
+  const scale = Math.min(1, edge / Math.max(bmp.width, bmp.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(bmp.width * scale));
+  canvas.height = Math.max(1, Math.round(bmp.height * scale));
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Bild konnte nicht vorbereitet werden.");
+  ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+  const url = canvas.toDataURL("image/jpeg", 0.82);
+  if (url.length > 700_000) throw new Error("Bild ist selbst verkleinert noch zu gross. Bitte ein kleineres Foto wählen.");
+  return url;
 }
 
 export function TicketForm() {

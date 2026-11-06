@@ -6,6 +6,7 @@ import { CautionTape, useSiteNotice } from "@/components/site/live";
 import { LiveDock, LiveHero, ServerStatusBanner } from "@/components/site/broadcast";
 import { LockScreen } from "@/components/site/offline-run";
 import { MORE, NAV, SITE } from "@/lib/alpen/site";
+import { FooterReview } from "@/components/site/reviews";
 
 export function Shell({ children }: { children: ReactNode }) {
   const path = useRouterState({ select: (state) => state.location.pathname });
@@ -147,7 +148,9 @@ function Footer() {
   const path = useRouterState({ select: (state) => state.location.pathname });
   const frame = path.startsWith("/team") ? "shell-staff" : "shell";
   return (
-    <footer className="relative z-20 mt-20 border-t border-line bg-bg">
+    <>
+      <FooterReview />
+      <footer className="relative z-20 border-t border-line bg-bg">
       <div className={`${frame} grid gap-10 py-12 md:grid-cols-4`}>
         <div className="md:col-span-2">
           <p className="display text-2xl">
@@ -205,6 +208,7 @@ function Footer() {
         </div>
       </div>
     </footer>
+    </>
   );
 }
 

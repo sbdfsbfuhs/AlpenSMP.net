@@ -215,7 +215,7 @@ export async function submitCommunity(body: {
 }
 
 function readableRelayError(raw: string, fallback: string) {
-  if (raw.includes("payload_too_large")) return "Das Bild ist für den Server zu gross. Bitte ein kleineres Foto oder nur die Rezension senden.";
+  if (raw.includes("payload_too_large")) return "Der Server nimmt das Bild nicht an. In der Sicherheits-App ist die Grenze 32 KB. Für gute Fotos muss sie auf 1 MB steigen.";
   try {
     const parsed = JSON.parse(raw) as { error?: string };
     if (parsed.error && parsed.error !== "payload_too_large") return parsed.error;

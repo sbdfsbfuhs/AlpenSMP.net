@@ -6,7 +6,6 @@ import { ModrinthLink } from "@/components/site/guide/mods";
 import { SiteMascot } from "@/components/site/assistant";
 import { CopyIp, MotdNotice, PlayerChart, SiteBanner, StatStrip, StatusCard } from "@/components/site/live";
 import { FEATURES, PILLARS } from "@/lib/alpen/content";
-import { fetchReviews, type LiveReview } from "@/lib/alpen/live";
 import { SITE } from "@/lib/alpen/site";
 import { useSeason } from "@/lib/alpen/seasons";
 
@@ -363,46 +362,6 @@ function Home() {
           </div>
         </article>
       </section>
-
-      <section className="border-t border-line bg-bg-raised py-16">
-        <div className="shell">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <p className="kicker">Stimmen</p>
-              <h2 className="display mt-3 text-4xl">Was die Community sagt</h2>
-            </div>
-            <Link to="/community" className="btn-ghost">
-              Alle Rezensionen
-            </Link>
-          </div>
-          <HomeReviews />
-        </div>
-      </section>
     </Shell>
-  );
-}
-
-function HomeReviews() {
-  const [reviews, setReviews] = useState<LiveReview[] | null>(null);
-  useEffect(() => {
-    fetchReviews()
-      .then(setReviews)
-      .catch(() => setReviews([]));
-  }, []);
-  const shown = (reviews ?? []).slice(0, 3);
-  if (reviews === null) return <p className="mt-8 text-sm text-muted">Freigegebene Stimmen werden geladen.</p>;
-  if (!shown.length) {
-    return <p className="mt-8 text-sm text-muted">Noch keine freigegebene Stimme. Erst einreichen, dann gibt das Team sie frei.</p>;
-  }
-  return (
-    <div className="mt-8 grid gap-4 md:grid-cols-3">
-      {shown.map((review) => (
-        <blockquote key={review.ts + review.name} className="card p-5">
-          <p className="text-star">{"★".repeat(review.rating)}</p>
-          <p className="mt-3 text-sm whitespace-pre-line text-fg">{review.text}</p>
-          <footer className="mt-4 text-sm text-faint">{review.name}</footer>
-        </blockquote>
-      ))}
-    </div>
   );
 }
