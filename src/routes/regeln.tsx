@@ -21,9 +21,25 @@ export const Route = createFileRoute("/regeln")({
 function RulesPage() {
   const [extra, setExtra] = useState<{ title?: string; body?: string }[]>([]);
   useEffect(() => {
-    fbGet<Record<string, { title?: string; body?: string }>>("rulesPublic")
-      .then((value) => setExtra(entries(value).map(([, item]) => item)))
-      .catch(() => setExtra([]));
+    let stop = false;
+    const load = () => {
+      if (document.hidden) return;
+      fbGet<Record<string, { title?: string; body?: string }>>("rulesPublic")
+        .then((value) => {
+          if (!stop) setExtra(entries(value).map(([, item]) => item));
+        })
+        .catch(() => {
+          if (!stop) setExtra([]);
+        });
+    };
+    load();
+    const id = window.setInterval(load, 20000);
+    document.addEventListener("visibilitychange", load);
+    return () => {
+      stop = true;
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", load);
+    };
   }, []);
 
   return (

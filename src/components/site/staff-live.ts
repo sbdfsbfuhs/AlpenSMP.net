@@ -1,9 +1,15 @@
 import { useEffect, useState } from "react";
 import { ensureIdToken } from "@/lib/alpen/fb-auth";
 import { SITE } from "@/lib/alpen/site";
+import { isMoved, loadPath } from "@/lib/alpen/security";
 import { fbGet, fbRemove, fbUpdate, type StaffSession } from "@/lib/alpen/staff";
 
 export function shallowCount(path: string) {
+  if (isMoved(path)) {
+    return loadPath(path)
+      .then((data) => (data && typeof data === "object" ? Object.keys(data as object).length : 0))
+      .catch(() => 0);
+  }
   return ensureIdToken()
     .then((token) => {
       const url = new URL(`${SITE.fb}/${path}.json`);
@@ -20,7 +26,9 @@ export function useLive<T>(path: string) {
   const [data, setData] = useState<Record<string, T>>({});
   useEffect(() => {
     let stop = false;
+    const wait = isMoved(path) ? 8000 : 30000;
     const pull = () => {
+      if (document.hidden) return;
       fbGet<Record<string, T>>(path)
         .then((value) => {
           if (!stop) setData(value ?? {});
@@ -28,10 +36,15 @@ export function useLive<T>(path: string) {
         .catch(() => {});
     };
     pull();
-    const id = window.setInterval(pull, 30000);
+    const id = window.setInterval(pull, wait);
+    const onShow = () => {
+      if (!document.hidden) pull();
+    };
+    document.addEventListener("visibilitychange", onShow);
     return () => {
       stop = true;
       window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onShow);
     };
   }, [path]);
   return data;

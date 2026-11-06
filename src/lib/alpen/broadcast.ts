@@ -105,7 +105,7 @@ export function fbListen(path: string, onValue: (data: unknown) => void) {
       if (document.hidden) return;
       pull();
     },
-    isMoved(path) ? 20000 : 3 * 60 * 1000,
+    isMoved(path) ? 8000 : 3 * 60 * 1000,
   );
   return () => {
     closed = true;

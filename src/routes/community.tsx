@@ -37,12 +37,32 @@ function CommunityPage() {
   }, [active]);
 
   useEffect(() => {
-    fetchReviews()
-      .then((rows) => setReviews(rows))
-      .catch(() => setReviews([]));
-    fetchShots()
-      .then(setShots)
-      .catch(() => setShots([]));
+    let stop = false;
+    const load = () => {
+      if (document.hidden) return;
+      fetchReviews()
+        .then((rows) => {
+          if (!stop) setReviews(rows);
+        })
+        .catch(() => {
+          if (!stop) setReviews([]);
+        });
+      fetchShots()
+        .then((rows) => {
+          if (!stop) setShots(rows);
+        })
+        .catch(() => {
+          if (!stop) setShots([]);
+        });
+    };
+    load();
+    const id = window.setInterval(load, 20000);
+    document.addEventListener("visibilitychange", load);
+    return () => {
+      stop = true;
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", load);
+    };
   }, []);
 
   return (

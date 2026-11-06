@@ -57,14 +57,6 @@ export async function securityJson<T>(path: string, init: RequestInit = {}): Pro
   return (await res.json()) as T;
 }
 
-function mergeValue(base: unknown, over: unknown): unknown {
-  if (over == null) return base ?? null;
-  if (base == null || typeof base !== "object" || typeof over !== "object" || Array.isArray(base) || Array.isArray(over)) return over;
-  const out: Record<string, unknown> = { ...(base as Record<string, unknown>) };
-  for (const [key, value] of Object.entries(over as Record<string, unknown>)) out[key] = mergeValue(out[key], value);
-  return out;
-}
-
 export async function relay(path: string, method: string, body?: unknown): Promise<{ handled: boolean; data: unknown }> {
   const result = await relayDetail(path, method, body);
   return { handled: result.ok, data: result.data };
@@ -110,14 +102,15 @@ async function firebaseGet(path: string) {
 }
 
 export async function loadPath(path: string) {
-  const [fb, moved] = await Promise.all([
-    firebaseGet(path).then((data) => ({ ok: true as const, data })).catch(() => ({ ok: false as const, data: null })),
-    isMoved(path) ? relay(path, "GET") : Promise.resolve({ handled: false, data: null }),
-  ]);
-  if (moved.handled) {
-    if (!fb.ok || fb.data == null) return moved.data;
-    return mergeValue(fb.data, moved.data);
+  if (isMoved(path)) {
+    const moved = await relayDetail(path, "GET");
+    if (moved.ok) return moved.data;
+    if (moved.status === 404) return null;
+    if (moved.status !== 0 && moved.status < 500) throw new Error("Laden fehlgeschlagen");
   }
-  if (!fb.ok) throw new Error("Laden fehlgeschlagen");
-  return fb.data;
+  try {
+    return await firebaseGet(path);
+  } catch {
+    throw new Error("Laden fehlgeschlagen");
+  }
 }
