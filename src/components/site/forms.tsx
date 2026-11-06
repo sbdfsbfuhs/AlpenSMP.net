@@ -1,10 +1,32 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "@tanstack/react-router";
 import { lookupTicket, submitCommunity, submitTicket, type TicketView } from "@/lib/alpen/live";
 import { DiscordLink } from "@/components/site/shell";
 
 const COOLDOWN = 60_000;
 const STAR_LINE = ["", "Autsch 😬", "Na ja...", "Solide", "Stark!", "Legendär! 🏔️"];
+const IMAGE_OK = /image\/(png|jpeg|webp)/;
+
+export function reviewGaps(input: {
+  name: string;
+  text: string;
+  kind: "both" | "image" | "review";
+  hasFile: boolean;
+  consent: boolean;
+  rights: boolean;
+}) {
+  const gaps: string[] = [];
+  if (input.name.trim().length < 2) gaps.push("Name");
+  if (input.kind !== "image" && input.text.trim().length < 4) gaps.push("Text");
+  if (input.kind !== "review" && !input.hasFile) gaps.push("Bild");
+  if (!input.consent) gaps.push("Datenschutz");
+  if (input.kind !== "review" && !input.rights) gaps.push("Bildrechte");
+  return gaps;
+}
+
+function imageFile(file: File) {
+  return IMAGE_OK.test(file.type) || /\.(png|jpe?g|webp)$/i.test(file.name);
+}
 
 export function ReviewForm() {
   const [name, setName] = useState("");
@@ -18,8 +40,18 @@ export function ReviewForm() {
   const [busy, setBusy] = useState(false);
   const [consent, setConsent] = useState(false);
   const [rights, setRights] = useState(false);
+  const [over, setOver] = useState(false);
+  const [motion, setMotion] = useState(true);
+  const fileRef = useRef<HTMLInputElement>(null);
   const lit = hover || rating;
   const sent = note.startsWith("Danke.");
+  const textNeeded = kind !== "image";
+  const imageNeeded = kind !== "review";
+  const gaps = reviewGaps({ name, text, kind, hasFile: Boolean(file), consent, rights });
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) setMotion(false);
+  }, []);
 
   useEffect(() => {
     if (!file) {
@@ -31,24 +63,34 @@ export function ReviewForm() {
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
+  function pickFile(next: File | null) {
+    if (!next) {
+      setFile(null);
+      if (fileRef.current) fileRef.current.value = "";
+      return;
+    }
+    if (!imageFile(next)) {
+      setNote("Nur PNG, JPG oder WebP. Diese Datei passt nicht.");
+      if (fileRef.current) fileRef.current.value = "";
+      return;
+    }
+    if (next.size > 12 * 1024 * 1024) {
+      setNote("Das Bild ist grösser als 12 MB. Bitte ein kleineres Foto.");
+      if (fileRef.current) fileRef.current.value = "";
+      return;
+    }
+    setNote("");
+    setFile(next);
+  }
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
+    if (busy) return;
     const cleanName = name.trim().slice(0, 32);
     const cleanText = text.trim().slice(0, 800);
-    if (cleanName.length < 2 || cleanText.length < 4) {
-      setNote("Name und ein kurzer Text bitte.");
-      return;
-    }
-    if ((kind === "image" || kind === "both") && !file) {
-      setNote("Für einen Shot bitte ein Bild wählen – oder nur eine Rezension senden.");
-      return;
-    }
-    if (!consent) {
-      setNote("Bitte die Datenschutz-Einwilligung anhaken.");
-      return;
-    }
-    if ((kind === "image" || kind === "both") && !rights) {
-      setNote("Bitte bestätigen, dass du das Bild zeigen darfst.");
+    const missing = reviewGaps({ name: cleanName, text: cleanText, kind, hasFile: Boolean(file), consent, rights });
+    if (missing.length) {
+      setNote(`Noch fehlt: ${missing.join(", ")}.`);
       return;
     }
     const last = Number(localStorage.getItem("alpensmp_last_submit") || 0);
@@ -60,17 +102,15 @@ export function ReviewForm() {
     setNote("Wird gesendet…");
     try {
       let imageUrl = "";
-      if (file && (kind === "image" || kind === "both")) {
-        imageUrl = await compressImage(file);
-      }
+      if (file && imageNeeded) imageUrl = await compressImage(file);
       await submitCommunity({ name: cleanName, text: cleanText, rating, kind, imageUrl });
       localStorage.setItem("alpensmp_last_submit", String(Date.now()));
       setName("");
       setText("");
-      setFile(null);
+      pickFile(null);
       setConsent(false);
       setRights(false);
-      setNote("Danke. Dein Beitrag ist raus – das Team schaltet ihn frei, sobald er geprüft ist. Er erscheint nicht sofort.");
+      setNote("Danke. Dein Beitrag ist raus. Das Team prüft ihn, danach erscheint er. Nicht sofort.");
     } catch (err) {
       setNote(err instanceof Error ? err.message : "Senden fehlgeschlagen. Alternativ über Discord.");
     } finally {
@@ -79,14 +119,26 @@ export function ReviewForm() {
   }
 
   return (
-    <form className="card card-still review-form space-y-5 p-5" onSubmit={onSubmit}>
-      <div>
-        <h3 className="text-lg font-semibold">📸 Reicht jetzt deins ein</h3>
-        <p className="mt-1 text-sm text-muted">Dein Screenshot oder deine Meinung – das Team prüft kurz, dann erscheint dein Beitrag.</p>
+    <form className={`card card-still review-form space-y-5 p-5${motion ? " is-live" : ""}`} onSubmit={onSubmit}>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-lg font-semibold">Reicht jetzt deins ein</h3>
+          <p className="mt-1 text-sm text-muted">
+            {kind === "image"
+              ? "Ein Bild reicht. Text ist freiwillig."
+              : kind === "review"
+                ? "Nur der Text. Ein Bild brauchst du nicht."
+                : "Bild und Text, beides."}
+          </p>
+        </div>
+        <label className="review-motion text-xs text-faint">
+          <input type="checkbox" checked={motion} onChange={(event) => setMotion(event.target.checked)} />
+          Bewegung
+        </label>
       </div>
       <label className="block text-sm" htmlFor="review-name">
         Name
-        <input id="review-name" className="field mt-1" name="name" autoComplete="nickname" value={name} maxLength={32} required onChange={(e) => setName(e.target.value)} />
+        <input id="review-name" className="field mt-1" name="name" autoComplete="nickname" value={name} maxLength={32} onChange={(e) => setName(e.target.value)} />
       </label>
       <fieldset className="review-block">
         <legend className="text-sm">Sterne</legend>
@@ -107,7 +159,7 @@ export function ReviewForm() {
             </button>
           ))}
         </div>
-        <p className="review-line" aria-live="polite">{STAR_LINE[rating]}</p>
+        <p className="review-line" aria-live="polite">{rating} von 5 · {STAR_LINE[rating]}</p>
       </fieldset>
       <fieldset className="review-block">
         <legend className="text-sm">Was du einreichst</legend>
@@ -131,43 +183,105 @@ export function ReviewForm() {
         ))}
         </div>
       </fieldset>
-      {kind !== "review" ? (
-        <label className="review-block block text-sm" htmlFor="review-file">
-          Bild
-          <input
-            id="review-file"
-            className="mt-1 block w-full text-sm text-muted"
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          />
-          {preview ? <img src={preview} alt="Vorschau deines Bildes" className="review-preview" /> : null}
-          <span className="mt-1 block text-xs text-faint">PNG, JPG oder WebP. Nur dein eigenes Bild. Es wird vor dem Senden verkleinert.</span>
-        </label>
-      ) : null}
+      {imageNeeded ? (
+        <div className="review-block text-sm">
+          <p>Bild{kind === "both" ? "" : " · reicht allein"}</p>
+          <div
+            className={over ? "review-drop is-over" : "review-drop"}
+            onDragOver={(event) => {
+              event.preventDefault();
+              setOver(true);
+            }}
+            onDragLeave={() => setOver(false)}
+            onDrop={(event) => {
+              event.preventDefault();
+              setOver(false);
+              pickFile(event.dataTransfer.files?.[0] ?? null);
+            }}
+          >
+            <input
+              ref={fileRef}
+              id="review-file"
+              className="sr-only"
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              onChange={(event) => pickFile(event.target.files?.[0] ?? null)}
+            />
+            <button type="button" className="btn-ghost" onClick={() => fileRef.current?.click()}>
+              Bild wählen
+            </button>
+            <p className="text-xs text-faint">Oder hierher ziehen. PNG, JPG oder WebP.</p>
+          </div>
+          {preview && file ? (
+            <div className="review-picked">
+              <img src={preview} alt="Vorschau deines Bildes" className="review-preview" />
+              <div className="min-w-0">
+                <p className="truncate font-semibold">{file.name}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <button type="button" className="btn-ghost px-3" onClick={() => fileRef.current?.click()}>
+                    Austauschen
+                  </button>
+                  <button type="button" className="btn-ghost px-3" onClick={() => pickFile(null)}>
+                    Entfernen
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        <p className="review-block text-sm text-muted">Kein Bild nötig.</p>
+      )}
       <label className="review-block block text-sm" htmlFor="review-text">
-        Text
-        <textarea id="review-text" className="field mt-1 min-h-28" name="text" value={text} maxLength={800} required placeholder="Was hat dich begeistert? Was könnte besser sein?" onChange={(e) => setText(e.target.value)} />
+        Text{textNeeded ? "" : " · optional"}
+        <textarea
+          id="review-text"
+          className="field mt-1 min-h-28"
+          name="text"
+          value={text}
+          maxLength={800}
+          placeholder={textNeeded ? "Was hat dich begeistert? Was könnte besser sein?" : "Optional. Ein Bild allein reicht."}
+          onChange={(e) => setText(e.target.value)}
+        />
       </label>
+      <ul className="review-list text-sm">
+        <Check ok={name.trim().length >= 2} label="Name eingetragen" />
+        <Check ok label={`Sterne: ${rating} · ${STAR_LINE[rating]}`} />
+        <Check ok={Boolean(file)} optional={!imageNeeded && !file} label={imageNeeded ? "Bild ausgewählt" : "Bild"} />
+        <Check ok={text.trim().length >= 4} optional={!textNeeded && text.trim().length < 4} label={textNeeded ? "Text ergänzt" : "Text"} />
+        <Check ok={consent} label="Datenschutz" />
+        {imageNeeded ? <Check ok={rights} label="Bildrechte" /> : null}
+      </ul>
+      {gaps.length ? <p className="text-sm text-brand">Vor dem Absenden noch: {gaps.join(", ")}.</p> : <p className="text-sm text-muted">Alles Nötige ist da.</p>}
       <label className="review-check text-sm" htmlFor="review-consent">
-        <input id="review-consent" className="review-check-input" type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} required />
+        <input id="review-consent" className="review-check-input" type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
         <span>
           Ich willige ein, dass Name, Text und Sterne
           {kind === "review" ? "" : " sowie das Bild"} gespeichert und nach Freigabe öffentlich gezeigt werden. Dazu die{" "}
           <Link to="/datenschutz" className="text-brand underline">Datenschutzerklärung</Link>.
         </span>
       </label>
-      {kind !== "review" ? (
+      {imageNeeded ? (
         <label className="review-check text-sm" htmlFor="review-rights">
-          <input id="review-rights" className="review-check-input" type="checkbox" checked={rights} onChange={(e) => setRights(e.target.checked)} required />
+          <input id="review-rights" className="review-check-input" type="checkbox" checked={rights} onChange={(e) => setRights(e.target.checked)} />
           <span>Das Bild gehört mir oder ich darf es hier zeigen. Kein fremdes Foto.</span>
         </label>
       ) : null}
       <button className={sent ? "btn-brand review-send is-sent" : "btn-brand review-send"} type="submit" disabled={busy}>
-        {busy ? "Wird gesendet…" : sent ? "✓ Angekommen" : "Absenden zur Freigabe"}
+        {busy ? "Wird gesendet…" : sent ? "Angekommen" : "Absenden zur Freigabe"}
       </button>
-      <p className="text-sm text-muted">{note || "Wird nicht sofort öffentlich. Maximal 1 Beitrag pro Minute."}</p>
+      <p className={sent ? "review-ok text-sm" : "text-sm text-muted"} role="status">{note || "Wird nicht sofort öffentlich. Maximal 1 Beitrag pro Minute."}</p>
     </form>
+  );
+}
+
+function Check({ ok, label, optional = false }: { ok: boolean; label: string; optional?: boolean }) {
+  return (
+    <li className={ok ? "is-ok" : ""}>
+      <span aria-hidden="true">{ok ? "✓" : optional ? "–" : "○"}</span>
+      {label}
+      {optional ? <span className="text-faint"> · optional</span> : null}
+    </li>
   );
 }
 

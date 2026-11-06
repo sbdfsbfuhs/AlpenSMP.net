@@ -3033,7 +3033,7 @@ html[data-season="halloween"] {
 }
 
 .review-kind.is-on {
-  animation: review-kind-in 220ms ease;
+  box-shadow: 0 0 0 1px rgb(225 6 44 / 0.45);
 }
 
 .review-preview {
@@ -3076,7 +3076,6 @@ html[data-season="halloween"] {
   border: solid #fff;
   border-width: 0 2px 2px 0;
   transform: rotate(45deg) translate(-1px, -1px);
-  animation: review-tick 180ms ease;
 }
 
 .review-check-input:focus-visible {
@@ -3089,7 +3088,7 @@ html[data-season="halloween"] {
 }
 
 .review-send.is-sent {
-  animation: review-kind-in 260ms ease;
+  box-shadow: 0 0 0 3px rgb(225 6 44 / 0.28);
 }
 
 .review-card {
@@ -3161,5 +3160,99 @@ html[data-season="halloween"] {
   }
   .review-star.is-on {
     transform: none;
+  }
+}
+
+.review-drop {
+  display: grid;
+  justify-items: start;
+  gap: 0.45rem;
+  margin-top: 0.45rem;
+  padding: 0.9rem;
+  border: 1px dashed color-mix(in oklab, var(--color-brand) 45%, var(--color-line));
+  border-radius: 0.9rem;
+  background: color-mix(in oklab, var(--color-bg) 70%, transparent);
+}
+
+.review-drop.is-over {
+  border-color: #e1062c;
+  background: color-mix(in oklab, #e1062c 12%, var(--color-bg));
+}
+
+.review-picked {
+  display: grid;
+  grid-template-columns: 7.5rem 1fr;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 0.75rem;
+}
+
+.review-picked .review-preview {
+  max-height: 5.5rem;
+  margin-top: 0;
+}
+
+.review-list {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 0.8rem;
+  background: color-mix(in oklab, var(--color-bg) 55%, transparent);
+}
+
+.review-list li {
+  display: flex;
+  gap: 0.45rem;
+  color: var(--color-muted);
+}
+
+.review-list li.is-ok {
+  color: var(--color-fg);
+}
+
+.review-ok {
+  color: var(--color-fg);
+  font-weight: 650;
+}
+
+.review-motion {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.review-form.is-live .review-kind.is-on,
+.review-form.is-live .review-picked,
+.review-form.is-live .review-send.is-sent {
+  animation: review-kind-in 220ms ease;
+}
+
+.review-form.is-live .review-star.is-on {
+  animation: review-glow 420ms ease;
+}
+
+.review-form.is-live .review-check-input:checked::after {
+  animation: review-tick 180ms ease;
+}
+
+@keyframes review-glow {
+  0%, 100% { text-shadow: 0 0 8px rgb(225 6 44 / 0.35); }
+  50% { text-shadow: 0 0 16px rgb(225 6 44 / 0.85); }
+}
+
+@media (max-width: 480px) {
+  .review-picked {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .review-form.is-live .review-kind.is-on,
+  .review-form.is-live .review-star.is-on,
+  .review-form.is-live .review-picked,
+  .review-form.is-live .review-send.is-sent,
+  .review-form.is-live .review-check-input:checked::after {
+    animation: none;
   }
 }
