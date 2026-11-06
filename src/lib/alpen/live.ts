@@ -12,7 +12,7 @@ export type ServerStatus = {
 
 export type HistoryPoint = { t: number; n: number };
 
-export type LiveReview = { name: string; rating: number; text: string; ts: number };
+export type LiveReview = { name: string; rating: number; text: string; ts: number; imageUrl?: string };
 
 export type Shot = { name: string; caption: string; imageUrl: string; ts: number };
 
@@ -129,17 +129,24 @@ export async function fetchReviews(): Promise<LiveReview[]> {
   try {
     const data = (await loadPath("community_reviews")) as Record<
       string,
-      { status?: string; name?: string; rating?: number; text?: string; ts?: number }
+      { status?: string; name?: string; rating?: number; text?: string; ts?: number; imageUrl?: string }
     > | null;
     if (!data) return [];
+    const shots = await fetchShots().catch(() => []);
     return Object.values(data)
-      .filter((row) => row && row.status === "approved" && row.text)
-      .map((row) => ({
-        name: row.name || "Spieler",
-        rating: Number(row.rating) || 5,
-        text: String(row.text),
-        ts: Number(row.ts) || 0,
-      }))
+      .filter((row) => row && row.status === "approved" && (row.text || row.imageUrl))
+      .map((row) => {
+        const text = String(row.text || "");
+        const own = typeof row.imageUrl === "string" ? row.imageUrl : "";
+        const shot = shots.find((item) => item.name === (row.name || "Spieler") && Math.abs(item.ts - (Number(row.ts) || 0)) < 120_000);
+        return {
+          name: row.name || "Spieler",
+          rating: Number(row.rating) || 5,
+          text,
+          ts: Number(row.ts) || 0,
+          imageUrl: own || shot?.imageUrl,
+        };
+      })
       .sort((a, b) => b.ts - a.ts);
   } catch {
     return [];

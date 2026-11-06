@@ -1,20 +1,35 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "@tanstack/react-router";
 import { lookupTicket, submitCommunity, submitTicket, type TicketView } from "@/lib/alpen/live";
 import { DiscordLink } from "@/components/site/shell";
 
 const COOLDOWN = 60_000;
+const STAR_LINE = ["", "Autsch 😬", "Na ja...", "Solide", "Stark!", "Legendär! 🏔️"];
 
 export function ReviewForm() {
   const [name, setName] = useState("");
   const [text, setText] = useState("");
   const [rating, setRating] = useState(5);
+  const [hover, setHover] = useState(0);
   const [kind, setKind] = useState<"both" | "image" | "review">("both");
   const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [consent, setConsent] = useState(false);
   const [rights, setRights] = useState(false);
+  const lit = hover || rating;
+  const sent = note.startsWith("Danke.");
+
+  useEffect(() => {
+    if (!file) {
+      setPreview("");
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -64,36 +79,37 @@ export function ReviewForm() {
   }
 
   return (
-    <form className="card space-y-4 p-5" onSubmit={onSubmit}>
+    <form className="card card-still review-form space-y-5 p-5" onSubmit={onSubmit}>
       <div>
-        <h3 className="text-lg font-semibold">Reicht jetzt deines ein</h3>
-        <p className="mt-1 text-sm text-muted">
-          Shot, Rezension oder beides. Das Team prüft kurz – danach erscheint dein Beitrag in Galerie und Stimmen.
-        </p>
+        <h3 className="text-lg font-semibold">📸 Reicht jetzt deins ein</h3>
+        <p className="mt-1 text-sm text-muted">Dein Screenshot oder deine Meinung – das Team prüft kurz, dann erscheint dein Beitrag.</p>
       </div>
       <label className="block text-sm" htmlFor="review-name">
         Name
         <input id="review-name" className="field mt-1" name="name" autoComplete="nickname" value={name} maxLength={32} required onChange={(e) => setName(e.target.value)} />
       </label>
-      <fieldset>
+      <fieldset className="review-block">
         <legend className="text-sm">Sterne</legend>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {[5, 4, 3, 2, 1].map((n) => (
+        <div className="review-stars mt-2" onMouseLeave={() => setHover(0)}>
+          {[1, 2, 3, 4, 5].map((n) => (
             <button
               key={n}
               type="button"
-              className={n === rating ? "btn-brand px-3" : "btn-ghost px-3"}
+              className={n <= lit ? "review-star is-on" : "review-star"}
+              onMouseEnter={() => setHover(n)}
+              onFocus={() => setHover(n)}
+              onBlur={() => setHover(0)}
               onClick={() => setRating(n)}
               aria-pressed={n === rating}
               aria-label={`${n} Sterne`}
             >
-              {n}
-              <span className="text-star" aria-hidden="true">★</span>
+              ★
             </button>
           ))}
         </div>
+        <p className="review-line" aria-live="polite">{STAR_LINE[rating]}</p>
       </fieldset>
-      <fieldset>
+      <fieldset className="review-block">
         <legend className="text-sm">Was du einreichst</legend>
         <div className="mt-2 flex flex-wrap gap-2">
         {(
@@ -106,7 +122,7 @@ export function ReviewForm() {
           <button
             key={value}
             type="button"
-            className={kind === value ? "btn-brand px-3" : "btn-ghost px-3"}
+            className={kind === value ? "btn-brand review-kind is-on px-3" : "btn-ghost review-kind px-3"}
             onClick={() => setKind(value)}
             aria-pressed={kind === value}
           >
@@ -116,7 +132,7 @@ export function ReviewForm() {
         </div>
       </fieldset>
       {kind !== "review" ? (
-        <label className="block text-sm" htmlFor="review-file">
+        <label className="review-block block text-sm" htmlFor="review-file">
           Bild
           <input
             id="review-file"
@@ -125,15 +141,16 @@ export function ReviewForm() {
             accept="image/png,image/jpeg,image/webp"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           />
+          {preview ? <img src={preview} alt="Vorschau deines Bildes" className="review-preview" /> : null}
           <span className="mt-1 block text-xs text-faint">PNG, JPG oder WebP. Nur dein eigenes Bild. Es wird vor dem Senden verkleinert.</span>
         </label>
       ) : null}
-      <label className="block text-sm" htmlFor="review-text">
+      <label className="review-block block text-sm" htmlFor="review-text">
         Text
-        <textarea id="review-text" className="field mt-1 min-h-28" name="text" value={text} maxLength={800} required onChange={(e) => setText(e.target.value)} />
+        <textarea id="review-text" className="field mt-1 min-h-28" name="text" value={text} maxLength={800} required placeholder="Was hat dich begeistert? Was könnte besser sein?" onChange={(e) => setText(e.target.value)} />
       </label>
-      <label className="flex items-start gap-3 text-sm" htmlFor="review-consent">
-        <input id="review-consent" className="mt-1" type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} required />
+      <label className="review-check text-sm" htmlFor="review-consent">
+        <input id="review-consent" className="review-check-input" type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} required />
         <span>
           Ich willige ein, dass Name, Text und Sterne
           {kind === "review" ? "" : " sowie das Bild"} gespeichert und nach Freigabe öffentlich gezeigt werden. Dazu die{" "}
@@ -141,13 +158,13 @@ export function ReviewForm() {
         </span>
       </label>
       {kind !== "review" ? (
-        <label className="flex items-start gap-3 text-sm" htmlFor="review-rights">
-          <input id="review-rights" className="mt-1" type="checkbox" checked={rights} onChange={(e) => setRights(e.target.checked)} required />
+        <label className="review-check text-sm" htmlFor="review-rights">
+          <input id="review-rights" className="review-check-input" type="checkbox" checked={rights} onChange={(e) => setRights(e.target.checked)} required />
           <span>Das Bild gehört mir oder ich darf es hier zeigen. Kein fremdes Foto.</span>
         </label>
       ) : null}
-      <button className="btn-brand" type="submit" disabled={busy}>
-        Absenden zur Freigabe
+      <button className={sent ? "btn-brand review-send is-sent" : "btn-brand review-send"} type="submit" disabled={busy}>
+        {busy ? "Wird gesendet…" : sent ? "✓ Angekommen" : "Absenden zur Freigabe"}
       </button>
       <p className="text-sm text-muted">{note || "Wird nicht sofort öffentlich. Maximal 1 Beitrag pro Minute."}</p>
     </form>

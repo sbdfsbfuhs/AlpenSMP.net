@@ -1,25 +1,40 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { fetchReviews, type LiveReview } from "@/lib/alpen/live";
 
 export function ReviewCard({ review }: { review: LiveReview }) {
+  const [open, setOpen] = useState(false);
   const stars = Math.max(0, Math.min(5, review.rating));
+  const text = review.text.trim();
   return (
-    <blockquote className="card relative overflow-hidden p-6">
-      <span className="display pointer-events-none absolute -top-4 left-4 text-7xl leading-none text-brand/35" aria-hidden="true">
-        “
-      </span>
-      <p className="text-star" aria-label={`${stars} von 5 Sternen`}>
+    <blockquote className="review-card card">
+      <span className="review-quote" aria-hidden="true">“</span>
+      {review.imageUrl ? (
+        <button type="button" className="review-shot" onClick={() => setOpen(true)} aria-label="Bild groß">
+          <img src={review.imageUrl} alt="" />
+        </button>
+      ) : null}
+      <p className="text-star text-sm" aria-label={`${stars} von 5 Sternen`}>
         {"★".repeat(stars)}
         <span className="text-faint">{"☆".repeat(5 - stars)}</span>
       </p>
-      <p className="mt-3 line-clamp-4 whitespace-pre-line text-fg">{review.text}</p>
-      <footer className="mt-4 flex items-center gap-3 text-sm">
-        <span className="grid size-8 place-items-center rounded-full bg-brand/15 font-semibold text-brand">
+      {text ? <p className="whitespace-pre-line text-sm text-fg">{text}</p> : null}
+      <footer className="review-by">
+        <span className="grid size-7 shrink-0 place-items-center rounded-full bg-brand/15 text-xs font-semibold text-brand">
           {(review.name || "?").slice(0, 1).toUpperCase()}
         </span>
-        <span className="font-semibold">{review.name}</span>
+        <span className="text-sm font-semibold">{review.name}</span>
       </footer>
+      {open && review.imageUrl && typeof document !== "undefined"
+        ? createPortal(
+            <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/88 p-3" role="dialog" aria-modal="true" aria-label="Bild groß">
+              <button type="button" className="absolute inset-0" aria-label="Schließen" onClick={() => setOpen(false)} />
+              <img src={review.imageUrl} alt="" className="relative z-10 max-h-[88vh] max-w-[96vw] rounded-lg object-contain" />
+            </div>,
+            document.body,
+          )
+        : null}
     </blockquote>
   );
 }
@@ -55,13 +70,10 @@ export function FooterReview() {
         {review ? (
           <ReviewCard review={review} />
         ) : (
-          <blockquote className="card relative overflow-hidden p-6 md:p-8">
-            <span className="display pointer-events-none absolute -top-4 left-4 text-7xl leading-none text-brand/35" aria-hidden="true">
-              “
-            </span>
-            <p className="display text-2xl md:text-3xl">Die erste Stimme ist noch frei.</p>
-            <p className="mt-3 max-w-xl text-muted">Gerade ist keine Rezension freigegeben. Wenn du spielst, kannst du die erste schreiben.</p>
-            <Link to="/community" className="btn-brand mt-5">
+          <blockquote className="review-card card">
+            <p className="display text-2xl">Die erste Stimme ist noch frei.</p>
+            <p className="text-sm text-muted">Gerade ist keine Rezension freigegeben. Wenn du spielst, kannst du die erste schreiben.</p>
+            <Link to="/community" className="btn-brand mt-2">
               Rezension schreiben
             </Link>
           </blockquote>
