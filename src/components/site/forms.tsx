@@ -41,17 +41,12 @@ export function ReviewForm() {
   const [consent, setConsent] = useState(false);
   const [rights, setRights] = useState(false);
   const [over, setOver] = useState(false);
-  const [motion, setMotion] = useState(true);
   const fileRef = useRef<HTMLInputElement>(null);
   const lit = hover || rating;
   const sent = note.startsWith("Danke.");
   const textNeeded = kind !== "image";
   const imageNeeded = kind !== "review";
   const gaps = reviewGaps({ name, text, kind, hasFile: Boolean(file), consent, rights });
-
-  useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) setMotion(false);
-  }, []);
 
   useEffect(() => {
     if (!file) {
@@ -119,25 +114,19 @@ export function ReviewForm() {
   }
 
   return (
-    <form className={`card card-still review-form space-y-5 p-5${motion ? " is-live" : ""}`} onSubmit={onSubmit}>
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="text-lg font-semibold">Reicht jetzt deins ein</h3>
-          <p className="mt-1 text-sm text-muted">
-            {kind === "image"
-              ? "Ein Bild reicht. Text ist freiwillig."
-              : kind === "review"
-                ? "Nur der Text. Ein Bild brauchst du nicht."
-                : "Bild und Text, beides."}
-          </p>
-        </div>
-        <label className="review-motion text-xs text-faint">
-          <input type="checkbox" checked={motion} onChange={(event) => setMotion(event.target.checked)} />
-          Bewegung
-        </label>
+    <form className="card card-still review-form space-y-5 p-5" onSubmit={onSubmit}>
+      <div>
+        <h3 className="text-lg font-semibold">Reiche jetzt deine Rezension ein</h3>
+        <p className="mt-1 text-sm text-muted">
+          {kind === "image"
+            ? "Ein Bild reicht. Text ist freiwillig."
+            : kind === "review"
+              ? "Nur der Text. Ein Bild brauchst du nicht."
+              : "Bild und Text, beides."}
+        </p>
       </div>
       <label className="block text-sm" htmlFor="review-name">
-        Name
+        Name (Ingame-Name)
         <input id="review-name" className="field mt-1" name="name" autoComplete="nickname" value={name} maxLength={32} onChange={(e) => setName(e.target.value)} />
       </label>
       <fieldset className="review-block">
