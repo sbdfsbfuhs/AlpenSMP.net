@@ -300,6 +300,7 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
   const canReadMinecraft = can(shown, "moderationRead") && can(real, "moderationRead");
   const canSyncMinecraft = can(shown, "moderation") && can(real, "moderation");
   const [minecraftPlayers, setMinecraftPlayers] = useState<string[]>([]);
+  const [minecraftBans, setMinecraftBans] = useState<MinecraftBan[]>([]);
   const banRows = useLive<ModItem>("bans");
   const warnRows = useLive<ModItem>("warns");
   useEffect(() => {
@@ -538,6 +539,7 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
             canSync={canSyncMinecraft}
             visible={safeTab === "moderation"}
             onPlayersChange={setMinecraftPlayers}
+            onBansChange={setMinecraftBans}
           />
           ) : null}
           <Suspense fallback={<p className="text-sm text-muted">Lade Bereich…</p>}>
@@ -550,6 +552,7 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
                   ban={can(shown, "moderation") && can(real, "moderation")}
                   writeNotes={can(shown, "notes") && can(real, "notes")}
                   players={minecraftPlayers}
+                  minecraftBans={minecraftBans}
                 />
               </>
             ) : null}
@@ -666,12 +669,16 @@ async function syncMinecraftBans(bans: MinecraftBan[]) {
       if (reason && (!hasBanReason(item.reason) || item.reasonSource === "minecraft") && item.reason !== reason) {
         patch.reason = reason;
         patch.reasonSource = "minecraft";
+        patch.reasonAddedAt = item.reasonAddedAt || (ban.created && Number.isFinite(Date.parse(ban.created)) ? Date.parse(ban.created) : Date.now());
+      } else if (reason && !item.reasonAddedAt) {
+        patch.reasonAddedAt = ban.created && Number.isFinite(Date.parse(ban.created)) ? Date.parse(ban.created) : Date.now();
       }
-      if (item.archived) {
-        patch.archived = false;
-        patch.archiveReason = "";
-        patch.archivedBy = "";
-        patch.archivedAt = 0;
+      const reasonAddedAt = item.reasonAddedAt || (ban.created && Number.isFinite(Date.parse(ban.created)) ? Date.parse(ban.created) : Date.now());
+      if (!item.archived && hasBanReason(reason) && Date.now() - reasonAddedAt >= 5 * 86_400_000) {
+        patch.archived = true;
+        patch.archiveReason = "Automatisch archiviert: Bann-Grund seit mindestens 5 Tagen eingetragen";
+        patch.archivedBy = "System";
+        patch.archivedAt = Date.now();
       }
       if (Object.keys(patch).length) {
         await fbUpdate(`bans/${id}`, patch);
@@ -691,11 +698,18 @@ async function syncMinecraftBans(bans: MinecraftBan[]) {
       ...(ban.source ? { minecraftSource: ban.source } : {}),
       ...(ban.until ? { minecraftExpires: ban.until } : {}),
       ...(reason ? { reasonSource: "minecraft" } : {}),
+      ...(reason ? { reasonAddedAt: ban.created && Number.isFinite(Date.parse(ban.created)) ? Date.parse(ban.created) : Date.now() } : {}),
       by: ban.source || "Minecraft",
       ts: ban.created && Number.isFinite(Date.parse(ban.created)) ? Date.parse(ban.created) : Date.now(),
     };
     const safeKey = [...key].map((character) => character.codePointAt(0)?.toString(16) || "0").join("_");
     const id = `minecraft_${safeKey}`;
+    if (reason && body.reasonAddedAt && Date.now() - body.reasonAddedAt >= 5 * 86_400_000) {
+      body.archived = true;
+      body.archivedBy = "System";
+      body.archivedAt = Date.now();
+      body.archiveReason = "Automatisch archiviert: Bann-Grund seit mindestens 5 Tagen eingetragen";
+    }
     await fbSet(`bans/${id}`, body);
     records.set(key, [id, body]);
     imported += 1;
@@ -719,10 +733,12 @@ function MinecraftBanList({
   canSync,
   visible,
   onPlayersChange,
+  onBansChange,
 }: {
   canSync: boolean;
   visible: boolean;
   onPlayersChange: (players: string[]) => void;
+  onBansChange: (bans: MinecraftBan[]) => void;
 }) {
   const [snapshot, setSnapshot] = useState<MinecraftPlayersSnapshot | null>(null);
   const [error, setError] = useState("");
@@ -744,6 +760,7 @@ function MinecraftBanList({
         if (!active) return;
         setSnapshot(next);
         onPlayersChange(next.players);
+        onBansChange(next.bans);
         setError("");
         setUpdatedAt(Date.now());
         if (canSync) {
@@ -773,7 +790,7 @@ function MinecraftBanList({
       window.clearInterval(interval);
       refreshRef.current = () => undefined;
     };
-  }, [canSync, onPlayersChange]);
+  }, [canSync, onPlayersChange, onBansChange]);
 
   if (!visible) return null;
 

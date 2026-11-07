@@ -92,3 +92,12 @@ export function minecraftPlayersSnapshot(data: unknown): MinecraftPlayersSnapsho
 export function minecraftBanKey(ban: MinecraftBan) {
   return `${ban.uuid || ban.name.toLowerCase()}:${ban.created || ban.until || "unknown"}`;
 }
+
+export function hasMinecraftBanReason(value: string | null | undefined) {
+  const reason = (value || "")
+    .replace(/§[0-9a-fk-or]/gi, "")
+    .trim()
+    .toLowerCase()
+    .replace(/[.!?]+$/, "");
+  return Boolean(reason && !["–", "-", "kein grund genannt", "kein bann-grund hinterlegt", "the ban hammer has spoken"].includes(reason));
+}

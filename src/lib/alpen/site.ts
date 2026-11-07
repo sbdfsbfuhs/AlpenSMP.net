@@ -16,6 +16,8 @@ export const SITE = {
   modrinthApp: "https://modrinth.com/app",
   staff: "https://alpensmp.net/team",
   rulesPage: "https://alpensmp.net/regeln/",
+  panelApi: "https://panel.alpensmp.net/alpen-sicherheit",
+  panelControlApi: "https://panel.alpensmp.net",
   fb: "https://alpensmp-ad844-default-rtdb.europe-west1.firebasedatabase.app",
   fbKey: "AIzaSyBugFF4T6y_XEhCYde99bwpSyYZOuKbJHc",
   securityApi: "https://panel.alpensmp.net/alpen-sicherheit",

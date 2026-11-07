@@ -6,11 +6,12 @@ import {
   minecraftBanKey,
   minecraftBans,
   minecraftPlayersSnapshot,
+  hasMinecraftBanReason,
   type MinecraftBan,
   type MinecraftPlayersSnapshot,
 } from "@/lib/alpen/minecraft";
 
-export { minecraftBanKey, minecraftBans, minecraftPlayersSnapshot };
+export { hasMinecraftBanReason, minecraftBanKey, minecraftBans, minecraftPlayersSnapshot };
 export type { MinecraftBan, MinecraftPlayersSnapshot };
 
 const ROOT = SITE.fb;
@@ -34,6 +35,7 @@ export type ModItem = {
   minecraftSource?: string;
   minecraftExpires?: string;
   reasonSource?: "minecraft" | "staff";
+  reasonAddedAt?: number;
   by?: string;
   ts?: number;
   text?: string;
@@ -180,6 +182,41 @@ export async function fetchMinecraftPlayersSnapshot(): Promise<MinecraftPlayersS
 
 export async function fetchMinecraftBans() {
   return (await fetchMinecraftPlayersSnapshot()).bans;
+}
+
+export async function executeMinecraftBan(input: { name: string; duration: string; reason: string }) {
+  const token = await ensureIdToken();
+  if (!token) throw new Error("Bitte melde dich erneut im Staff-Center an.");
+
+  let response: Response;
+  try {
+    response = await fetch(`${SITE.panelControlApi}/api/minecraft/ban`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+      cache: "no-store",
+    });
+  } catch {
+    throw new Error("Das Control Center ist momentan nicht erreichbar. Es wurde kein Bann ausgeführt.");
+  }
+
+  let data: unknown;
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error("Das Control Center lieferte eine ungültige Antwort. Bitte prüfe den Bann im Spiel.");
+  }
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error("Das Control Center lieferte eine ungültige Antwort. Bitte prüfe den Bann im Spiel.");
+  }
+  const row = data as Record<string, unknown>;
+  if (!response.ok || row.ok !== true) {
+    throw new Error(typeof row.error === "string" ? row.error : "Der Minecraft-Bann ist fehlgeschlagen.");
+  }
+  if (typeof row.command !== "string" || (row.action !== "ban" && row.action !== "tempban")) {
+    throw new Error("Das Control Center bestätigte den Bann nicht eindeutig. Bitte prüfe den Bann im Spiel.");
+  }
+  return { action: row.action, command: row.command };
 }
 
 export function entries<T>(value: MapOf<T> | null | undefined): [string, T][] {
