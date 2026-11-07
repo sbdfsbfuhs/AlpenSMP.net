@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { archive, useLive, wipe } from "@/components/site/staff-live";
 import { Neu } from "@/components/site/staff-shared";
 import {
@@ -18,7 +18,7 @@ import {
 
 type Filter = "active" | "expired" | "archived" | "all";
 
-export function Moderation({ user, note, ban, writeNotes }: { user: StaffSession; note: (text: string) => void; ban: boolean; writeNotes: boolean }) {
+export function Moderation({ user, note, ban, writeNotes, players }: { user: StaffSession; note: (text: string) => void; ban: boolean; writeNotes: boolean; players: string[] }) {
   const bans = useLive<ModItem>("bans");
   const warns = useLive<ModItem>("warns");
   const notes = useLive<ModItem>("notes");
@@ -51,6 +51,7 @@ export function Moderation({ user, note, ban, writeNotes }: { user: StaffSession
           note={note}
           withDuration
           presets={active === "bans" ? ["1h", "1d", "7d", "30d", "Permanent"] : ["1d", "7d", "30d"]}
+          players={players}
         />
       ) : null}
       <List
@@ -74,6 +75,7 @@ function ModForm({
   note,
   withDuration,
   presets,
+  players,
 }: {
   title: string;
   path: string;
@@ -81,17 +83,51 @@ function ModForm({
   note: (text: string) => void;
   withDuration?: boolean;
   presets?: string[];
+  players: string[];
 }) {
   const [name, setName] = useState("");
   const [reason, setReason] = useState("");
   const [duration, setDuration] = useState("");
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [activeSuggestion, setActiveSuggestion] = useState(-1);
   const known = useLive<ModItem>(path);
   const guide = useLive<{ offense?: string; duration?: string }>("banGuide");
   const needle = name.trim().toLowerCase();
+  const suggestions = useMemo(
+    () => path === "bans" && needle
+      ? players.filter((player) => player.toLowerCase().startsWith(needle)).slice(0, 8)
+      : [],
+    [needle, path, players],
+  );
   const past = withDuration && needle.length >= 2
     ? entries(known).filter(([, item]) => (item.name || "").toLowerCase().includes(needle))
     : [];
   const guideRows = entries(guide).filter(([, item]) => item.offense && item.duration);
+
+  function choosePlayer(player: string) {
+    setName(player);
+    setActiveSuggestion(-1);
+    setSuggestionsOpen(false);
+  }
+
+  function handlePlayerKeyDown(event: ReactKeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Escape") {
+      setSuggestionsOpen(false);
+      setActiveSuggestion(-1);
+      return;
+    }
+    if (!suggestions.length) return;
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      setSuggestionsOpen(true);
+      setActiveSuggestion((current) => event.key === "ArrowDown"
+        ? (current + 1) % suggestions.length
+        : (current <= 0 ? suggestions.length - 1 : current - 1));
+    } else if (event.key === "Enter" && suggestionsOpen && activeSuggestion >= 0) {
+      event.preventDefault();
+      choosePlayer(suggestions[activeSuggestion]);
+    }
+  }
 
   async function save(event: FormEvent) {
     event.preventDefault();
@@ -125,7 +161,46 @@ function ModForm({
   return (
     <form className="card card-still p-5" onSubmit={save}>
       <h2 className="text-lg font-semibold">{title}</h2>
-      <input className="field mt-3" placeholder="Spieler" value={name} onChange={(e) => setName(e.target.value)} />
+      <div className="relative mt-3">
+        <input
+          className="field"
+          placeholder="Spieler"
+          value={name}
+          autoComplete={path === "bans" ? "off" : undefined}
+          role={path === "bans" ? "combobox" : undefined}
+          aria-autocomplete={path === "bans" ? "list" : undefined}
+          aria-expanded={path === "bans" ? suggestionsOpen && suggestions.length > 0 : undefined}
+          aria-controls={path === "bans" ? "minecraft-player-suggestions" : undefined}
+          aria-activedescendant={path === "bans" && activeSuggestion >= 0 ? `minecraft-player-option-${activeSuggestion}` : undefined}
+          onChange={(event) => {
+            setName(event.target.value);
+            setActiveSuggestion(-1);
+            setSuggestionsOpen(true);
+          }}
+          onFocus={() => setSuggestionsOpen(true)}
+          onBlur={() => window.setTimeout(() => setSuggestionsOpen(false), 100)}
+          onKeyDown={handlePlayerKeyDown}
+        />
+        {suggestionsOpen && suggestions.length ? (
+          <ul id="minecraft-player-suggestions" role="listbox" className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-md border border-line bg-surface p-1 shadow-xl">
+            {suggestions.map((player, index) => (
+              <li key={player}>
+                <button
+                  id={`minecraft-player-option-${index}`}
+                  type="button"
+                  role="option"
+                  aria-selected={activeSuggestion === index}
+                  className={`w-full rounded px-3 py-2 text-left text-sm ${activeSuggestion === index ? "bg-brand/15 text-fg" : "text-muted hover:bg-surface-2 hover:text-fg"}`}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => choosePlayer(player)}
+                >
+                  {player}
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
       <input className="field mt-2" placeholder="Grund" value={reason} onChange={(e) => setReason(e.target.value)} />
       {presets ? (
         <div className="mt-3 flex flex-wrap gap-2">
@@ -280,4 +355,3 @@ function List({
     </section>
   );
 }
-

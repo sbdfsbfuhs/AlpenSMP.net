@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { lazy, Suspense, useEffect, useState, type FormEvent } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, type FormEvent } from "react";
 import { PageHero, Shell } from "@/components/site/shell";
 import { SiteMascot } from "@/components/site/assistant";
 import { StaffChat } from "@/components/site/staff-chat";
@@ -35,13 +35,16 @@ import {
   fbRemove,
   fbSet,
   fbUpdate,
+  formatWhen,
   isPermanentBan,
   loginStaff,
-  fetchMinecraftBans,
+  fetchMinecraftPlayersSnapshot,
+  minecraftBanKey,
   readSession,
   savePassword,
   writeSession,
   type MinecraftBan,
+  type MinecraftPlayersSnapshot,
   type ModItem,
   type StaffSession,
 } from "@/lib/alpen/staff";
@@ -294,13 +297,16 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
     if (item.id === "rules") return can(shown, "rulesRead") || can(shown, "rulesEdit");
     return can(shown, item.area);
   });
+  const canReadMinecraft = can(shown, "moderationRead") && can(real, "moderationRead");
+  const canSyncMinecraft = can(shown, "moderation") && can(real, "moderation");
+  const [minecraftPlayers, setMinecraftPlayers] = useState<string[]>([]);
   const banRows = useLive<ModItem>("bans");
   const warnRows = useLive<ModItem>("warns");
   useEffect(() => {
     if (!can(real, "moderation")) return;
     const now = Date.now();
     for (const [key, item] of Object.entries(banRows)) {
-      if (item.archived || item.pending || !isPermanentBan(item)) continue;
+      if (item.archived || item.pending || item.minecraftBanKey || !isPermanentBan(item)) continue;
       const start = item.confirmedAt || item.ts || 0;
       if (!start || now - start < 86_400_000) continue;
       void fbUpdate(`bans/${key}`, {
@@ -527,16 +533,23 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
               </p>
             </header>
           ) : null}
+          {canReadMinecraft ? (
+          <MinecraftBanList
+            canSync={canSyncMinecraft}
+            visible={safeTab === "moderation"}
+            onPlayersChange={setMinecraftPlayers}
+          />
+          ) : null}
           <Suspense fallback={<p className="text-sm text-muted">Lade Bereich…</p>}>
           <div className="panel-in min-w-0 px-1" key={safeTab}>
             {safeTab === "moderation" ? (
               <>
-                {can(shown, "moderationRead") && can(real, "moderationRead") ? <MinecraftBanList /> : null}
                 <Moderation
                   user={user}
                   note={note}
                   ban={can(shown, "moderation") && can(real, "moderation")}
                   writeNotes={can(shown, "notes") && can(real, "notes")}
+                  players={minecraftPlayers}
                 />
               </>
             ) : null}
@@ -609,37 +622,199 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
   );
 }
 
-function MinecraftBanList() {
-  const [rows, setRows] = useState<MinecraftBan[] | null>(null);
-  const [error, setError] = useState("");
-  useEffect(() => {
-    let stop = false;
-    fetchMinecraftBans()
-      .then((list) => {
-        if (!stop) setRows(list);
-      })
-      .catch((err: unknown) => {
-        if (!stop) setError(err instanceof Error ? err.message : "Bannliste nicht erreichbar.");
-      });
-    return () => {
-      stop = true;
+function hasBanReason(value: string | null | undefined) {
+  const reason = value?.trim() || "";
+  return Boolean(reason && reason !== "–" && reason !== "-");
+}
+
+function minecraftBanDuration(ban: MinecraftBan) {
+  const until = ban.until.trim();
+  if (!until || /^(?:forever|never|permanent)$/i.test(until)) return { duration: "Permanent", endsAt: null };
+  const endsAt = Date.parse(until);
+  return Number.isFinite(endsAt)
+    ? { duration: `bis ${formatWhen(endsAt)}`, endsAt }
+    : { duration: `Ablauf: ${until}`, endsAt: null };
+}
+
+async function syncMinecraftBans(bans: MinecraftBan[]) {
+  const rows = await fbGet<Record<string, ModItem>>("bans") || {};
+  const records = new Map(
+    Object.entries(rows)
+      .filter(([, item]) => item.minecraftBanKey)
+      .map(([id, item]) => [item.minecraftBanKey as string, [id, item] as const]),
+  );
+  const activeKeys = new Set(bans.map(minecraftBanKey));
+  let imported = 0;
+  let updated = 0;
+  let archived = 0;
+
+  for (const ban of bans) {
+    const key = minecraftBanKey(ban);
+    const existing = records.get(key);
+    const reason = hasBanReason(ban.reason) ? ban.reason.trim() : "";
+    const { duration, endsAt } = minecraftBanDuration(ban);
+
+    if (existing) {
+      const [id, item] = existing;
+      const patch: Partial<ModItem> = {};
+      if (item.duration !== duration) patch.duration = duration;
+      if (item.endsAt !== endsAt) patch.endsAt = endsAt;
+      if (ban.uuid && item.minecraftUuid !== ban.uuid) patch.minecraftUuid = ban.uuid;
+      if (ban.created && item.minecraftCreated !== ban.created) patch.minecraftCreated = ban.created;
+      if (ban.source && item.minecraftSource !== ban.source) patch.minecraftSource = ban.source;
+      if (ban.until && item.minecraftExpires !== ban.until) patch.minecraftExpires = ban.until;
+      if (reason && (!hasBanReason(item.reason) || item.reasonSource === "minecraft") && item.reason !== reason) {
+        patch.reason = reason;
+        patch.reasonSource = "minecraft";
+      }
+      if (item.archived) {
+        patch.archived = false;
+        patch.archiveReason = "";
+        patch.archivedBy = "";
+        patch.archivedAt = 0;
+      }
+      if (Object.keys(patch).length) {
+        await fbUpdate(`bans/${id}`, patch);
+        updated += 1;
+      }
+      continue;
+    }
+
+    const body: ModItem = {
+      name: ban.name,
+      reason: reason || "–",
+      duration,
+      endsAt,
+      minecraftBanKey: key,
+      ...(ban.uuid ? { minecraftUuid: ban.uuid } : {}),
+      ...(ban.created ? { minecraftCreated: ban.created } : {}),
+      ...(ban.source ? { minecraftSource: ban.source } : {}),
+      ...(ban.until ? { minecraftExpires: ban.until } : {}),
+      ...(reason ? { reasonSource: "minecraft" } : {}),
+      by: ban.source || "Minecraft",
+      ts: ban.created && Number.isFinite(Date.parse(ban.created)) ? Date.parse(ban.created) : Date.now(),
     };
-  }, []);
+    const safeKey = [...key].map((character) => character.codePointAt(0)?.toString(16) || "0").join("_");
+    const id = `minecraft_${safeKey}`;
+    await fbSet(`bans/${id}`, body);
+    records.set(key, [id, body]);
+    imported += 1;
+  }
+
+  for (const [id, item] of Object.entries(rows)) {
+    if (!item.minecraftBanKey || item.archived || activeKeys.has(item.minecraftBanKey)) continue;
+    await fbUpdate(`bans/${id}`, {
+      archived: true,
+      archivedBy: "Minecraft",
+      archivedAt: Date.now(),
+      archiveReason: "Nicht mehr in der Minecraft-Bannliste",
+    });
+    archived += 1;
+  }
+
+  return { imported, updated, archived };
+}
+
+function MinecraftBanList({
+  canSync,
+  visible,
+  onPlayersChange,
+}: {
+  canSync: boolean;
+  visible: boolean;
+  onPlayersChange: (players: string[]) => void;
+}) {
+  const [snapshot, setSnapshot] = useState<MinecraftPlayersSnapshot | null>(null);
+  const [error, setError] = useState("");
+  const [syncError, setSyncError] = useState("");
+  const [syncMessage, setSyncMessage] = useState("");
+  const [updatedAt, setUpdatedAt] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const refreshRef = useRef<() => void>(() => undefined);
+  const inFlight = useRef(false);
+
+  useEffect(() => {
+    let active = true;
+    const refresh = async () => {
+      if (inFlight.current) return;
+      inFlight.current = true;
+      setLoading(true);
+      try {
+        const next = await fetchMinecraftPlayersSnapshot();
+        if (!active) return;
+        setSnapshot(next);
+        onPlayersChange(next.players);
+        setError("");
+        setUpdatedAt(Date.now());
+        if (canSync) {
+          try {
+            const result = await syncMinecraftBans(next.bans);
+            if (!active) return;
+            setSyncError("");
+            setSyncMessage(`Website-Bannliste synchronisiert: ${result.imported} neu, ${result.updated} aktualisiert, ${result.archived} aufgehoben.`);
+          } catch (syncFailure) {
+            if (!active) return;
+            setSyncError(syncFailure instanceof Error ? syncFailure.message : "Minecraft-Banns konnten nicht in die Website-Bannliste übernommen werden.");
+          }
+        }
+      } catch (failure) {
+        if (active) setError(failure instanceof Error ? failure.message : "Minecraft-Bannliste nicht erreichbar.");
+      } finally {
+        inFlight.current = false;
+        if (active) setLoading(false);
+      }
+    };
+    refreshRef.current = () => void refresh();
+    const initial = window.setTimeout(() => void refresh(), 0);
+    const interval = window.setInterval(() => void refresh(), 30_000);
+    return () => {
+      active = false;
+      window.clearTimeout(initial);
+      window.clearInterval(interval);
+      refreshRef.current = () => undefined;
+    };
+  }, [canSync, onPlayersChange]);
+
+  if (!visible) return null;
+
   return (
     <section className="card card-still mb-4 p-4 text-sm">
-      <h3 className="font-semibold">Minecraft-Bannliste</h3>
-      <p className="mt-1 text-xs text-muted">Direkt vom Server. Nur mit Team-Anmeldung, nicht öffentlich.</p>
-      {error ? <p className="mt-3 text-ember">{error}</p> : null}
-      {!error && rows === null ? <p className="mt-3 text-muted">Wird geladen.</p> : null}
-      {rows && rows.length === 0 ? <p className="mt-3 text-muted">Keine Bans auf dem Minecraft-Server.</p> : null}
-      {rows && rows.length > 0 ? (
-        <ul className="mt-3 space-y-2">
-          {rows.map((row) => (
-            <li key={`${row.uuid}-${row.name}`}>
-              <span className="font-semibold">{row.name}</span>
-              <span className="text-muted"> · {row.reason} · {row.until}</span>
-            </li>
-          ))}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 className="font-semibold">Minecraft-Banns · live synchronisiert</h3>
+          <p className="mt-1 text-xs text-muted">Direkt vom Server; Aktualisierung alle 30 Sekunden. Änderungen werden nur angezeigt und in die Website-Bannliste übernommen, Minecraft selbst bleibt unverändert.</p>
+        </div>
+        <button type="button" className="btn-ghost px-3" disabled={loading} onClick={() => refreshRef.current()}>
+          {loading ? "Aktualisiere…" : "Jetzt aktualisieren"}
+        </button>
+      </div>
+      {error ? <p className="mt-3 text-ember" role="alert">{error}{snapshot ? " Die angezeigten Karten stammen vom letzten erfolgreichen Abruf." : ""}</p> : null}
+      {syncError ? <p className="mt-3 text-ember" role="alert">Website-Synchronisierung fehlgeschlagen: {syncError}</p> : null}
+      {canSync && syncMessage && !syncError ? <p className="mt-2 text-xs text-muted" role="status">{syncMessage}</p> : null}
+      {updatedAt ? <p className="mt-1 text-xs text-faint">Serverstand abgerufen: {formatWhen(updatedAt)}</p> : null}
+      {!snapshot && loading && !error ? <p className="mt-3 text-muted">Minecraft-Bannliste wird geladen…</p> : null}
+      {snapshot && !snapshot.bans.length ? <p className="mt-3 text-muted">Keine aktiven Minecraft-Banns.</p> : null}
+      {snapshot?.bans.length ? (
+        <ul className="mt-3 max-h-96 space-y-2 overflow-auto">
+          {snapshot.bans.map((ban) => {
+            const reason = hasBanReason(ban.reason) ? ban.reason.trim() : "";
+            const createdAt = ban.created && Number.isFinite(Date.parse(ban.created))
+              ? formatWhen(Date.parse(ban.created))
+              : ban.created;
+            return (
+              <li key={minecraftBanKey(ban)} className="rounded-md border border-line bg-bg/50 px-3 py-3">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <p className="font-semibold">{ban.name}</p>
+                  <span className="rounded-full border border-brand/30 bg-brand/10 px-2 py-0.5 text-xs font-medium text-ice">{minecraftBanDuration(ban).duration}</span>
+                </div>
+                <p className={`mt-2 ${reason ? "text-fg" : "text-amber-300"}`}>{reason || "Kein Bann-Grund hinterlegt."}</p>
+                <p className="mt-2 text-xs text-muted">
+                  {createdAt ? `Gebannt: ${createdAt}` : "Zeitpunkt nicht verfügbar"}
+                  {ban.source ? ` · Von: ${ban.source}` : ""}
+                </p>
+              </li>
+            );
+          })}
         </ul>
       ) : null}
     </section>
@@ -707,4 +882,3 @@ async function askHelp(user: StaffSession, note: (text: string) => void) {
   await fbPush("helpRequests", { by: user.username, msg, ts: Date.now(), replies: {}, status: "open" });
   note("Hilfe gesendet");
 }
-

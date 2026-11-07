@@ -1,6 +1,17 @@
 import { SITE } from "@/lib/alpen/site";
 import { changeOwnPassword, clearFirebaseLogin, createFirebaseUser, ensureIdToken, signInEmail } from "@/lib/alpen/fb-auth";
 import { isMoved, loadPath, relayDetail } from "@/lib/alpen/security";
+import {
+  isMinecraftPlayersResponse,
+  minecraftBanKey,
+  minecraftBans,
+  minecraftPlayersSnapshot,
+  type MinecraftBan,
+  type MinecraftPlayersSnapshot,
+} from "@/lib/alpen/minecraft";
+
+export { minecraftBanKey, minecraftBans, minecraftPlayersSnapshot };
+export type { MinecraftBan, MinecraftPlayersSnapshot };
 
 const ROOT = SITE.fb;
 
@@ -17,6 +28,12 @@ export type ModItem = {
   reason?: string;
   duration?: string;
   endsAt?: number | null;
+  minecraftBanKey?: string;
+  minecraftUuid?: string;
+  minecraftCreated?: string;
+  minecraftSource?: string;
+  minecraftExpires?: string;
+  reasonSource?: "minecraft" | "staff";
   by?: string;
   ts?: number;
   text?: string;
@@ -135,40 +152,7 @@ export function fbRemoveLocal(path: string) {
   return firebaseRaw(path, "DELETE");
 }
 
-export type MinecraftBan = { name: string; reason: string; until: string; uuid: string };
-
-export function minecraftBans(data: unknown): MinecraftBan[] {
-  let source = "";
-  let rows: unknown[] = [];
-  if (Array.isArray(data)) {
-    rows = data;
-    source = "list";
-  } else if (data && typeof data === "object") {
-    const record = data as Record<string, unknown>;
-    for (const key of ["banned", "bans", "players", "list", "data"]) {
-      if (Array.isArray(record[key])) {
-        rows = record[key] as unknown[];
-        source = key;
-        break;
-      }
-    }
-  }
-  return rows.flatMap((item) => {
-    if (!item || typeof item !== "object" || Array.isArray(item)) return [];
-    const row = item as Record<string, unknown>;
-    const ban = row.ban && typeof row.ban === "object" && !Array.isArray(row.ban) ? (row.ban as Record<string, unknown>) : null;
-    const text = (value: unknown) => (typeof value === "string" ? value.trim() : "");
-    const name = text(row.name) || text(row.player) || text(row.username) || text(ban?.name);
-    if (!name) return [];
-    const reason = text(row.reason) || text(row.banReason) || text(ban?.reason);
-    const banned = row.banned === true || row.isBanned === true || Boolean(ban) || text(row.banReason).length > 0 || ((source === "banned" || source === "bans") && reason.length > 0);
-    if (!banned) return [];
-    const until = text(row.until) || text(row.expires) || text(ban?.until) || text(ban?.expires) || (row.permanent === true || ban?.permanent === true ? "Permanent" : "");
-    return [{ name, reason: reason || "–", until: until || "–", uuid: text(row.uuid) || text(row.id) }];
-  });
-}
-
-export async function fetchMinecraftBans() {
+export async function fetchMinecraftPlayersSnapshot(): Promise<MinecraftPlayersSnapshot> {
   const token = await ensureIdToken();
   if (!token) throw new Error("Bitte neu anmelden. Die Sitzung ist abgelaufen.");
   let res: Response;
@@ -182,7 +166,20 @@ export async function fetchMinecraftBans() {
   }
   if (res.status === 401 || res.status === 403) throw new Error("Keine Berechtigung für die Minecraft-Bannliste.");
   if (!res.ok) throw new Error("Bannliste nicht erreichbar.");
-  return minecraftBans(await res.json());
+  let data: unknown;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error("Minecraft-Abgleich lieferte ungültige Daten.");
+  }
+  if (!isMinecraftPlayersResponse(data)) {
+    throw new Error("Minecraft-Abgleich lieferte ungültige Daten.");
+  }
+  return minecraftPlayersSnapshot(data);
+}
+
+export async function fetchMinecraftBans() {
+  return (await fetchMinecraftPlayersSnapshot()).bans;
 }
 
 export function entries<T>(value: MapOf<T> | null | undefined): [string, T][] {
