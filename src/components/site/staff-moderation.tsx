@@ -1,6 +1,7 @@
 import { useMemo, useState, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { archive, useLive, wipe } from "@/components/site/staff-live";
 import { Neu } from "@/components/site/staff-shared";
+import { suggestMinecraftPlayers } from "@/lib/alpen/minecraft";
 import {
   entries,
   executeMinecraftBan,
@@ -36,13 +37,14 @@ export function Moderation({ user, note, ban, writeNotes, players, minecraftBans
   ] as const;
   const active = modes.some(([id]) => id === kind) ? kind : modes[0]?.[0] || "notes";
   const items = active === "bans" ? entries(bans) : active === "warns" ? entries(warns) : entries(notes);
+  const counts = { bans: entries(bans).length, warns: entries(warns).length, notes: entries(notes).length };
   return (
     <div className="space-y-4">
       {modes.length > 1 ? (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Moderationsbereich">
           {modes.map(([id, label]) => (
             <button key={id} type="button" className={id === active ? "btn-brand px-3" : "btn-ghost px-3"} onClick={() => setKind(id)}>
-              {label}
+              {label} <span className="ml-1 text-xs opacity-70">{counts[id]}</span>
             </button>
           ))}
         </div>
@@ -104,12 +106,29 @@ function ModForm({
   const [activeSuggestion, setActiveSuggestion] = useState(-1);
   const known = useLive<ModItem>(path);
   const guide = useLive<{ offense?: string; duration?: string }>("banGuide");
-  const needle = name.trim().toLowerCase();
+  const needle = name.trim().toLocaleLowerCase();
+  const knownNames = useMemo(
+    () => entries(known).flatMap(([, item]) => item.name ? [item.name] : []),
+    [known],
+  );
+  const playerNames = useMemo(
+    () => [...players, ...minecraftBans.map((item) => item.name), ...knownNames],
+    [knownNames, minecraftBans, players],
+  );
   const suggestions = useMemo(
-    () => path === "bans" && needle
-      ? players.filter((player) => player.toLowerCase().startsWith(needle)).slice(0, 8)
+    () => name.trim() ? suggestMinecraftPlayers(name, playerNames) : [],
+    [name, playerNames],
+  );
+  const bansNeedingReason = useMemo(
+    () => path === "bans"
+      ? minecraftBans.filter((minecraftBan) => {
+        if (hasMinecraftBanReason(minecraftBan.reason)) return false;
+        return !entries(known).some(([, item]) =>
+          item.minecraftBanKey === minecraftBanKey(minecraftBan) && hasMinecraftBanReason(item.reason),
+        );
+      })
       : [],
-    [needle, path, players],
+    [known, minecraftBans, path],
   );
   const past = withDuration && needle.length >= 2
     ? entries(known).filter(([, item]) => (item.name || "").toLowerCase().includes(needle))
@@ -234,28 +253,30 @@ function ModForm({
     <form className="card card-still p-5" onSubmit={save}>
       <h2 className="text-lg font-semibold">{title}</h2>
       <div className="relative mt-3">
+        <label htmlFor="moderation-player-name" className="mb-1 block text-sm font-medium">Spielername</label>
         <input
+          id="moderation-player-name"
           className="field"
-          placeholder="Spieler"
+          placeholder={path === "bans" ? "Minecraft-Spieler suchen" : "Spieler für die Verwarnung suchen"}
           value={name}
           autoComplete={path === "bans" ? "off" : undefined}
-          role={path === "bans" ? "combobox" : undefined}
-          aria-autocomplete={path === "bans" ? "list" : undefined}
-          aria-expanded={path === "bans" ? suggestionsOpen && suggestions.length > 0 : undefined}
-          aria-controls={path === "bans" ? "minecraft-player-suggestions" : undefined}
-          aria-activedescendant={path === "bans" && activeSuggestion >= 0 ? `minecraft-player-option-${activeSuggestion}` : undefined}
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={suggestionsOpen}
+          aria-controls="minecraft-player-suggestions"
+          aria-activedescendant={activeSuggestion >= 0 ? `minecraft-player-option-${activeSuggestion}` : undefined}
           onChange={(event) => {
             setName(event.target.value);
             setActiveSuggestion(-1);
             setSuggestionsOpen(true);
           }}
-          onFocus={() => setSuggestionsOpen(true)}
+          onFocus={() => setSuggestionsOpen(Boolean(name.trim()))}
           onBlur={() => window.setTimeout(() => setSuggestionsOpen(false), 100)}
           onKeyDown={handlePlayerKeyDown}
         />
-        {suggestionsOpen && suggestions.length ? (
+        {suggestionsOpen ? (
           <ul id="minecraft-player-suggestions" role="listbox" className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-md border border-line bg-surface p-1 shadow-xl">
-            {suggestions.map((player, index) => (
+            {suggestions.length ? suggestions.map((player, index) => (
               <li key={player}>
                 <button
                   id={`minecraft-player-option-${index}`}
@@ -269,16 +290,44 @@ function ModForm({
                   {player}
                 </button>
               </li>
-            ))}
+            )) : (
+              <li className="px-3 py-2 text-sm text-muted">Keine Treffer – du kannst den Namen manuell eingeben.</li>
+            )}
           </ul>
         ) : null}
       </div>
+      <p className="mt-1 text-xs text-faint">Vorschläge aus Spielerliste, aktiven Banns und bisherigen Moderationseinträgen.</p>
+      {bansNeedingReason.length ? (
+        <section className="mt-4 rounded-lg border border-amber-500/30 bg-amber-950/15 p-3" aria-labelledby="bans-needing-reason-title">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h3 id="bans-needing-reason-title" className="text-sm font-semibold">Ingame-Banns eintragen</h3>
+            <span className="text-xs text-muted">{bansNeedingReason.length} ohne eindeutigen Grund</span>
+          </div>
+          <p className="mt-1 text-xs text-muted">Spieler auswählen, dann einen konkreten Grund ergänzen.</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {bansNeedingReason.slice(0, 8).map((minecraftBan) => (
+              <button
+                key={minecraftBanKey(minecraftBan)}
+                type="button"
+                className={name.toLocaleLowerCase() === minecraftBan.name.toLocaleLowerCase() ? "btn-brand px-3" : "btn-ghost px-3"}
+                aria-pressed={name.toLocaleLowerCase() === minecraftBan.name.toLocaleLowerCase()}
+                onClick={() => choosePlayer(minecraftBan.name)}
+              >
+                {minecraftBan.name}
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : null}
       {path === "bans" && name.trim() ? (
         <p className="mt-2 text-sm text-muted">
           {selectedBan ? (hasMinecraftBanReason(selectedBan.reason) ? "Aktiver Ingame-Bann gefunden." : "Aktiver Ingame-Bann gefunden – bitte einen konkreten Grund ergänzen.") : "Noch nicht ingame gebannt – beim Eintragen kannst du den Ingame-Bann bestätigen."}
         </p>
       ) : null}
-      <input className="field mt-2" placeholder={path === "bans" ? "Konkreter Bann-Grund" : "Grund"} value={displayedReason} onChange={(e) => setReason(e.target.value)} readOnly={!canEditReason} required={path !== "bans" || !hasMinecraftBanReason(selectedBan?.reason)} />
+      <label className="mt-3 block text-sm font-medium">
+        {path === "bans" ? "Konkreter Grund" : "Grund der Verwarnung"}
+        <input className="field mt-1" placeholder={path === "bans" ? "z. B. X-Ray beim Mining" : "Was ist vorgefallen?"} value={displayedReason} onChange={(e) => setReason(e.target.value)} readOnly={!canEditReason} required={path !== "bans" || !hasMinecraftBanReason(selectedBan?.reason)} />
+      </label>
       {presets ? (
         <div className="mt-3 flex flex-wrap gap-2">
           {presets.map((item) => (
@@ -305,7 +354,12 @@ function ModForm({
           ))}
         </div>
       ) : null}
-      {withDuration ? <input className="field mt-2" placeholder="Oder eigene Dauer, z. B. 12h" value={duration} onChange={(e) => setDuration(e.target.value)} /> : null}
+      {withDuration ? (
+        <label className="mt-3 block text-sm font-medium">
+          Dauer
+          <input className="field mt-1" placeholder="Eigene Dauer, z. B. 12h" value={duration} onChange={(e) => setDuration(e.target.value)} />
+        </label>
+      ) : null}
       {past.length ? (
         <ul className="mt-3 space-y-1 text-sm">
           {past.slice(0, 5).map(([key, item]) => (
@@ -407,17 +461,29 @@ function List({
 }) {
   const [filter, setFilter] = useState<Filter>(notes ? "all" : "active");
   const [q, setQ] = useState("");
+  const counts = useMemo(() => {
+    let activeCount = 0;
+    let expiredCount = 0;
+    let archivedCount = 0;
+    for (const [, item] of items) {
+      if (item.archived) archivedCount += 1;
+      else if (item.endsAt && item.endsAt <= Date.now()) expiredCount += 1;
+      else activeCount += 1;
+    }
+    return { active: activeCount, expired: expiredCount, archived: archivedCount, all: items.length };
+  }, [items]);
   const rows = useMemo(() => {
     return items.filter(([, item]) => {
       const expired = Boolean(item.endsAt && item.endsAt <= Date.now());
+      let matchesFilter = true;
       if (!notes) {
-        if (filter === "archived") return Boolean(item.archived);
-        if (filter === "expired") return !item.archived && expired;
-        if (filter === "active") return !item.archived && !expired;
+        if (filter === "archived") matchesFilter = Boolean(item.archived);
+        else if (filter === "expired") matchesFilter = !item.archived && expired;
+        else if (filter === "active") matchesFilter = !item.archived && !expired;
       }
       const blob = `${item.name || ""} ${item.reason || ""} ${item.text || ""} ${item.by || ""}`.toLowerCase();
-      return blob.includes(q.trim().toLowerCase());
-    });
+      return matchesFilter && blob.includes(q.trim().toLowerCase());
+    }).sort(([, a], [, b]) => (b.updatedAt || b.ts || 0) - (a.updatedAt || a.ts || 0));
   }, [items, filter, q, notes]);
 
   return (
@@ -428,13 +494,13 @@ function List({
           <div className="flex flex-wrap gap-1">
             {(["active", "expired", "archived", "all"] as Filter[]).map((item) => (
               <button key={item} type="button" className={item === filter ? "btn-brand px-3" : "btn-ghost px-3"} onClick={() => setFilter(item)}>
-                {item === "active" ? "Aktiv" : item === "expired" ? "Abgelaufen" : item === "archived" ? "Archiv" : "Alle"}
+                {item === "active" ? "Aktiv" : item === "expired" ? "Abgelaufen" : item === "archived" ? "Archiv" : "Alle"} <span className="ml-1 text-xs opacity-70">{counts[item]}</span>
               </button>
             ))}
           </div>
         ) : null}
       </div>
-      <input className="field mt-3" placeholder="Suchen" value={q} onChange={(e) => setQ(e.target.value)} />
+      <input className="field mt-3" placeholder="Spieler, Grund oder Teammitglied suchen" value={q} onChange={(e) => setQ(e.target.value)} />
       <ul className="mt-3 max-h-80 space-y-2 overflow-auto p-1">
         {rows.map(([key, item]) => {
           const perm = path === "bans" && isPermanentBan(item) && !item.archived;
@@ -470,6 +536,7 @@ function List({
         })}
         {!rows.length ? <li className="text-sm text-muted">Keine Einträge</li> : null}
       </ul>
+      <p className="mt-2 text-xs text-faint">{rows.length} von {items.length} Einträgen · neueste zuerst</p>
     </section>
   );
 }

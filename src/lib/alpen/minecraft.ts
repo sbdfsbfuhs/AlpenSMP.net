@@ -12,6 +12,27 @@ export type MinecraftPlayersSnapshot = {
   bans: MinecraftBan[];
 };
 
+export function suggestMinecraftPlayers(query: string, candidates: string[], limit = 8): string[] {
+  const needle = query.trim().toLocaleLowerCase();
+  const uniqueNames = new Map<string, string>();
+  for (const candidate of candidates) {
+    const name = candidate.trim();
+    const key = name.toLocaleLowerCase();
+    if (name && !uniqueNames.has(key)) uniqueNames.set(key, name);
+  }
+  const unique = [...uniqueNames.values()];
+  if (!needle) return unique.slice(0, limit);
+  return unique
+    .filter((name) => name.toLocaleLowerCase().includes(needle))
+    .sort((a, b) => {
+      const aStarts = a.toLocaleLowerCase().startsWith(needle);
+      const bStarts = b.toLocaleLowerCase().startsWith(needle);
+      return Number(bStarts) - Number(aStarts)
+        || a.localeCompare(b, undefined, { sensitivity: "base" });
+    })
+    .slice(0, limit);
+}
+
 function isMinecraftBanRecord(value: unknown): value is Record<string, unknown> & { name: string } {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const row = value as Record<string, unknown>;

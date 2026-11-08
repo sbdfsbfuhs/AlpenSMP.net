@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { isMinecraftPlayersResponse, minecraftPlayersSnapshot } from "./minecraft.ts";
+import { isMinecraftPlayersResponse, minecraftPlayersSnapshot, suggestMinecraftPlayers } from "./minecraft.ts";
 
 describe("Minecraft-Spieler- und Bannlisten", () => {
   it("behält permanente Banns ohne Grund als aktive Banns", () => {
@@ -31,6 +31,20 @@ describe("Minecraft-Spieler- und Bannlisten", () => {
 
     assert.deepEqual(snapshot.players, ["BannedPlayer"]);
     assert.equal(snapshot.bans[0]?.until, "2027-01-01T00:00:00.000Z");
+  });
+
+  it("findet Spielernamen ohne Beachtung der Großschreibung auch innerhalb des Namens", () => {
+    assert.deepEqual(
+      suggestMinecraftPlayers("lex", ["Alex", "Lexi", "alex", "PlayerLex"]),
+      ["Lexi", "Alex", "PlayerLex"],
+    );
+  });
+
+  it("entfernt doppelte Vorschläge und begrenzt die Ergebnisliste", () => {
+    assert.deepEqual(
+      suggestMinecraftPlayers("", ["Alex", "alex", "Bee", "Casey"], 2),
+      ["Alex", "Bee"],
+    );
   });
 
   it("weist fehlerhafte API-Antworten zurück, statt sie als leere Bannliste zu behandeln", () => {

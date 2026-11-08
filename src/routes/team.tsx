@@ -398,6 +398,7 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
   }, [user.username, user.role]);
 
   const showChat = can(shown, "chat") && can(real, "chat");
+  const dockChat = showChat && safeTab !== "moderation";
   const seeTeamChat = showChat && shown !== "builder";
   const seeBuilderChat = showChat && (shown === "builder" || shown === "owner" || shown === "admin" || shown === "helper" || shown === "supporter");
 
@@ -476,7 +477,7 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
         ) : null}
       {shown === "streamer" ? null : <PlayerSearch />}
       {real === "owner" ? <CheckInBanner /> : null}
-      <div className={`mt-6 grid min-w-0 items-start gap-5 ${showChat ? "xl:grid-cols-[15rem_minmax(0,1fr)_26rem]" : "lg:grid-cols-[16rem_minmax(0,1fr)]"}`}>
+      <div className={`mt-6 grid min-w-0 items-start gap-5 ${dockChat ? "xl:grid-cols-[15rem_minmax(0,1fr)_26rem]" : "lg:grid-cols-[16rem_minmax(0,1fr)]"}`}>
         <nav
           className="card card-still min-w-0 p-2 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto"
           aria-label="Team-Bereiche"
@@ -600,7 +601,7 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
           </div>
           </Suspense>
         </section>
-        {showChat ? (
+        {dockChat ? (
           <div className="sticky top-20 hidden h-[calc(100vh-6rem)] min-w-0 xl:block">
             <StaffChat user={user} team={seeTeamChat} builder={seeBuilderChat} dock />
           </div>
@@ -608,11 +609,16 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
       </div>
       {showChat ? (
         <>
-          <button type="button" className="btn-brand fixed bottom-24 right-3 z-40 xl:hidden" onClick={() => setChatOpen(true)}>
+          <button
+            type="button"
+            className={`btn-brand fixed bottom-24 right-3 z-40 ${safeTab === "moderation" ? "" : "xl:hidden"}`}
+            aria-expanded={chatOpen}
+            onClick={() => setChatOpen(true)}
+          >
             Chat
           </button>
           {chatOpen ? (
-            <div className="fixed inset-3 z-50 flex flex-col xl:hidden">
+            <div className="fixed inset-3 z-50 flex flex-col xl:inset-y-6 xl:left-auto xl:right-6 xl:w-[26rem]">
               <button type="button" className="btn-ghost mb-2 self-end" onClick={() => setChatOpen(false)}>Schliessen</button>
               <div className="min-h-0 flex-1">
                 <StaffChat user={user} team={seeTeamChat} builder={seeBuilderChat} dock />
@@ -741,6 +747,8 @@ function MinecraftBanList({
   onBansChange: (bans: MinecraftBan[]) => void;
 }) {
   const [snapshot, setSnapshot] = useState<MinecraftPlayersSnapshot | null>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [query, setQuery] = useState("");
   const [error, setError] = useState("");
   const [syncError, setSyncError] = useState("");
   const [syncMessage, setSyncMessage] = useState("");
@@ -794,45 +802,62 @@ function MinecraftBanList({
 
   if (!visible) return null;
 
+  const missingReasonCount = snapshot?.bans.filter((ban) => !hasBanReason(ban.reason)).length || 0;
+  const filteredBans = snapshot?.bans.filter((ban) => {
+    const needle = query.trim().toLocaleLowerCase();
+    return !needle || `${ban.name} ${ban.reason} ${ban.source}`.toLocaleLowerCase().includes(needle);
+  }) || [];
+
   return (
     <section className="card card-still mb-4 p-4 text-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="font-semibold">Minecraft-Banns · live synchronisiert</h3>
-          <p className="mt-1 text-xs text-muted">Direkt vom Server; Aktualisierung alle 30 Sekunden. Änderungen werden nur angezeigt und in die Website-Bannliste übernommen, Minecraft selbst bleibt unverändert.</p>
+          <h3 className="font-semibold">Minecraft-Banns <span className="font-normal text-muted">· {snapshot ? `${snapshot.bans.length} aktiv${missingReasonCount ? ` · ${missingReasonCount} ohne Grund` : ""}` : loading ? "wird geladen" : "nicht verfügbar"}</span></h3>
+          <p className="mt-1 text-xs text-muted">Live-Synchronisierung alle 30 Sekunden. Diese Übersicht ändert Minecraft selbst nicht.</p>
         </div>
-        <button type="button" className="btn-ghost px-3" disabled={loading} onClick={() => refreshRef.current()}>
-          {loading ? "Aktualisiere…" : "Jetzt aktualisieren"}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className="btn-ghost px-3" aria-expanded={expanded} aria-controls="live-minecraft-ban-list" onClick={() => setExpanded((value) => !value)}>
+            {expanded ? "Liste ausblenden" : "Liste anzeigen"}
+          </button>
+          <button type="button" className="btn-ghost px-3" disabled={loading} onClick={() => refreshRef.current()}>
+            {loading ? "Aktualisiere…" : "Aktualisieren"}
+          </button>
+        </div>
       </div>
       {error ? <p className="mt-3 text-ember" role="alert">{error}{snapshot ? " Die angezeigten Karten stammen vom letzten erfolgreichen Abruf." : ""}</p> : null}
       {syncError ? <p className="mt-3 text-ember" role="alert">Website-Synchronisierung fehlgeschlagen: {syncError}</p> : null}
       {canSync && syncMessage && !syncError ? <p className="mt-2 text-xs text-muted" role="status">{syncMessage}</p> : null}
-      {updatedAt ? <p className="mt-1 text-xs text-faint">Serverstand abgerufen: {formatWhen(updatedAt)}</p> : null}
-      {!snapshot && loading && !error ? <p className="mt-3 text-muted">Minecraft-Bannliste wird geladen…</p> : null}
-      {snapshot && !snapshot.bans.length ? <p className="mt-3 text-muted">Keine aktiven Minecraft-Banns.</p> : null}
-      {snapshot?.bans.length ? (
-        <ul className="mt-3 max-h-96 space-y-2 overflow-auto">
-          {snapshot.bans.map((ban) => {
+      {updatedAt ? <p className="mt-1 text-xs text-faint">Stand: {formatWhen(updatedAt)}</p> : null}
+      {expanded ? (
+        <div id="live-minecraft-ban-list" className="mt-3">
+          {snapshot?.bans.length ? <input className="field" placeholder="Minecraft-Banns durchsuchen" value={query} onChange={(event) => setQuery(event.target.value)} /> : null}
+          {!snapshot && loading && !error ? <p className="mt-3 text-muted">Minecraft-Bannliste wird geladen…</p> : null}
+          {snapshot && !snapshot.bans.length ? <p className="mt-3 text-muted">Keine aktiven Minecraft-Banns.</p> : null}
+          {snapshot?.bans.length && !filteredBans.length ? <p className="mt-3 text-muted">Keine Banns passen zur Suche.</p> : null}
+          {filteredBans.length ? (
+            <ul className="mt-3 max-h-80 space-y-2 overflow-auto">
+              {filteredBans.map((ban) => {
             const reason = hasBanReason(ban.reason) ? ban.reason.trim() : "";
             const createdAt = ban.created && Number.isFinite(Date.parse(ban.created))
               ? formatWhen(Date.parse(ban.created))
               : ban.created;
             return (
-              <li key={minecraftBanKey(ban)} className="rounded-md border border-line bg-bg/50 px-3 py-3">
+              <li key={minecraftBanKey(ban)} className="rounded-md border border-line bg-bg/50 px-3 py-2">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <p className="font-semibold">{ban.name}</p>
                   <span className="rounded-full border border-brand/30 bg-brand/10 px-2 py-0.5 text-xs font-medium text-ice">{minecraftBanDuration(ban).duration}</span>
                 </div>
-                <p className={`mt-2 ${reason ? "text-fg" : "text-amber-300"}`}>{reason || "Kein Bann-Grund hinterlegt."}</p>
-                <p className="mt-2 text-xs text-muted">
+                <p className={`mt-1 ${reason ? "text-fg" : "text-amber-300"}`}>{reason || "Kein Bann-Grund hinterlegt."}</p>
+                <p className="mt-1 text-xs text-muted">
                   {createdAt ? `Gebannt: ${createdAt}` : "Zeitpunkt nicht verfügbar"}
                   {ban.source ? ` · Von: ${ban.source}` : ""}
                 </p>
               </li>
             );
           })}
-        </ul>
+            </ul>
+          ) : null}
+        </div>
       ) : null}
     </section>
   );
