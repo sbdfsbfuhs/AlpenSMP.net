@@ -219,6 +219,41 @@ export async function executeMinecraftBan(input: { name: string; duration: strin
   return { action: row.action, command: row.command };
 }
 
+export async function executeMinecraftUnban(input: { name: string }) {
+  const token = await ensureIdToken();
+  if (!token) throw new Error("Bitte melde dich erneut im Staff-Center an.");
+
+  let response: Response;
+  try {
+    response = await fetch(`${SITE.panelControlApi}/api/minecraft/unban`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+      cache: "no-store",
+    });
+  } catch {
+    throw new Error("Das Control Center ist momentan nicht erreichbar. Bitte prüfe den Bannstatus in Minecraft, bevor du es erneut versuchst.");
+  }
+
+  let data: unknown;
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error("Das Control Center lieferte eine ungültige Antwort. Bitte prüfe den Bann im Spiel.");
+  }
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error("Das Control Center lieferte eine ungültige Antwort. Bitte prüfe den Bann im Spiel.");
+  }
+  const row = data as Record<string, unknown>;
+  if (!response.ok || row.ok !== true) {
+    throw new Error(typeof row.error === "string" ? row.error : "Der Minecraft-Entbann ist fehlgeschlagen.");
+  }
+  if (typeof row.command !== "string" || row.action !== "pardon") {
+    throw new Error("Das Control Center bestätigte den Entbann nicht eindeutig. Bitte prüfe den Bann im Spiel.");
+  }
+  return { action: row.action, command: row.command };
+}
+
 export function entries<T>(value: MapOf<T> | null | undefined): [string, T][] {
   return Object.entries(value ?? {}).reverse();
 }

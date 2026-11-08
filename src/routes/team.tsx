@@ -38,6 +38,7 @@ import {
   formatWhen,
   isPermanentBan,
   loginStaff,
+  executeMinecraftUnban,
   fetchMinecraftPlayersSnapshot,
   minecraftBanKey,
   readSession,
@@ -750,17 +751,24 @@ function MinecraftBanList({
   const [expanded, setExpanded] = useState(false);
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
+  const [unbanError, setUnbanError] = useState("");
+  const [unbanMessage, setUnbanMessage] = useState("");
+  const [unbanningName, setUnbanningName] = useState<string | null>(null);
   const [syncError, setSyncError] = useState("");
   const [syncMessage, setSyncMessage] = useState("");
   const [updatedAt, setUpdatedAt] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const refreshRef = useRef<() => void>(() => undefined);
   const inFlight = useRef(false);
+  const refreshAgain = useRef(false);
 
   useEffect(() => {
     let active = true;
     const refresh = async () => {
-      if (inFlight.current) return;
+      if (inFlight.current) {
+        refreshAgain.current = true;
+        return;
+      }
       inFlight.current = true;
       setLoading(true);
       try {
@@ -787,6 +795,10 @@ function MinecraftBanList({
       } finally {
         inFlight.current = false;
         if (active) setLoading(false);
+        if (active && refreshAgain.current) {
+          refreshAgain.current = false;
+          void refresh();
+        }
       }
     };
     refreshRef.current = () => void refresh();
@@ -808,12 +820,29 @@ function MinecraftBanList({
     return !needle || `${ban.name} ${ban.reason} ${ban.source}`.toLocaleLowerCase().includes(needle);
   }) || [];
 
+  async function unbanPlayer(name: string) {
+    if (!canSync || unbanningName) return;
+    if (!window.confirm(`Soll ${name} wirklich in Minecraft entbannt werden?`)) return;
+    setUnbanningName(name);
+    setUnbanError("");
+    setUnbanMessage("");
+    try {
+      await executeMinecraftUnban({ name });
+      setUnbanMessage(`${name} wurde in Minecraft entbannt.`);
+    } catch (failure) {
+      setUnbanError(failure instanceof Error ? failure.message : "Minecraft-Entbannen fehlgeschlagen.");
+    } finally {
+      refreshRef.current();
+      setUnbanningName(null);
+    }
+  }
+
   return (
     <section className="card card-still mb-4 p-4 text-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="font-semibold">Minecraft-Banns <span className="font-normal text-muted">· {snapshot ? `${snapshot.bans.length} aktiv${missingReasonCount ? ` · ${missingReasonCount} ohne Grund` : ""}` : loading ? "wird geladen" : "nicht verfügbar"}</span></h3>
-          <p className="mt-1 text-xs text-muted">Live-Synchronisierung alle 30 Sekunden. Diese Übersicht ändert Minecraft selbst nicht.</p>
+          <p className="mt-1 text-xs text-muted">Live-Synchronisierung alle 30 Sekunden. „In Minecraft entbannen“ entfernt den Bann nach deiner Bestätigung direkt auf dem Server.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button type="button" className="btn-ghost px-3" aria-expanded={expanded} aria-controls="live-minecraft-ban-list" onClick={() => setExpanded((value) => !value)}>
@@ -825,6 +854,8 @@ function MinecraftBanList({
         </div>
       </div>
       {error ? <p className="mt-3 text-ember" role="alert">{error}{snapshot ? " Die angezeigten Karten stammen vom letzten erfolgreichen Abruf." : ""}</p> : null}
+      {unbanError ? <p className="mt-3 text-ember" role="alert">{unbanError}</p> : null}
+      {unbanMessage ? <p className="mt-3 text-muted" role="status">{unbanMessage}</p> : null}
       {syncError ? <p className="mt-3 text-ember" role="alert">Website-Synchronisierung fehlgeschlagen: {syncError}</p> : null}
       {canSync && syncMessage && !syncError ? <p className="mt-2 text-xs text-muted" role="status">{syncMessage}</p> : null}
       {updatedAt ? <p className="mt-1 text-xs text-faint">Stand: {formatWhen(updatedAt)}</p> : null}
@@ -852,6 +883,16 @@ function MinecraftBanList({
                   {createdAt ? `Gebannt: ${createdAt}` : "Zeitpunkt nicht verfügbar"}
                   {ban.source ? ` · Von: ${ban.source}` : ""}
                 </p>
+                {canSync ? (
+                  <button
+                    type="button"
+                    className="btn-ghost mt-2 px-3 py-1 text-xs"
+                    disabled={unbanningName !== null}
+                    onClick={() => void unbanPlayer(ban.name)}
+                  >
+                    {unbanningName === ban.name ? "Entbanne…" : "In Minecraft entbannen"}
+                  </button>
+                ) : null}
               </li>
             );
           })}
