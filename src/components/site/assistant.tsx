@@ -121,6 +121,7 @@ export function SiteMascot({
   const [quip, setQuip] = useState<string | null>(null);
   const [hidden, setHidden] = useState(false);
   const [away, setAway] = useState(false);
+  const [portalReady, setPortalReady] = useState(false);
   const [spotPos, setSpotPos] = useState<{ x: number; y: number } | null>(null);
   const [dragging, setDragging] = useState(false);
   const dragRef = useRef(false);
@@ -138,6 +139,10 @@ export function SiteMascot({
   actRef.current = act;
   settingsRef.current = settings;
   chatRef.current = chat;
+
+  useEffect(() => {
+    setPortalReady(true);
+  }, []);
 
   useEffect(() => {
     const pull = () => {
@@ -459,7 +464,7 @@ export function SiteMascot({
 
   if (hidden) {
     const restore =
-      typeof document === "undefined"
+      !portalReady
         ? null
         : createPortal(
             <button
@@ -585,7 +590,6 @@ export function SiteMascot({
   );
   const unit = typeof document === "undefined" ? null : createPortal(mascot, document.body);
 
-  if (inset) return unit;
-  return <div className="shell">{unit}</div>;
+  if (inset) return portalReady ? unit : null;
+  return <div className="shell">{portalReady ? unit : null}</div>;
 }
-
