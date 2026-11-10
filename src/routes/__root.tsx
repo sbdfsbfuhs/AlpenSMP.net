@@ -17,6 +17,23 @@ export const Route = createRootRoute({
           "AlpenSMP ist ein deutschsprachiger Vanilla-Survival-Server für Java und Bedrock. Faire Community, Claims, Simple Voice Chat – ohne Pay-to-Win.",
       },
       { name: "theme-color", content: "#090909" },
+      { name: "alpen-react-share-meta", content: "true" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "AlpenSMP – Deutscher Minecraft Survival Server" },
+      {
+        name: "twitter:description",
+        content: "Deutscher Vanilla-Survival-Server. Java & Bedrock, faire Community.",
+      },
+      { name: "twitter:image", content: "https://alpensmp.net/og.jpg" },
+      { property: "og:title", content: "AlpenSMP – Deutscher Minecraft Survival Server" },
+      {
+        property: "og:description",
+        content: "Deutscher Vanilla-Survival-Server. Java & Bedrock, faire Community.",
+      },
+      { property: "og:type", content: "website" },
+      { property: "og:image", content: "https://alpensmp.net/og.jpg" },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
     ],
     links: [
       { rel: "icon", type: "image/png", href: "/logo.png" },

@@ -115,6 +115,16 @@ test("platform chrome overwrites share-card metas and always sets og:title", () 
   assert.doesNotMatch(out, /property="og:image"/);
 });
 
+test("React-managed share metadata is left unchanged for document hydration", () => {
+  const html =
+    '<html><head><meta name="alpen-react-share-meta" content="true"><meta name="twitter:card" content="summary_large_image"><meta property="og:title" content="AlpenSMP"></head></html>';
+  const out = injectGrokPwaHead(html, { appName: "Wild Race" });
+  assert.match(out, /name="alpen-react-share-meta" content="true"/);
+  assert.match(out, /property="og:title" content="AlpenSMP"/);
+  assert.equal(out.split('property="og:title"').length - 1, 1);
+  assert.equal(out.split('name="twitter:card"').length - 1, 1);
+});
+
 test("does not duplicate twitter:card or og:title", () => {
   const once = injectGrokPwaHead("<html><head><title>Hello World</title></head></html>");
   const twice = injectGrokPwaHead(once);
@@ -503,4 +513,3 @@ test("vite plugin bakes og identity as a virtual module", () => {
   assert.match(plugin, /virtual:grok-og-identity/);
   assert.match(plugin, /snapshotOgIdentity/);
 });
-
