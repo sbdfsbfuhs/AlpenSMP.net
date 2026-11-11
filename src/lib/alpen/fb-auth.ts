@@ -33,7 +33,8 @@ function fail(code: string): Error {
   if (code === "CONFIGURATION_NOT_FOUND") {
     return new Error("E-Mail-Anmeldung ist in Firebase noch aus. Authentication → Sign-in method → E-Mail/Passwort einschalten.");
   }
-  if (code === "EMAIL_EXISTS") return new Error("Diese E-Mail gibt es schon");
+  if (code === "EMAIL_EXISTS") return new Error("Diese E-Mail ist bereits registriert");
+  if (code === "EMAIL_NOT_FOUND") return new Error("E-Mail oder Passwort falsch");
   if (code === "TOO_MANY_ATTEMPTS_TRY_LATER") return new Error("Zu viele Versuche. Kurz warten.");
   if (code.startsWith("WEAK_PASSWORD")) return new Error("Firebase lässt unter 6 Zeichen nicht zu. Kürzer geht nicht.");
   if (code === "INVALID_EMAIL") return new Error("E-Mail ungültig");
@@ -116,21 +117,29 @@ export async function changeOwnPassword(password: string) {
   storeFrom(data, stored?.email || "");
 }
 
+export async function sendPasswordResetEmail(email: string) {
+  const clean = email.trim().toLowerCase();
+  if (!clean || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) throw new Error("Bitte eine gültige E-Mail-Adresse eingeben.");
+  const continueUrl = typeof window === "undefined" ? undefined : `${window.location.origin}/team`;
+  try {
+    await authPost("accounts:sendOobCode", {
+      requestType: "PASSWORD_RESET",
+      email: clean,
+      ...(continueUrl ? { continueUrl } : {}),
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === "E-Mail oder Passwort falsch") return;
+    throw error;
+  }
+}
+
 export async function createFirebaseUser(email: string, password: string) {
   const clean = email.trim().toLowerCase();
-  try {
-    const data = await authPost("accounts:signUp", { email: clean, password, returnSecureToken: true });
-    if (!data.localId) throw new Error("Account konnte nicht angelegt werden");
-    return { email: clean, uid: data.localId };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "";
-    if (!message.includes("gibt es schon")) throw err;
-    try {
-      const data = await authPost("accounts:signInWithPassword", { email: clean, password, returnSecureToken: true });
-      if (!data.localId) throw new Error("belegt");
-      return { email: clean, uid: data.localId };
-    } catch {
-      throw new Error("Der Name ist schon belegt und das Passwort passt nicht. Anderen Namen nehmen.");
-    }
-  }
+  const data = await authPost("accounts:signUp", { email: clean, password, returnSecureToken: true });
+  if (!data.localId || !data.idToken) throw new Error("Account konnte nicht angelegt werden");
+  return { email: clean, uid: data.localId, idToken: data.idToken };
+}
+
+export async function deleteFirebaseUser(idToken: string) {
+  await authPost("accounts:delete", { idToken });
 }

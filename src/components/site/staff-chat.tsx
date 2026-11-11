@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { useLive } from "@/components/site/staff-live";
-import { entries, fbPush, fbRemove, fbSet, type StaffSession } from "@/lib/alpen/staff";
+import type { StaffSession } from "@/lib/alpen/staff";
 import { SecurityDenied, SecurityDown, securityJson } from "@/lib/alpen/security";
 
 const TWO_WEEKS = 14 * 24 * 60 * 60 * 1000;
@@ -35,7 +34,6 @@ export function StaffChat({ user, team = true, builder = false, dock = false }: 
         ) : (
           <h2 className="font-semibold">{active.title}</h2>
         )}
-        <span className="ml-auto size-2 rounded-full bg-emerald-400" title="Verbunden" />
       </header>
       <ChatThread path={active.path} user={user} />
     </div>
@@ -47,40 +45,34 @@ function roomOf(path: string) {
 }
 
 function ChatThread({ path, user }: { path: string; user: StaffSession }) {
-  const rows = useLive<Msg>(path);
-  const pin = useLive<{ text?: string; by?: string; ts?: number }>("chats/pin");
   const [text, setText] = useState("");
   const [draft, setDraft] = useState("");
   const [pinOpen, setPinOpen] = useState(false);
-  const [source, setSource] = useState<"pending" | "oracle" | "firebase">("pending");
   const [remote, setRemote] = useState<Wire[]>([]);
   const [remotePin, setRemotePin] = useState<Msg | null>(null);
   const [hint, setHint] = useState("Verbinden…");
   const box = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
   const [away, setAway] = useState(0);
-  const sourceRef = useRef(source);
-  sourceRef.current = source;
   const room = roomOf(path);
 
   useEffect(() => {
     let stop = false;
-    let locked = false;
+    let pulling = false;
     async function pull() {
-      if (locked) return;
+      if (pulling) return;
+      pulling = true;
       try {
         const data = await securityJson<{ messages?: Wire[] }>(`/api/chat/${room}`);
         const nextPin = room === "team" ? await securityJson<Msg>("/api/chat/pin") : null;
-        if (stop || locked) return;
-        setSource("oracle");
+        if (stop) return;
         setRemote(Array.isArray(data.messages) ? data.messages : []);
         setRemotePin(nextPin);
-        setHint("Neuer Server");
+        setHint("Verbunden");
       } catch (err) {
-        if (stop) return;
-        locked = true;
-        setSource("firebase");
-        setHint(err instanceof SecurityDenied ? "Firebase, neuer Server lehnt ab" : "Firebase, neuer Server nicht erreichbar");
+        if (!stop) setHint(chatError(err));
+      } finally {
+        pulling = false;
       }
     }
     void pull();
@@ -91,21 +83,11 @@ function ChatThread({ path, user }: { path: string; user: StaffSession }) {
     };
   }, [room]);
 
-  const fbList = entries(rows)
-    .filter(([, item]) => (item.ts || 0) >= Date.now() - TWO_WEEKS)
-    .sort((a, b) => (a[1].ts || 0) - (b[1].ts || 0));
-  const oracleList = remote
+  const list = remote
     .filter((item) => (item.ts || 0) >= Date.now() - TWO_WEEKS)
-    .map((item, index) => [item.id || `oracle-${item.ts || index}`, item] as [string, Msg]);
-  const list = (source === "oracle" ? [...fbList, ...oracleList] : fbList).sort((a, b) => (a[1].ts || 0) - (b[1].ts || 0));
-  const firebasePin = path === "chats/team" ? pin.current : undefined;
-  const pinned = source === "oracle" && remotePin?.text ? remotePin : firebasePin;
-
-  useEffect(() => {
-    const limit = Date.now() - TWO_WEEKS;
-    const old = entries(rows).filter(([, item]) => (item.ts || 0) < limit);
-    for (const [key] of old) void fbRemove(`${path}/${key}`);
-  }, [rows, path]);
+    .map((item, index) => [item.id || `oracle-${item.ts || index}`, item] as [string, Wire])
+    .sort((a, b) => (a[1].ts || 0) - (b[1].ts || 0));
+  const pinned = remotePin?.text ? remotePin : null;
 
   useEffect(() => {
     const el = box.current;
@@ -122,29 +104,63 @@ function ChatThread({ path, user }: { path: string; user: StaffSession }) {
     const msg = text.trim();
     if (!msg) return;
     stick.current = true;
-    if (sourceRef.current !== "firebase") {
-      try {
-        await securityJson(`/api/chat/${room}`, { method: "POST", body: JSON.stringify({ text: msg.slice(0, 800) }) });
-        setSource("oracle");
-        sourceRef.current = "oracle";
-        setHint("Neuer Server");
-        setText("");
-        const data = await securityJson<{ messages?: Wire[] }>(`/api/chat/${room}`);
-        setRemote(Array.isArray(data.messages) ? data.messages : []);
-        return;
-      } catch (err) {
-        if (!(err instanceof SecurityDown) && !(err instanceof SecurityDenied)) return;
-        setSource("firebase");
-        sourceRef.current = "firebase";
-        setHint(err instanceof SecurityDenied ? "Firebase, neuer Server lehnt ab" : "Firebase, neuer Server nicht erreichbar");
-      }
+    setHint("Sende…");
+    try {
+      const saved = await securityJson<Wire>(`/api/chat/${room}`, {
+        method: "POST",
+        body: JSON.stringify({ text: msg.slice(0, 800) }),
+      });
+      setRemote((current) => [...current, saved]);
+      setText("");
+      setHint("Verbunden");
+    } catch (err) {
+      setHint(chatError(err));
     }
-    void fbPush(path, { by: user.username, text: msg.slice(0, 800), ts: Date.now() }).then(() => setText(""));
+  }
+
+  async function removeMessage(id: string) {
+    try {
+      await securityJson(`/api/chat/${room}/${encodeURIComponent(id)}`, { method: "DELETE" });
+      setRemote((current) => current.filter((item) => item.id !== id));
+      setHint("Verbunden");
+    } catch (err) {
+      setHint(chatError(err));
+    }
+  }
+
+  async function removePin() {
+    try {
+      await securityJson("/api/chat/pin", { method: "DELETE" });
+      setRemotePin(null);
+      setHint("Verbunden");
+    } catch (err) {
+      setHint(chatError(err));
+    }
+  }
+
+  async function savePin(event: FormEvent) {
+    event.preventDefault();
+    const next = draft.trim().slice(0, 160);
+    if (!next) return;
+    try {
+      const saved = await securityJson<Msg>("/api/chat/pin", {
+        method: "PUT",
+        body: JSON.stringify({ text: next }),
+      });
+      setRemotePin(saved);
+      setDraft("");
+      setPinOpen(false);
+      setHint("Verbunden");
+    } catch (err) {
+      setHint(chatError(err));
+    }
   }
 
   return (
     <>
-      <p className="sr-only">{hint}</p>
+      <p className={`border-b border-line px-3 py-1 text-xs ${hint === "Verbunden" ? "text-muted" : "text-ember"}`} role="status">
+        {hint}
+      </p>
       {pinned?.text ? (
         <p className="border-b border-brand/40 bg-brand/10 px-3 py-2 text-sm">
           <span className="text-xs font-semibold text-brand">Angepinnt</span>
@@ -153,13 +169,7 @@ function ChatThread({ path, user }: { path: string; user: StaffSession }) {
             <button
               type="button"
               className="mt-1 text-xs text-muted underline"
-              onClick={() => {
-                if (sourceRef.current === "oracle") {
-                  void securityJson("/api/chat/pin", { method: "DELETE" }).catch(() => undefined);
-                }
-                void fbRemove("chats/pin/current");
-                setRemotePin(null);
-              }}
+              onClick={() => void removePin()}
             >
               Lösen
             </button>
@@ -181,7 +191,7 @@ function ChatThread({ path, user }: { path: string; user: StaffSession }) {
           const mine = item.by === user.username;
           const showDay = !prev || dayKey(prev.ts) !== dayKey(item.ts);
           const grouped = Boolean(prev && !showDay && prev.by === item.by);
-          const onFirebase = key in rows;
+          const messageId = item.id;
           return (
             <div key={key}>
               {showDay ? (
@@ -201,8 +211,8 @@ function ChatThread({ path, user }: { path: string; user: StaffSession }) {
                   <p className="whitespace-pre-wrap break-words">{item.text}</p>
                   <p className={`mt-0.5 text-right text-[10px] ${mine ? "text-white/70" : "text-muted"}`}>
                     {clock(item.ts)}
-                    {user.role === "owner" && onFirebase ? (
-                      <button type="button" className="ml-2 underline" onClick={() => void fbRemove(`${path}/${key}`)}>
+                    {user.role === "owner" && messageId ? (
+                      <button type="button" className="ml-2 underline" onClick={() => void removeMessage(messageId)}>
                         Löschen
                       </button>
                     ) : null}
@@ -230,24 +240,7 @@ function ChatThread({ path, user }: { path: string; user: StaffSession }) {
       ) : null}
       {path === "chats/team" && user.role === "owner" ? (
         pinOpen ? (
-          <form
-            className="flex gap-2 border-t border-line px-3 py-2"
-            onSubmit={(event) => {
-              event.preventDefault();
-              const next = draft.trim().slice(0, 160);
-              if (!next) return;
-              const body = { text: next, by: user.username, ts: Date.now() };
-              if (sourceRef.current === "oracle") {
-                void securityJson("/api/chat/pin", { method: "PUT", body: JSON.stringify({ text: next }) })
-                  .then(() => setRemotePin(body))
-                  .catch(() => undefined);
-              }
-              void fbSet("chats/pin/current", body).then(() => {
-                setDraft("");
-                setPinOpen(false);
-              });
-            }}
-          >
+          <form className="flex gap-2 border-t border-line px-3 py-2" onSubmit={(event) => void savePin(event)}>
             <input className="field" placeholder="Oben anpinnen" value={draft} onChange={(e) => setDraft(e.target.value)} />
             <button className="btn-ghost" type="submit">
               Anpinnen
@@ -302,4 +295,10 @@ function dayLabel(ts?: number) {
 function clock(ts?: number) {
   if (!ts) return "";
   return new Date(ts).toLocaleTimeString("de-CH", { hour: "2-digit", minute: "2-digit" });
+}
+
+function chatError(error: unknown) {
+  if (error instanceof SecurityDenied) return "Keine Berechtigung für diesen Chat.";
+  if (error instanceof SecurityDown) return "Chatserver nicht erreichbar.";
+  return "Chat-Anfrage fehlgeschlagen.";
 }

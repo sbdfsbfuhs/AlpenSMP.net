@@ -335,7 +335,7 @@ export function TicketForm() {
       {sent ? (
         <div className="mb-6 rounded-md border border-brand/40 bg-brand/10 p-4">
           <p className="font-semibold">Ticket gesendet</p>
-          <p className="mt-1 text-sm text-muted">Merke dir die Nummer. Damit kannst du den Status unten prüfen.</p>
+          <p className="mt-1 text-sm text-muted">Der Ticketcode ist ein geheimer Zugangslink. Teile ihn nur mit Personen, denen du Zugriff geben möchtest. Er läuft nach 30 Tagen ab.</p>
           <p className="mt-2 font-mono text-lg">{sent}</p>
         </div>
       ) : null}
@@ -374,17 +374,17 @@ export function TicketForm() {
       </form>
       <div className="mt-6 border-t border-line pt-5">
         <h3 className="font-semibold">Status prüfen</h3>
-        <p className="mt-1 text-sm text-muted">Ticket-Nummer eingeben. Ein Login ist nicht nötig.</p>
+        <p className="mt-1 text-sm text-muted">Ticketcode eingeben. Er funktioniert als geheimer Zugangslink, läuft nach 30 Tagen ab und sollte nicht öffentlich geteilt werden.</p>
         <div className="mt-3 flex flex-col gap-2 sm:flex-row">
           <label className="sr-only" htmlFor="ticket-code">Ticket-Nummer</label>
-          <input id="ticket-code" className="field" placeholder="z. B. ALP-4K2P" value={code} maxLength={16} onChange={(e) => setCode(e.target.value)} />
+          <input id="ticket-code" className="field" placeholder="ALP- und 32 Zeichen" value={code} maxLength={36} autoCapitalize="characters" onChange={(e) => setCode(e.target.value)} />
           <button
             type="button"
             className="btn-ghost"
             onClick={async () => {
               const row = await lookupTicket(code);
               setFound(row);
-              if (!row) setNote("Kein Ticket unter dieser Nummer.");
+              if (!row) setNote("Ticket nicht gefunden oder der Zugriffslink ist abgelaufen.");
             }}
           >
             Status laden

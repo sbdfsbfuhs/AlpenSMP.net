@@ -1,5 +1,6 @@
 import { SITE } from "@/lib/alpen/site";
 import { loadPath, relayDetail } from "@/lib/alpen/security";
+import { createTicketCode, normalizeTicketCode, ticketAccessIsValid, TICKET_ACCESS_TTL_MS } from "@/lib/alpen/ticket-access";
 
 export type ServerStatus = {
   online: boolean;
@@ -192,14 +193,7 @@ export async function submitCommunity(body: {
       source: "website",
     };
     const moved = await relayDetail("community_reviews", "POST", review);
-    if (!moved.ok) {
-      const res = await fetch(`${SITE.fb}/community_reviews.json`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(review),
-      });
-      if (!res.ok) throw new Error(readableRelayError(moved.error, "Rezension konnte nicht gespeichert werden."));
-    }
+    if (!moved.ok) throw new Error(readableRelayError(moved.error, "Rezension konnte nicht gespeichert werden."));
   }
   if ((body.kind === "image" || body.kind === "both") && body.imageUrl) {
     const image = {
@@ -210,14 +204,7 @@ export async function submitCommunity(body: {
       ts: Date.now(),
     };
     const moved = await relayDetail("community_images", "POST", image);
-    if (!moved.ok) {
-      const res = await fetch(`${SITE.fb}/community_images.json`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(image),
-      });
-      if (!res.ok) throw new Error(readableRelayError(moved.error, "Bild konnte nicht gespeichert werden."));
-    }
+    if (!moved.ok) throw new Error(readableRelayError(moved.error, "Bild konnte nicht gespeichert werden."));
   }
 }
 
@@ -240,7 +227,8 @@ export async function submitTicket(input: { name: string; topic: string; msg: st
   if (name.length < 2 || topic.length < 3 || msg.length < 8) throw new Error("Name, Betreff und Beschreibung prüfen.");
   const last = Number(window.localStorage.getItem("alpen-ticket-at") || 0);
   if (Date.now() - last < 60_000) throw new Error("Bitte eine Minute warten, bevor du ein weiteres Ticket sendest.");
-  const code = "ALP-" + Math.random().toString(36).slice(2, 6).toUpperCase();
+  const code = createTicketCode();
+  const expiresAt = Date.now() + TICKET_ACCESS_TTL_MS;
   const helpBody = {
     by: name,
     msg,
@@ -253,19 +241,9 @@ export async function submitTicket(input: { name: string; topic: string; msg: st
     status: "offen",
   };
   const helpMoved = await relayDetail("helpRequests", "POST", helpBody);
-  let helpKey = "";
-  if (helpMoved.ok) {
-    helpKey = String((helpMoved.data as { name?: string } | null)?.name || "");
-  } else {
-    const help = await fetch(`${SITE.fb}/helpRequests.json`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(helpBody),
-    });
-    if (!help.ok) throw new Error(helpMoved.error || "Ticket konnte nicht gesendet werden.");
-    const pushed = (await help.json()) as { name?: string };
-    helpKey = pushed.name || "";
-  }
+  if (!helpMoved.ok) throw new Error(readableRelayError(helpMoved.error, "Ticket konnte nicht gesendet werden."));
+  const helpKey = String((helpMoved.data as { name?: string } | null)?.name || "");
+  if (!helpKey) throw new Error("Ticket konnte nicht gesendet werden.");
   const ticket = {
     name,
     topic,
@@ -275,16 +253,10 @@ export async function submitTicket(input: { name: string; topic: string; msg: st
     replies: {},
     status: "offen",
     helpKey,
+    expiresAt,
   };
   const saved = await relayDetail(`tickets/${code}`, "PUT", ticket);
-  if (!saved.ok) {
-    const res = await fetch(`${SITE.fb}/tickets/${code}.json`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(ticket),
-    });
-    if (!res.ok) throw new Error(saved.error || "Ticket-Code konnte nicht angelegt werden.");
-  }
+  if (!saved.ok) throw new Error(readableRelayError(saved.error, "Ticket-Code konnte nicht angelegt werden."));
   window.localStorage.setItem("alpen-ticket-at", String(Date.now()));
   return code;
 }
@@ -299,12 +271,14 @@ export type TicketView = {
 };
 
 export async function lookupTicket(code: string): Promise<TicketView | null> {
-  const clean = code.trim().toUpperCase();
+  const clean = normalizeTicketCode(code);
+  if (!clean) return null;
   type TicketRow = {
     status?: string;
     topic?: string;
     category?: string;
     msg?: string;
+    expiresAt?: number;
     replies?: Record<string, { by?: string; text?: string; msg?: string; ts?: number }> | null;
   };
   let data: TicketRow | null = null;
@@ -313,7 +287,7 @@ export async function lookupTicket(code: string): Promise<TicketView | null> {
   } catch {
     return null;
   }
-  if (!data) return null;
+  if (!data || !ticketAccessIsValid(data.expiresAt)) return null;
   const replies = data.replies
     ? Object.values(data.replies).map((row) => ({
         by: row.by || "Team",

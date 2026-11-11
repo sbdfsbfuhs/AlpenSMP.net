@@ -25,6 +25,12 @@ const MOVED = new Set([
   "community_images",
   "season",
   "site_settings",
+  "site_rules",
+  "staffActivity",
+  "staffAlerts",
+  "staffLog",
+  "staffNotifications",
+  "staffRuleHistory",
 ]);
 
 export class SecurityDown extends Error {}
@@ -106,7 +112,8 @@ export async function loadPath(path: string) {
     const moved = await relayDetail(path, "GET");
     if (moved.ok) return moved.data;
     if (moved.status === 404) return null;
-    if (moved.status !== 0 && moved.status < 500) throw new Error("Laden fehlgeschlagen");
+    if (moved.status === 401 || moved.status === 403) throw new SecurityDenied("keine Berechtigung");
+    throw new SecurityDown(moved.error || "nicht erreichbar");
   }
   try {
     return await firebaseGet(path);

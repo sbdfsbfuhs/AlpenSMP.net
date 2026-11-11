@@ -71,8 +71,8 @@
     "tickets": {
       ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
       "$code": {
-        ".read": true,
-        ".write": "(auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true) || (!data.exists() && newData.child('status').val() == 'offen' && newData.child('msg').isString() && newData.child('msg').val().length <= 2000)"
+        ".read": "(auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true) || (data.exists() && data.child('expiresAt').isNumber() && data.child('expiresAt').val() > now)",
+        ".write": "(auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true) || (!data.exists() && $code.matches(/^ALP-[0-9A-F]{32}$/) && newData.child('status').val() == 'offen' && newData.child('msg').isString() && newData.child('msg').val().length <= 2000 && newData.child('expiresAt').isNumber() && newData.child('expiresAt').val() > now && newData.child('expiresAt').val() <= now + 2592000000)"
       }
     },
     "staffByUid": {
@@ -95,7 +95,7 @@
     },
     "staffGate": {
       "$name": {
-        ".read": true,
+        ".read": "auth != null && (root.child('staffUsers').child('owner').child('uid').val() == auth.uid || auth.token.email == 'passtu09@gmail.com' || root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'Owner' || root.child('staffByUid').child(auth.uid).child('username').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('username').val() == 'Owner')",
         ".write": "auth != null && (root.child('staffUsers').child('owner').child('uid').val() == auth.uid || auth.token.email == 'passtu09@gmail.com' || root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'Owner' || root.child('staffByUid').child(auth.uid).child('username').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('username').val() == 'Owner' || (root.child('staffOpen').child($name).child('open').val() == true && auth.token.email == $name + '@staff.alpensmp.net'))"
       }
     },

@@ -6,6 +6,7 @@ import { StaffChat } from "@/components/site/staff-chat";
 import { CheckInBanner, PlayerSearch } from "@/components/site/staff-search";
 import { shallowCount, useLive } from "@/components/site/staff-live";
 import { can, roleLabel, ROLES, asRole, type Role } from "@/lib/alpen/roles";
+import { sendPasswordResetEmail } from "@/lib/alpen/fb-auth";
 
 const AbsenceBoard = lazy(() => import("@/components/site/staff-extra").then((m) => ({ default: m.AbsenceBoard })));
 const BanGuideEditor = lazy(() => import("@/components/site/staff-extra").then((m) => ({ default: m.BanGuideEditor })));
@@ -36,7 +37,7 @@ import {
   fbSet,
   fbUpdate,
   formatWhen,
-  isPermanentBan,
+  shouldArchivePermanentBan,
   loginStaff,
   executeMinecraftUnban,
   fetchMinecraftPlayersSnapshot,
@@ -203,6 +204,10 @@ function Login({ onIn }: { onIn: (user: StaffSession) => void }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [recoveryEmail, setRecoveryEmail] = useState("");
+  const [recoveryMessage, setRecoveryMessage] = useState("");
+  const [recoveryError, setRecoveryError] = useState("");
+  const [recoveryBusy, setRecoveryBusy] = useState(false);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -220,23 +225,53 @@ function Login({ onIn }: { onIn: (user: StaffSession) => void }) {
     }
   }
 
+  async function recover(event: FormEvent) {
+    event.preventDefault();
+    setRecoveryBusy(true);
+    setRecoveryMessage("");
+    setRecoveryError("");
+    try {
+      await sendPasswordResetEmail(recoveryEmail);
+      setRecoveryMessage("Falls ein Konto zu dieser Adresse gehört, wurde ein Passwort-Link gesendet.");
+    } catch (err) {
+      setRecoveryError(err instanceof Error ? err.message : "Der Passwort-Link konnte nicht angefordert werden.");
+    } finally {
+      setRecoveryBusy(false);
+    }
+  }
+
   return (
-    <form className="card card-still panel-in mx-auto max-w-md p-6" onSubmit={submit}>
-      <h2 className="text-xl font-semibold">Anmelden</h2>
-      <p className="mt-2 text-sm text-muted">Genau der Team-Name aus der Account-Liste, keine E-Mail. Dazu das Passwort, das beim Anlegen oder beim letzten Reset galt.</p>
-      <label className="mt-5 block text-sm">
-        Name
-        <input className="field mt-1" value={name} onChange={(e) => setName(e.target.value)} autoComplete="username" />
-      </label>
-      <label className="mt-3 block text-sm">
-        Passwort
-        <input className="field mt-1" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
-      </label>
-      {error ? <p className="mt-3 text-sm text-ember">{error}</p> : null}
-      <button className="btn-brand mt-5 w-full" type="submit" disabled={busy}>
-        {busy ? "Prüfe…" : "Rein"}
-      </button>
-    </form>
+    <div className="mx-auto max-w-md space-y-4">
+      <form className="card card-still panel-in p-6" onSubmit={submit}>
+        <h2 className="text-xl font-semibold">Anmelden</h2>
+        <p className="mt-2 text-sm text-muted">Melde dich mit der persönlichen E-Mail-Adresse deines Accounts und deinem Passwort an. Bei älteren Konten funktioniert übergangsweise auch der Teamname. Deine E-Mail-Adresse wird nicht öffentlich für die Teamnamen-Suche bereitgestellt.</p>
+        <label className="mt-5 block text-sm">
+          Persönliche E-Mail-Adresse oder älterer Teamname
+          <input className="field mt-1" value={name} onChange={(e) => setName(e.target.value)} autoComplete="username" required />
+        </label>
+        <label className="mt-3 block text-sm">
+          Passwort
+          <input className="field mt-1" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
+        </label>
+        {error ? <p className="mt-3 text-sm text-ember">{error}</p> : null}
+        <button className="btn-brand mt-5 w-full" type="submit" disabled={busy}>
+          {busy ? "Prüfe…" : "Rein"}
+        </button>
+      </form>
+      <form className="card card-still p-6" onSubmit={recover}>
+        <h2 className="text-lg font-semibold">Passwort vergessen?</h2>
+        <p className="mt-2 text-sm text-muted">Wir senden einen Link an die persönliche E-Mail-Adresse deines Accounts.</p>
+        <label className="mt-4 block text-sm">
+          E-Mail-Adresse
+          <input className="field mt-1" type="email" value={recoveryEmail} onChange={(e) => setRecoveryEmail(e.target.value)} autoComplete="email" required />
+        </label>
+        {recoveryMessage ? <p className="mt-3 text-sm text-muted" role="status">{recoveryMessage}</p> : null}
+        {recoveryError ? <p className="mt-3 text-sm text-ember" role="alert">{recoveryError}</p> : null}
+        <button className="btn-ghost mt-4 w-full" type="submit" disabled={recoveryBusy}>
+          {recoveryBusy ? "Sende…" : "Passwort-Link anfordern"}
+        </button>
+      </form>
+    </div>
   );
 }
 
@@ -304,32 +339,40 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
   const [minecraftBans, setMinecraftBans] = useState<MinecraftBan[]>([]);
   const banRows = useLive<ModItem>("bans");
   const warnRows = useLive<ModItem>("warns");
+  const autoArchiveFailures = useRef(new Map<string, number>());
   useEffect(() => {
     if (!can(real, "moderation")) return;
     const now = Date.now();
+    const archiveAutomatically = (path: string, key: string, body: Partial<ModItem>) => {
+      const record = `${path}/${key}`;
+      if ((autoArchiveFailures.current.get(record) || 0) > now - 60_000) return;
+      autoArchiveFailures.current.set(record, now);
+      void fbUpdate(record, body).catch((err) => {
+        autoArchiveFailures.current.set(record, Date.now());
+        note(err instanceof Error ? `Automatische Archivierung fehlgeschlagen: ${err.message}` : "Automatische Archivierung fehlgeschlagen.");
+      });
+    };
     for (const [key, item] of Object.entries(banRows)) {
-      if (item.archived || item.pending || item.minecraftBanKey || !isPermanentBan(item)) continue;
-      const start = item.confirmedAt || item.ts || 0;
-      if (!start || now - start < 86_400_000) continue;
-      void fbUpdate(`bans/${key}`, {
+      if (!shouldArchivePermanentBan(item, now)) continue;
+      archiveAutomatically("bans", key, {
         archived: true,
         archivedBy: "system",
         archivedAt: now,
         archiveReason: "Permanent, automatisch nach 24 Stunden",
         updatedAt: now,
-      }).catch(() => undefined);
+      });
     }
     for (const [key, item] of Object.entries(warnRows)) {
       if (item.archived || !item.endsAt || item.endsAt > now) continue;
-      void fbUpdate(`warns/${key}`, {
+      archiveAutomatically("warns", key, {
         archived: true,
         archivedBy: "system",
         archivedAt: now,
         archiveReason: "Warnung abgelaufen",
         updatedAt: now,
-      }).catch(() => undefined);
+      });
     }
-  }, [banRows, warnRows, real]);
+  }, [banRows, warnRows, real, note]);
   const [tab, setTab] = useState<Tab>(() => {
     if (typeof window === "undefined") return "roster";
     const saved = window.sessionStorage.getItem("alpen-team-tab");

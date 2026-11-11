@@ -1,23 +1,18 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useLive } from "@/components/site/staff-live";
-import { ensureIdToken } from "@/lib/alpen/fb-auth";
-import { SITE } from "@/lib/alpen/site";
 import {
   createStaffAccount,
   entries,
-  fbGet,
-  fbSet,
   fbUpdate,
   formatWhen,
   removeStaffAccount,
   resetStaffPassword,
+  setStaffEmail,
   setStaffPaused,
   setStaffRole,
-  fbRemoveLocal,
   type ModItem,
   type StaffSession,
 } from "@/lib/alpen/staff";
-import { relayDetail } from "@/lib/alpen/security";
 
 export function Accounts({ note, actor }: { note: (text: string) => void; actor: StaffSession }) {
   const users = useLive<{ role?: string; mustChangePw?: boolean; uid?: string; disabled?: boolean; lastLogin?: number }>("staffUsers");
@@ -27,20 +22,9 @@ export function Accounts({ note, actor }: { note: (text: string) => void; actor:
   const warns = useLive<ModItem>("warns");
   const notes = useLive<ModItem>("notes");
   const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("");
   const [role, setRole] = useState("helper");
   const [formError, setFormError] = useState("");
-  const [copying, setCopying] = useState(false);
-  const [copyResult, setCopyResult] = useState("");
-  const [wiping, setWiping] = useState(false);
-  const [wipeResult, setWipeResult] = useState("");
-
-  useEffect(() => {
-    if (actor.role !== "owner") return;
-    for (const [name, item] of entries(users)) {
-      if (!item.uid) void fbSet(`staffOpen/${name}`, { open: true, role: item.role || "helper" }).catch(() => undefined);
-    }
-  }, [users, actor.role]);
 
   return (
     <div className="space-y-4">
@@ -50,20 +34,20 @@ export function Accounts({ note, actor }: { note: (text: string) => void; actor:
           event.preventDefault();
           setFormError("");
           if (actor.role !== "owner") return setFormError("Nur der Owner vergibt Rollen");
-          void createStaffAccount({ username, password, role, createdBy: actor.username })
+          void createStaffAccount({ username, email, role, createdBy: actor.username })
             .then(() => {
               setUsername("");
-              setPassword("");
+              setEmail("");
               setFormError("");
-              note("Account angelegt. Die Person meldet sich mit dem Namen an.");
+              note("Account angelegt. Passwort-Link an die persönliche E-Mail-Adresse gesendet.");
             })
             .catch((err) => setFormError(err instanceof Error ? err.message : "Anlegen fehlgeschlagen"));
         }}
       >
         <h2 className="text-lg font-semibold">Account anlegen</h2>
-        <p className="mt-2 text-sm text-muted">Stand 3. Nur Team-Name und Startpasswort. Keine private E-Mail. Ein gesetztes Passwort kann später niemand ansehen, auch du nicht. Du siehst es nur, während du es eintippst.</p>
-        <input className="field mt-3" placeholder="Name im Team" value={username} onChange={(e) => setUsername(e.target.value)} />
-        <input className="field mt-2" type="text" placeholder="Startpasswort" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
+        <p className="mt-2 text-sm text-muted">Teamname und persönliche E-Mail-Adresse sind erforderlich. Die Person meldet sich mit ihrer E-Mail-Adresse an und erhält einen sicheren Link, um ihr Passwort selbst festzulegen. E-Mail-Adressen werden nicht öffentlich über Teamnamen aufgelöst.</p>
+        <input className="field mt-3" placeholder="Name im Team" value={username} onChange={(e) => setUsername(e.target.value)} required autoComplete="off" />
+        <input className="field mt-2" type="email" placeholder="Persönliche E-Mail-Adresse" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
         <select className="field mt-2" value={role} onChange={(e) => setRole(e.target.value)}>
           <option value="helper">Helper</option>
           <option value="supporter">Supporter</option>
@@ -77,43 +61,8 @@ export function Accounts({ note, actor }: { note: (text: string) => void; actor:
       </form>
       {actor.role === "owner" ? (
         <section className="card card-still p-5">
-          <h2 className="text-lg font-semibold">Interne Daten übernehmen</h2>
-          <p className="mt-2 text-sm text-muted">Kopiert Bans, Verwarnungen, Notizen, Tickets, Hilfe, Commands, Aufgaben, Abwesenheiten, interne Regeln, Einstellungen und Live auf den neuen Server. Firebase bleibt als Reserve. Einmal drücken, während du angemeldet bist.</p>
-          <button
-            type="button"
-            className="btn-brand mt-3"
-            disabled={copying}
-            onClick={() => {
-              setCopying(true);
-              setCopyResult("");
-              void copyInternal()
-                .then((text) => setCopyResult(text))
-                .catch((err) => setCopyResult(err instanceof Error ? err.message : "Kopieren fehlgeschlagen"))
-                .finally(() => setCopying(false));
-            }}
-          >
-            {copying ? "Kopiere…" : "Jetzt kopieren"}
-          </button>
-          {copyResult ? <p className="mt-3 text-sm text-muted">{copyResult}</p> : null}
-          <h2 className="mt-6 text-lg font-semibold">Firebase-Kopien löschen</h2>
-          <p className="mt-2 text-sm text-muted">Löscht Bilder, Rezensionen und die anderen kopierten Inhalte nur in Firebase. Nur wenn der neue Server sie schon hat. Anmeldung, Online-Status und Server-down bleiben.</p>
-          <button
-            type="button"
-            className="btn-ghost mt-3"
-            disabled={wiping}
-            onClick={() => {
-              if (!window.confirm("Kopien in Firebase löschen? Der neue Server behält sie.")) return;
-              setWiping(true);
-              setWipeResult("");
-              void wipeFirebaseCopies()
-                .then((text) => setWipeResult(text))
-                .catch((err) => setWipeResult(err instanceof Error ? err.message : "Löschen fehlgeschlagen"))
-                .finally(() => setWiping(false));
-            }}
-          >
-            {wiping ? "Lösche…" : "Kopien in Firebase löschen"}
-          </button>
-          {wipeResult ? <p className="mt-3 text-sm text-muted">{wipeResult}</p> : null}
+          <h2 className="text-lg font-semibold">Interne Daten</h2>
+          <p className="mt-2 text-sm text-muted">Migrierte Teamdaten werden über den Sicherheits-Server gelesen und gespeichert. Firebase bleibt für Konten sowie Status- und Notfalldaten; die ursprünglichen Firebase-Daten werden nicht automatisch gelöscht.</p>
         </section>
       ) : null}
       <StreamerAccount note={note} actor={actor} />
@@ -147,147 +96,9 @@ export function Accounts({ note, actor }: { note: (text: string) => void; actor:
   );
 }
 
-const COPY_ROOTS: [string, string][] = [
-  ["bans", "Bans"],
-  ["warns", "Verwarnungen"],
-  ["notes", "Notizen"],
-  ["helpRequests", "Hilfe"],
-  ["tickets", "Tickets"],
-  ["commands", "Commands"],
-  ["banGuide", "Bann-Leitfaden"],
-  ["tasks", "Aufgaben"],
-  ["absences", "Abwesenheiten"],
-  ["rulesStaff", "Interne Regeln"],
-  ["guideTopics", "Guide"],
-  ["site_copy", "Texte"],
-  ["site_settings", "Einstellungen"],
-  ["live_streams", "Live"],
-];
-
-const KEY = /^[A-Za-z0-9_-]{1,80}$/;
-
-async function putTree(path: string, value: unknown, depth: number): Promise<{ ok: number; fail: number; status: number; error: string }> {
-  if (value == null || depth > 6) return { ok: 0, fail: value == null ? 0 : 1, status: 0, error: value == null ? "" : "zu tief" };
-  const json = JSON.stringify(value);
-  const asMap = typeof value === "object" && !Array.isArray(value) && json.length > 30000;
-  if (!asMap) {
-    let saved = await relayDetail(path, "PUT", value);
-    if (!saved.ok && (saved.status === 404 || saved.status === 405)) saved = await relayDetail(path, "PATCH", value);
-    if (saved.ok) return { ok: 1, fail: 0, status: saved.status, error: "" };
-    return { ok: 0, fail: 1, status: saved.status, error: saved.error };
-  }
-  let ok = 0;
-  let fail = 0;
-  let status = 0;
-  let error = "";
-  for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
-    if (!KEY.test(key)) {
-      fail += 1;
-      status = 0;
-      error = "ungültiger Name";
-      continue;
-    }
-    const part = await putTree(`${path}/${key}`, child, depth + 1);
-    ok += part.ok;
-    fail += part.fail;
-    if (part.fail && !error) {
-      status = part.status;
-      error = part.error;
-    }
-  }
-  return { ok, fail, status, error };
-}
-
-async function copyInternal() {
-  const lines: string[] = [];
-  for (const [path, label] of COPY_ROOTS) {
-    const data = await fbGet<unknown>(path).catch(() => null);
-    if (data == null) {
-      lines.push(`${label}: leer`);
-      continue;
-    }
-    const result = await putTree(path, data, 1);
-    const problem = result.fail ? `, ${result.fail} nicht (${result.status} ${result.error})` : "";
-    lines.push(`${label}: ${result.ok} gespeichert${problem}`);
-  }
-  return lines.join(" · ");
-}
-
-async function firebaseNode(path: string) {
-  const token = await ensureIdToken().catch(() => null);
-  const url = new URL(`${SITE.fb}/${path}.json`);
-  if (token) url.searchParams.set("auth", token);
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(String(res.status));
-  return res.json();
-}
-
-const WIPE_ROOTS: [string, string][] = [
-  ["community_images", "Bilder"],
-  ["community_reviews", "Rezensionen"],
-  ["changelog", "News"],
-  ["season", "Saison"],
-  ["mascotSettings", "Maskottchen"],
-  ["playerCommands", "Spieler-Commands"],
-  ["bans", "Bans"],
-  ["warns", "Verwarnungen"],
-  ["notes", "Notizen"],
-  ["helpRequests", "Hilfe"],
-  ["tickets", "Tickets"],
-  ["commands", "Commands"],
-  ["banGuide", "Bann-Leitfaden"],
-  ["tasks", "Aufgaben"],
-  ["absences", "Abwesenheiten"],
-  ["site_copy", "Texte"],
-  ["site_settings", "Einstellungen"],
-];
-
-async function wipeFirebaseCopies() {
-  const lines: string[] = [];
-  for (const [path, label] of WIPE_ROOTS) {
-    const remote = await relayDetail(path, "GET");
-    if (!remote.ok || remote.data == null) {
-      lines.push(`${label}: bleibt, neuer Server leer`);
-      continue;
-    }
-    let local: unknown;
-    try {
-      local = await firebaseNode(path);
-    } catch {
-      lines.push(`${label}: Firebase nicht lesbar`);
-      continue;
-    }
-    if (local == null) {
-      lines.push(`${label}: in Firebase schon leer`);
-      continue;
-    }
-    const keys = typeof local === "object" && !Array.isArray(local) ? Object.keys(local).filter((key) => KEY.test(key)) : [];
-    let gone = 0;
-    let fail = 0;
-    for (const key of keys) {
-      try {
-        await fbRemoveLocal(`${path}/${key}`);
-        gone += 1;
-      } catch {
-        fail += 1;
-      }
-    }
-    if (!keys.length) {
-      try {
-        await fbRemoveLocal(path);
-        gone = 1;
-      } catch {
-        fail = 1;
-      }
-    }
-    lines.push(fail ? `${label}: ${gone} gelöscht, ${fail} nicht` : `${label}: ${gone} gelöscht`);
-  }
-  return lines.join(" · ");
-}
-
 function StreamerAccount({ note, actor }: { note: (text: string) => void; actor: StaffSession }) {
   const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("");
   const [notify, setNotify] = useState(true);
   const [error, setError] = useState("");
   if (actor.role !== "owner") return null;
@@ -297,7 +108,7 @@ function StreamerAccount({ note, actor }: { note: (text: string) => void; actor:
       onSubmit={(event) => {
         event.preventDefault();
         setError("");
-        void createStaffAccount({ username, password, role: "streamer", createdBy: actor.username })
+        void createStaffAccount({ username, email, role: "streamer", createdBy: actor.username })
           .then(async () => {
             const name = username.trim().toLowerCase().replace(/\s+/g, "");
             try {
@@ -306,16 +117,16 @@ function StreamerAccount({ note, actor }: { note: (text: string) => void; actor:
               /* Hinweis-Flag ist optional, der Account steht. */
             }
             setUsername("");
-            setPassword("");
-            note("Streamer-Account angelegt");
+            setEmail("");
+            note("Streamer-Account angelegt. Passwort-Link wurde versendet.");
           })
           .catch((err) => setError(err instanceof Error ? err.message : "Anlegen fehlgeschlagen"));
       }}
     >
       <h2 className="text-lg font-semibold">Streamer-Account anlegen</h2>
-      <p className="mt-2 text-sm text-muted">Die Rolle ist fest Streamer. Die Person sieht danach nur den Tab „Mein Stream“.</p>
-      <input className="field mt-3" placeholder="Name" value={username} onChange={(e) => setUsername(e.target.value)} />
-      <input className="field mt-2" type="text" placeholder="Startpasswort" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
+      <p className="mt-2 text-sm text-muted">Die Rolle ist fest Streamer. Die Person sieht danach nur den Tab „Mein Stream“ und meldet sich mit ihrer E-Mail-Adresse an. Der Passwort-Link wird dorthin gesendet.</p>
+      <input className="field mt-3" placeholder="Name" value={username} onChange={(e) => setUsername(e.target.value)} required autoComplete="off" />
+      <input className="field mt-2" type="email" placeholder="Persönliche E-Mail-Adresse" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
       <label className="mt-3 flex items-center gap-2 text-sm">
         <input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} />
         Hinweis im Staff-Center, wenn der Stream live geht
@@ -335,7 +146,7 @@ function AccountCard({
   events,
 }: {
   name: string;
-  item: { role?: string; mustChangePw?: boolean; uid?: string; disabled?: boolean; lastLogin?: number };
+  item: { role?: string; email?: string; mustChangePw?: boolean; uid?: string; disabled?: boolean; lastLogin?: number };
   actor: StaffSession;
   note: (text: string) => void;
   lastSeen?: number;
@@ -344,8 +155,7 @@ function AccountCard({
   const mine = name === actor.username;
   const [open, setOpen] = useState(false);
   const [role, setRole] = useState(item.role || "helper");
-  const [password, setPassword] = useState("");
-  const [showPw, setShowPw] = useState(true);
+  const [email, setEmail] = useState(item.email || "");
 
   return (
     <li className={`card card-still p-4 text-sm${item.disabled ? " border border-red-500 bg-red-950/40" : ""}`}>
@@ -357,9 +167,10 @@ function AccountCard({
             {item.mustChangePw ? " · muss Passwort ändern" : ""}
           </p>
           <p className="mt-1 text-muted">
+            E-Mail {item.email || "nicht hinterlegt"} ·{" "}
             Login {formatWhen(item.lastLogin) || "noch nie"}
             {lastSeen ? ` · zuletzt da ${formatWhen(lastSeen)}` : ""}
-            {!item.uid ? " · noch kein Passwort, setzt es beim nächsten Login" : ""}
+            {!item.uid ? " · Account noch nicht vollständig eingerichtet" : ""}
           </p>
         </div>
         <button type="button" className="btn-ghost" onClick={() => setOpen((value) => !value)}>
@@ -385,23 +196,26 @@ function AccountCard({
             </button>
           </div>
           <div className="flex gap-2">
-            <input className="field" type={showPw ? "text" : "password"} placeholder="Neues Passwort" value={password} onChange={(e) => setPassword(e.target.value)} />
-            <button type="button" className="btn-ghost" onClick={() => setShowPw((value) => !value)}>{showPw ? "Verbergen" : "Ansehen"}</button>
+            <input className="field" type="email" placeholder="Persönliche E-Mail-Adresse" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
             <button
               type="button"
-              className="btn-brand"
+              className="btn-ghost"
               onClick={() =>
-                void resetStaffPassword(name, password, actor.username)
+                void setStaffEmail(name, email, actor.username)
                   .then(() => {
-                    note("Neues Passwort gilt. Einmal weitergeben, danach nicht mehr sichtbar.");
-                    setPassword("");
+                    note(email.trim().toLowerCase() === item.email?.trim().toLowerCase() ? "Passwort-Link gesendet" : "E-Mail gespeichert. Passwort-Link wurde gesendet.");
                   })
-                  .catch((err) => note(err instanceof Error ? err.message : "Reset fehlgeschlagen"))
+                  .catch((err) => note(err instanceof Error ? err.message : "E-Mail konnte nicht gespeichert werden"))
               }
             >
-              Reset
+              E-Mail speichern & Passwort-Link senden
             </button>
           </div>
+          {item.email ? (
+            <button type="button" className="btn-brand" onClick={() => void resetStaffPassword(name, actor.username).then(() => note("Falls die Adresse zum Account gehört, wurde ein Passwort-Link gesendet.")).catch((err) => note(err instanceof Error ? err.message : "Passwort-Link konnte nicht gesendet werden"))}>
+              Passwort-Link erneut senden
+            </button>
+          ) : null}
           <button type="button" className="btn-ghost" onClick={() => void setStaffPaused(name, !item.disabled, actor.username).then(() => note(item.disabled ? "Account frei" : "Account pausiert")).catch((err) => note(err instanceof Error ? err.message : "Fehlgeschlagen"))}>
             {item.disabled ? "Freigeben" : "Pausieren"}
           </button>
