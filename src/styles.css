@@ -2266,8 +2266,28 @@
 }
 
 .home-hero-layout {
-  align-items: center;
-  padding-block: 3rem;
+  min-height: inherit;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: end;
+  padding-block: clamp(7rem, 18vh, 12rem) clamp(3rem, 8vh, 6rem);
+}
+
+.home-hero {
+  min-height: min(900px, max(42rem, calc(100svh - 4rem)));
+}
+
+.home-hero-copy {
+  max-width: 52rem;
+}
+
+.home-live-section {
+  display: grid;
+  gap: 1rem;
+  padding-block: 2rem;
+}
+
+.home-live-section .home-status-card {
+  width: 100%;
 }
 
 .home-status-card {
@@ -2341,12 +2361,25 @@
 }
 
 @media (min-width: 900px) {
-  .home-hero-layout {
-    padding-block: 4rem;
+  .home-hero .hero-read {
+    background:
+      linear-gradient(90deg, rgb(8 6 8 / 0.66), rgb(8 6 8 / 0.28) 55%, rgb(8 6 8 / 0.08)),
+      linear-gradient(0deg, var(--color-bg), transparent 38%);
   }
 
-  .home-hero-layout .hero-status {
-    margin-top: 0;
+  .home-hero .home-hero-layout {
+    grid-template-columns: minmax(0, 1fr);
+    padding-block: clamp(7rem, 18vh, 12rem) clamp(3rem, 8vh, 6rem);
+  }
+
+  .home-live-section {
+    grid-template-columns: minmax(0, 1fr) minmax(20rem, 0.68fr);
+    align-items: center;
+  }
+
+  .home-live-section .home-status-card {
+    justify-self: end;
+    width: min(100%, 28rem);
   }
 
   .home-stats-disclosure {

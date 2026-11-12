@@ -77,12 +77,12 @@ function Home() {
   const [statsOpen, setStatsOpen] = useState(false);
   return (
     <Shell>
-      <section className="hero-sky relative overflow-hidden border-b border-line" data-sky={sky || undefined}>
+      <section className="hero-sky home-hero relative overflow-hidden border-b border-line" data-sky={sky || undefined}>
         <div ref={hero} className="hero-parallax">
           <img
             src="/media/ridge.jpg"
             alt="Abendlicht über einem Alpenkamm und Fichtenwald"
-            className="hero-drift tone-red absolute inset-0 h-full w-full object-cover opacity-40"
+            className="hero-drift tone-red absolute inset-0 h-full w-full object-cover opacity-75"
             fetchPriority="high"
             decoding="async"
           />
@@ -102,37 +102,29 @@ function Home() {
         </div>
         <div className="hero-read" />
         <div className="shell relative z-[3] hero-layout home-hero-layout">
-          <div>
+          <div className="home-hero-copy">
             <p className="kicker">Deutschsprachiger Minecraft Survival Server</p>
             <SeasonBadge />
-            <h1 className="display mt-3 text-5xl text-fg md:text-7xl">
+            <h1 className="display mt-3 text-6xl text-fg md:text-8xl">
               Alpen<span className="text-brand">SMP</span>
             </h1>
-            <p className="display mt-4 max-w-xl text-xl text-fg italic md:text-2xl">
+            <p className="display mt-4 max-w-2xl text-2xl text-fg italic md:text-3xl">
               Vanilla Survival. Faire Community. Persönliche Serverleitung.
             </p>
-            <p className="mt-4 max-w-xl text-base text-muted md:text-lg">
-              Eine gemeinsame Welt für Java und Bedrock – mit Claims, optionalem Voice-Chat und ohne Pay-to-Win.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
+            <p className="mt-4 max-w-xl text-base text-muted md:text-lg">Eine Welt für Java und Bedrock. Kostenlos und ohne Pay-to-Win.</p>
+            <div className="mt-7 flex flex-wrap gap-3">
               <Link to="/server" className="btn-brand">
                 So spielst du mit <ArrowRight className="size-4" />
               </Link>
-              <a href="#entdecken" className="btn-ghost">
-                Website entdecken
-              </a>
             </div>
-            <p className="mt-4 text-sm text-faint">Kostenlos · Java & Bedrock · empfohlen: Minecraft {SITE.version}</p>
-          </div>
-          <div className="hero-status">
-            <StatusCard compact />
           </div>
         </div>
       </section>
 
-      <div className="shell home-notice">
+      <section className="shell home-live-section">
         <MotdNotice />
-      </div>
+        <StatusCard compact />
+      </section>
 
       <section className="shell py-14 md:py-16">
         <div className="max-w-2xl">
