@@ -1,13 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Map, Mic, Shield, Sparkles } from "lucide-react";
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { ArrowRight, BookOpen, Compass, Map, Mic, Shield, Sparkles, Users } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { DiscordLink, Shell, TikTokLink } from "@/components/site/shell";
 import { ModrinthLink } from "@/components/site/guide/mods";
 import { SiteMascot } from "@/components/site/assistant";
-import { CopyIp, MotdNotice, PlayerChart, SiteBanner, StatStrip, StatusCard } from "@/components/site/live";
+import { CopyIp, MotdNotice, PlayerChart, StatStrip, StatusCard } from "@/components/site/live";
 import { FEATURES, PILLARS } from "@/lib/alpen/content";
 import { SITE } from "@/lib/alpen/site";
-import { useSeason } from "@/lib/alpen/seasons";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -60,79 +59,6 @@ function useSky() {
   return sky;
 }
 
-function useTorch(ref: RefObject<HTMLElement | null>) {
-  useEffect(() => {
-    const root = ref.current;
-    if (!root) return;
-    const fine = window.matchMedia("(hover: hover) and (pointer: fine)");
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (!fine.matches || reduce.matches) return;
-    root.dataset.torch = "on";
-    const sparks = Array.from(root.querySelectorAll<HTMLElement>(".torch-spark"));
-    let index = 0;
-    let frame = 0;
-    let px = -1;
-    let py = -1;
-    const onMove = (event: PointerEvent) => {
-      const box = root.getBoundingClientRect();
-      const x = event.clientX - box.left;
-      const y = event.clientY - box.top;
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
-        root.style.setProperty("--mx", `${x}px`);
-        root.style.setProperty("--my", `${y}px`);
-        if (px >= 0 && Math.hypot(x - px, y - py) > 12 && sparks.length) {
-          const spark = sparks[index % sparks.length];
-          index += 1;
-          spark.style.setProperty("--sx", `${x}px`);
-          spark.style.setProperty("--sy", `${y}px`);
-          spark.style.setProperty("--drift", `${(Math.random() - 0.5) * 16}px`);
-          spark.classList.remove("lit");
-          void spark.offsetWidth;
-          spark.classList.add("lit");
-        }
-        px = x;
-        py = y;
-      });
-    };
-    const onLeave = () => {
-      root.style.setProperty("--mx", "-30%");
-      root.style.setProperty("--my", "-30%");
-    };
-    root.addEventListener("pointermove", onMove);
-    root.addEventListener("pointerleave", onLeave);
-    return () => {
-      cancelAnimationFrame(frame);
-      root.removeEventListener("pointermove", onMove);
-      root.removeEventListener("pointerleave", onLeave);
-      delete root.dataset.torch;
-    };
-  }, [ref]);
-}
-
-function Snowman() {
-  const season = useSeason();
-  if (season !== "winter") return null;
-  return (
-    <svg className="snowman" viewBox="0 0 120 168" aria-hidden="true">
-      <ellipse cx="60" cy="160" rx="36" ry="6" fill="#000" opacity="0.28" />
-      <circle cx="60" cy="124" r="28" fill="#f4f7f8" />
-      <circle cx="60" cy="80" r="20" fill="#f7fafb" />
-      <circle cx="60" cy="48" r="14" fill="#fff" />
-      <rect x="44" y="26" width="32" height="7" rx="2" fill="#141c24" />
-      <rect x="50" y="10" width="20" height="18" rx="2" fill="#141c24" />
-      <circle cx="54" cy="46" r="1.7" fill="#141c24" />
-      <circle cx="66" cy="46" r="1.7" fill="#141c24" />
-      <path d="M57 52 q3 3 6 0" fill="none" stroke="#141c24" strokeWidth="1.2" strokeLinecap="round" />
-      <path d="M42 60 h36 l-6 8 H48 Z" fill="#c10522" />
-      <path className="snowman-scarf" d="M74 62 q18 10 8 28" fill="none" stroke="#c10522" strokeWidth="4" strokeLinecap="round" />
-      <circle cx="60" cy="108" r="2.2" fill="#141c24" />
-      <circle cx="60" cy="120" r="2.2" fill="#141c24" />
-      <circle cx="60" cy="132" r="2.2" fill="#141c24" />
-    </svg>
-  );
-}
-
 function SeasonBadge() {
   const [label, setLabel] = useState("");
   useEffect(() => {
@@ -147,17 +73,16 @@ function SeasonBadge() {
 
 function Home() {
   const hero = useHeroParallax();
-  const stage = useRef<HTMLElement>(null);
   const sky = useSky();
-  useTorch(stage);
+  const [statsOpen, setStatsOpen] = useState(false);
   return (
     <Shell>
-      <section ref={stage} className="hero-sky relative overflow-hidden border-b border-line" data-sky={sky || undefined}>
+      <section className="hero-sky relative overflow-hidden border-b border-line" data-sky={sky || undefined}>
         <div ref={hero} className="hero-parallax">
           <img
             src="/media/ridge.jpg"
             alt="Abendlicht über einem Alpenkamm und Fichtenwald"
-            className="hero-drift tone-red absolute inset-0 h-full w-full object-cover opacity-55"
+            className="hero-drift tone-red absolute inset-0 h-full w-full object-cover opacity-40"
             fetchPriority="high"
             decoding="async"
           />
@@ -175,76 +100,44 @@ function Home() {
             <span className="sky-sun" aria-hidden="true" />
           ) : null}
         </div>
-        <div className="torch-layer" aria-hidden="true">
-          <span className="torch-shade" />
-          {Array.from({ length: 12 }, (_, i) => (
-            <i key={i} className="torch-spark" />
-          ))}
-        </div>
         <div className="hero-read" />
-        <Snowman />
-        <div className="shell relative z-[3] hero-layout">
+        <div className="shell relative z-[3] hero-layout home-hero-layout">
           <div>
             <p className="kicker">Deutschsprachiger Minecraft Survival Server</p>
             <SeasonBadge />
-            <h1 className="display mt-4 text-5xl text-fg md:text-7xl">
+            <h1 className="display mt-3 text-5xl text-fg md:text-7xl">
               Alpen<span className="text-brand">SMP</span>
             </h1>
-            <p className="display mt-5 max-w-xl text-2xl text-fg italic md:text-3xl">
+            <p className="display mt-4 max-w-xl text-xl text-fg italic md:text-2xl">
               Vanilla Survival. Faire Community. Persönliche Serverleitung.
             </p>
-            <p className="mt-5 max-w-xl text-lg text-muted">
-              Gemeinsame Survival-Welt mit Claims und Simple Voice Chat – für Java und Bedrock. Kein Pay-to-Win,
-              keine überladenen Plugins.
+            <p className="mt-4 max-w-xl text-base text-muted md:text-lg">
+              Eine gemeinsame Welt für Java und Bedrock – mit Claims, optionalem Voice-Chat und ohne Pay-to-Win.
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-6 flex flex-wrap gap-3">
               <Link to="/server" className="btn-brand">
-                Jetzt spielen
+                So spielst du mit <ArrowRight className="size-4" />
               </Link>
-              <Link to="/regeln" className="btn-ghost">
-                Server-Regeln
-              </Link>
-              <DiscordLink>Discord</DiscordLink>
-              <TikTokLink>TikTok</TikTokLink>
+              <a href="#entdecken" className="btn-ghost">
+                Website entdecken
+              </a>
             </div>
+            <p className="mt-4 text-sm text-faint">Kostenlos · Java & Bedrock · empfohlen: Minecraft {SITE.version}</p>
           </div>
           <div className="hero-status">
-            <StatusCard />
+            <StatusCard compact />
           </div>
         </div>
       </section>
 
-      <section className="border-b border-line bg-black">
-        <div className="shell grid gap-2 py-4 sm:grid-cols-3 lg:grid-cols-6">
-          {(
-            [
-              ["Spielen", "/server"],
-              ["Regeln", "/regeln"],
-              ["Guide", "/guide"],
-              ["Team-Prefix", "/prefix"],
-              ["Karte", "/karte"],
-              ["Community", "/community"],
-              ["Staff", "/team"],
-            ] as const
-          ).map(([label, to]) => (
-            <Link key={to} to={to} className="chip rounded-md border border-line bg-bg px-3 py-3 text-center text-sm font-semibold hover:border-brand hover:text-brand">
-              {label}
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <div className="shell mt-8">
+      <div className="shell home-notice">
         <MotdNotice />
-        <div className="mt-3">
-          <SiteBanner />
-        </div>
       </div>
 
-      <section className="shell py-16">
+      <section className="shell py-14 md:py-16">
         <div className="max-w-2xl">
           <p className="kicker">Über AlpenSMP</p>
-          <h2 className="display mt-3 text-4xl">Vanilla Survival, ohne Umwege.</h2>
+          <h2 className="display mt-3 text-3xl md:text-4xl">Einfach Minecraft spielen – fair und gemeinsam.</h2>
           <p className="mt-4 text-muted">
             Eine gemeinsame Survival-Welt mit fairer, deutschsprachiger Community. Keine Pay-to-Win-Mechaniken, keine
             überladenen Plugins – nur Minecraft, so wie es gedacht ist.
@@ -262,42 +155,86 @@ function Home() {
 
       <SiteMascot home="index" line="Frag mich nach der IP oder den Regeln." />
 
-      <section className="border-y border-line bg-bg-raised py-16">
+      <section className="border-y border-line bg-bg-raised py-14 md:py-16">
         <div className="shell">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <p className="kicker">Features</p>
-              <h2 className="display mt-3 text-4xl">Was dich erwartet</h2>
+              <p className="kicker">Auf dem Server</p>
+              <h2 className="display mt-3 text-3xl md:text-4xl">Das Wichtigste auf einen Blick</h2>
             </div>
             <Link to="/features" className="btn-ghost">
-              Alle Features
+              Alle Features ansehen <ArrowRight className="size-4" />
             </Link>
           </div>
-          <div className="stagger mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {FEATURES.map((feature) => (
+          <div className="stagger mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {FEATURES.filter((feature) => ["survival", "claims", "voice", "graves"].includes(feature.id)).map((feature) => (
               <Link key={feature.id} to="/features" hash={feature.id} className="card p-4 hover:border-brand/50">
-                <Sparkles className="hop-icon size-4 text-brand" />
+                <Sparkles className="size-4 text-brand" />
                 <h3 className="mt-2 font-semibold">{feature.title}</h3>
                 <p className="mt-2 text-sm text-muted">{feature.summary}</p>
+                <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-ice">Mehr erfahren <ArrowRight className="size-3" /></span>
               </Link>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="shell py-16">
-        <p className="kicker">In Zahlen</p>
-        <h2 className="display mt-3 text-4xl">AlpenSMP gerade jetzt</h2>
-        <p className="mt-3 max-w-2xl text-muted">Live-Daten und Community-Zahlen – ohne Schnickschnack.</p>
-        <div className="mt-8">
-          <StatStrip />
+      <section id="entdecken" className="shell scroll-mt-24 py-14 md:py-16">
+        <div className="max-w-2xl">
+          <p className="kicker">Auf der Website</p>
+          <h2 className="display mt-3 text-3xl md:text-4xl">Was möchtest du finden?</h2>
+          <p className="mt-3 text-muted">Die wichtigsten Infos und Werkzeuge – direkt an einem Ort.</p>
         </div>
-        <div className="mt-4">
-          <PlayerChart />
+        <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Link to="/guide" className="card home-discovery-card p-5">
+            <BookOpen className="size-5 text-brand" />
+            <h3 className="mt-3 font-semibold">Guide & Befehle</h3>
+            <p className="mt-2 text-sm text-muted">Einstieg, Claims, Teams und hilfreiche Befehle.</p>
+            <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-ice">Zum Guide <ArrowRight className="size-4" /></span>
+          </Link>
+          <Link to="/regeln" className="card home-discovery-card p-5">
+            <Shield className="size-5 text-brand" />
+            <h3 className="mt-3 font-semibold">Regeln</h3>
+            <p className="mt-2 text-sm text-muted">Alles für ein faires Miteinander auf dem Server.</p>
+            <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-ice">Regeln lesen <ArrowRight className="size-4" /></span>
+          </Link>
+          <Link to="/community" className="card home-discovery-card p-5">
+            <Users className="size-5 text-brand" />
+            <h3 className="mt-3 font-semibold">Community & Events</h3>
+            <p className="mt-2 text-sm text-muted">Discord, Neuigkeiten, Aktionen und gemeinsame Projekte.</p>
+            <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-ice">Community entdecken <ArrowRight className="size-4" /></span>
+          </Link>
+          <Link to="/server" className="card home-discovery-card p-5">
+            <Compass className="size-5 text-brand" />
+            <h3 className="mt-3 font-semibold">Server & Beitritt</h3>
+            <p className="mt-2 text-sm text-muted">Live-Status, Version sowie alle Schritte zum Mitspielen.</p>
+            <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-ice">Server ansehen <ArrowRight className="size-4" /></span>
+          </Link>
         </div>
       </section>
 
-      <section id="join" className="shell scroll-mt-24 grid gap-4 pb-16 lg:grid-cols-3">
+      <section className="border-y border-line bg-bg-raised py-12 md:py-14">
+        <div className="shell">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="kicker">Live vom Server</p>
+              <h2 className="display mt-3 text-3xl md:text-4xl">AlpenSMP gerade jetzt</h2>
+              <p className="mt-2 text-sm text-muted">Spielerzahlen und Community-Statistiken – nur wenn du sie ansehen möchtest.</p>
+            </div>
+            <details className="home-stats-disclosure" open={statsOpen} onToggle={(event) => setStatsOpen(event.currentTarget.open)}>
+              <summary>{statsOpen ? "Statistiken ausblenden" : "Statistiken anzeigen"}</summary>
+              {statsOpen ? (
+                <div className="mt-5 space-y-4">
+                  <StatStrip />
+                  <PlayerChart />
+                </div>
+              ) : null}
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <section id="join" className="shell scroll-mt-24 grid gap-4 py-14 md:py-16 lg:grid-cols-3">
         <article className="card overflow-hidden lg:col-span-2">
           <img src="/media/lichen.jpg" alt="Fichten und Flechten im Alpenwald" className="tone-red h-44 w-full object-cover" loading="lazy" decoding="async" />
           <div className="grid gap-6 p-6 md:grid-cols-2">

@@ -35,30 +35,30 @@ export function useServerStatus() {
   return { status, error };
 }
 
-export function CopyIp({ value, label }: { value: string; label: string }) {
+export function CopyIp({ value, label, compact = false }: { value: string; label: string; compact?: boolean }) {
   const burst = useCopyBurst();
   const port = /port/i.test(label);
   return (
     <button
       type="button"
       data-copy-kind={port ? "port" : "ip"}
-      className={`btn-ghost copy-slot relative w-full justify-between ${burst.copied ? "is-copied" : ""}`}
+      className={`btn-ghost copy-slot relative w-full justify-between ${compact ? "copy-slot-compact" : ""} ${burst.copied ? "is-copied" : ""}`}
       onClick={(event) => void burst.copy(value, event)}
     >
       <span className="text-left">
-        <span className="block text-xs font-medium text-faint">{burst.copied ? "✓ Kopiert" : label}</span>
-        <span className="font-semibold tracking-wide text-fg">{value}</span>
+        <span className={`${compact ? "inline" : "block"} text-xs font-medium text-faint`}>{burst.copied ? "✓ Kopiert" : label}</span>
+        <span className={`${compact ? "ml-2" : ""} font-semibold tracking-wide text-fg`}>{value}</span>
       </span>
       {burst.copied ? <CopyTick /> : <Copy className="size-4 text-brand" />}
     </button>
   );
 }
 
-export function StatusCard() {
+export function StatusCard({ compact = false }: { compact?: boolean }) {
   const { status, error } = useServerStatus();
   const online = status?.online;
   return (
-    <aside className="card p-5">
+    <aside className={`card p-5${compact ? " home-status-card" : ""}`}>
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm font-semibold">Serverstatus</p>
         <span className={`inline-flex items-center gap-2 text-sm font-semibold ${online ? "text-ice" : "text-ember"}`}>
@@ -66,25 +66,31 @@ export function StatusCard() {
           {status ? (online ? "Online" : "Offline") : error ? "Unbekannt" : "Lädt…"}
         </span>
       </div>
-      <p className="display mt-4 text-4xl text-fg">
+      <p className={`display mt-4 text-fg ${compact ? "text-5xl" : "text-4xl"}`}>
         {status ? <CountUp value={status.players} /> : "–"}
         <span className="text-xl text-muted"> / {status ? <CountUp value={status.max} /> : "–"}</span>
       </p>
       <p className="mt-1 text-sm text-muted">Spieler gerade auf dem Server</p>
-      <dl className="mt-5 grid grid-cols-2 gap-3 text-sm">
-        <div>
-          <dt className="text-faint">Software</dt>
-          <dd className="font-medium">{status ? `${status.software} ${status.version}` : "Paper 1.21.11"}</dd>
-        </div>
-        <div>
-          <dt className="text-faint">Empfohlen</dt>
-          <dd className="font-medium">Minecraft {SITE.version}</dd>
-        </div>
-      </dl>
+      {!compact ? (
+        <dl className="mt-5 grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <dt className="text-faint">Software</dt>
+            <dd className="font-medium">{status ? `${status.software} ${status.version}` : "Paper 1.21.11"}</dd>
+          </div>
+          <div>
+            <dt className="text-faint">Empfohlen</dt>
+            <dd className="font-medium">Minecraft {SITE.version}</dd>
+          </div>
+        </dl>
+      ) : (
+        <p className="mt-1 text-xs text-faint">Java & Bedrock · empfohlen: Minecraft {SITE.version}</p>
+      )}
       <div className="mt-5 space-y-2">
-        <CopyIp value={SITE.ip} label="Java" />
-        <CopyIp value={SITE.play} label="Bedrock" />
-        <CopyIp value={SITE.bedrockPort} label="Bedrock-Port" />
+        <CopyIp value={SITE.ip} label="Java-Adresse" compact={compact} />
+        <div className="space-y-2">
+          <CopyIp value={SITE.play} label="Bedrock-Adresse" compact={compact} />
+          <CopyIp value={SITE.bedrockPort} label="Bedrock-Port" compact={compact} />
+        </div>
       </div>
     </aside>
   );
