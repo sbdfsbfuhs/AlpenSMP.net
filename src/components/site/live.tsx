@@ -333,7 +333,10 @@ export function PlayerChart() {
   const { status } = useServerStatus();
   const [range, setRange] = useState<"1h" | "5h" | "24h" | "7d">("24h");
   const [points, setPoints] = useState<HistoryPoint[]>([]);
+  const [chartRows, setChartRows] = useState<{ label: string; spieler: number }[]>([]);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const chartRowsRef = useRef(chartRows);
+  const chartInitialized = useRef(false);
 
   useEffect(() => {
     const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -378,6 +381,60 @@ export function PlayerChart() {
       }));
   }, [points, range, status]);
 
+  const targetRows = useMemo(() => {
+    if (!rows.length) return [];
+    const count = 60;
+    return Array.from({ length: count }, (_, index) => {
+      const position = (index / (count - 1)) * (rows.length - 1);
+      const before = Math.floor(position);
+      const after = Math.min(rows.length - 1, before + 1);
+      const amount = position - before;
+      const current = rows[before];
+      const next = rows[after];
+      return {
+        label: next?.label ?? current?.label ?? "",
+        spieler: (current?.spieler ?? 0) + ((next?.spieler ?? 0) - (current?.spieler ?? 0)) * amount,
+      };
+    });
+  }, [rows]);
+
+  useEffect(() => {
+    if (!targetRows.length) {
+      chartRowsRef.current = [];
+      setChartRows([]);
+      return;
+    }
+
+    if (!chartInitialized.current || reducedMotion) {
+      chartInitialized.current = true;
+      chartRowsRef.current = targetRows;
+      setChartRows(targetRows);
+      return;
+    }
+
+    const startRows = chartRowsRef.current;
+    const startedAt = performance.now();
+    const duration = 520;
+    let frame = 0;
+    const animate = (now: number) => {
+      const progress = Math.min(1, (now - startedAt) / duration);
+      const eased = 1 - (1 - progress) ** 3;
+      const nextRows = targetRows.map((row, index) => {
+        const from = startRows[index]?.spieler ?? row.spieler;
+        return { label: row.label, spieler: from + (row.spieler - from) * eased };
+      });
+      chartRowsRef.current = nextRows;
+      setChartRows(nextRows);
+      if (progress < 1) {
+        frame = requestAnimationFrame(animate);
+      } else {
+        chartRowsRef.current = targetRows;
+      }
+    };
+    frame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frame);
+  }, [targetRows, reducedMotion]);
+
   return (
     <div className="card p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -408,10 +465,10 @@ export function PlayerChart() {
       </div>
       <div className="mt-4 h-56 min-w-0">
         <ChartGuard>
-          {rows.length > 0 ? (
-            <div key={range} className="player-chart-canvas">
+          {chartRows.length > 0 ? (
+            <div className="player-chart-canvas">
               <ResponsiveContainer width="100%" height="100%" minWidth={1}>
-                <LineChart data={rows}>
+                <LineChart data={chartRows}>
                   <CartesianGrid stroke="var(--color-line)" vertical={false} />
                   <XAxis dataKey="label" hide />
                   <YAxis allowDecimals={false} width={28} stroke="var(--color-faint)" fontSize={12} />
@@ -429,10 +486,8 @@ export function PlayerChart() {
                     dataKey="spieler"
                     stroke="var(--color-brand)"
                     strokeWidth={2}
-                    dot={rows.length < 30}
-                    isAnimationActive={!reducedMotion}
-                    animationDuration={420}
-                    animationEasing="ease-in-out"
+                    dot={false}
+                    isAnimationActive={false}
                   />
                 </LineChart>
               </ResponsiveContainer>

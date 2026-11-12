@@ -2474,18 +2474,6 @@
 .player-chart-canvas {
   width: 100%;
   height: 100%;
-  animation: player-chart-enter 260ms ease both;
-}
-
-@keyframes player-chart-enter {
-  from {
-    opacity: 0.45;
-    transform: translateY(5px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 .home-stats-disclosure > summary {
@@ -2542,10 +2530,8 @@
 @media (prefers-reduced-motion: reduce) {
   .home-discovery-card,
   .player-chart-range,
-  .player-chart-range-indicator,
-  .player-chart-canvas {
+  .player-chart-range-indicator {
     transition: none;
-    animation: none;
   }
 }
 
