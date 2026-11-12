@@ -130,19 +130,19 @@ function PrefixPage() {
               <code>{token || `&${code}`}</code> · {token.length}/10
               {clean.length === 0 ? " · mindestens ein Buchstabe" : ""}
             </p>
-            <p className="mt-2 text-sm text-muted">Der Prefix gehört zum Team und wird vor dem Spielernamen angezeigt. Farbcode und Buchstaben dürfen zusammen höchstens 10 Zeichen haben.</p>
+            <p className="mt-2 text-sm text-muted">Der Prefix gehört zum Team und steht im Tab hinter dem Spielernamen. Farbcode und Buchstaben dürfen zusammen höchstens 10 Zeichen haben.</p>
           </article>
           <article className="card card-still p-5">
             <h2 className="text-lg font-semibold">Vorschau im Tab</h2>
             <div className="mc-tab" aria-label="Vorschau der Tab-Liste">
               <p className="dim">Steve</p>
               <p>
-                <span style={{ color: color.hex }}>{clean || "Team"}</span>
                 <span className="player">Spieler</span>
+                <span style={{ color: color.hex }}> {clean || "Team"}</span>
               </p>
               <p className="dim">Alex</p>
             </div>
-            <p className="mt-4 text-sm text-muted">Farbig ist nur der Team-Prefix. Der Spielername dahinter bleibt weiss und zählt nicht zu den 10 Zeichen.</p>
+            <p className="mt-4 text-sm text-muted">Farbig ist nur der Team-Prefix. Der Spielername bleibt weiss; er zählt nicht zu den 10 Zeichen.</p>
             <div className="mt-3">
               {prefixOk ? <CopyIp value={command} label="Prefix kopieren" /> : <p className="text-sm text-brand">Gib mindestens einen Buchstaben für den Prefix ein.</p>}
             </div>

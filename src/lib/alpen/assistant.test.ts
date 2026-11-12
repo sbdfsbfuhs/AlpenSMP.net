@@ -47,12 +47,31 @@ describe("AlpenKI versteht Umschreibungen", () => {
     assert.match(port, /19132|25565/);
   });
 
-  it("bietet bei unklaren Fragen antippbare Vorschläge", () => {
+  it("bietet sichere Links an, wenn eine Frage nicht beantwortet werden kann", () => {
     resetAssistantMemory();
     const reply = replyTo("erzähl mir von dinosauriern");
     assert.match(reply.text, /nicht bei mir/);
     assert.ok(reply.actions.some((item) => item.label === "IP"));
     assert.ok(reply.actions.some((item) => item.label === "Regeln"));
     assert.ok(reply.actions.some((item) => /Discord/.test(item.label)));
+  });
+
+  it("findet passende Inhalte mit Synonymen und kurzen Umschreibungen", () => {
+    const cases: Array<[string, RegExp]> = [
+      ["wie verbinde ich mich mit dem server", /alpensmp\.net/],
+      ["wie schütze ich mein grundstück", /Claim|1000/],
+      ["wie gründe ich eine gruppe", /\/team create/],
+      ["welche kommandos gibt es", /\/spawn|\/sethome|Guide/],
+      ["was passiert wenn ich sterbe und items verliere", /Todesgrab|Items/],
+    ];
+    for (const [question, pattern] of cases) {
+      resetAssistantMemory();
+      assert.match(answerQuestion(question), pattern, question);
+    }
+  });
+
+  it("rät bei mehreren nicht passenden Begriffen nicht ins Blaue", () => {
+    resetAssistantMemory();
+    assert.match(answerQuestion("wie funktioniert die dinosaurier forschung"), /steht so nicht/);
   });
 });

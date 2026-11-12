@@ -42,8 +42,8 @@ function waveHold() {
 // Art. 50 Abs. 1 AI Act kann einen Hinweis verlangen, wenn ein KI-System direkt mit Personen spricht.
 // AlpenKI ist eine feste Antworttabelle, kein Sprachmodell. Der Hinweis steht trotzdem sofort im Chat,
 // damit niemand eine menschliche Antwort erwartet. Siehe /ki-transparenz.
-const STARTER = "Ich bin ein automatischer Assistent, kein Mensch. Frag mich zur IP, zu SwissRed oder zu den Regeln – oder sag: setz dich, schlaf, wink.";
-const PROMPTS = ["Wer ist der Owner?", "Wo wohnt SwissRed?", "Welche Befehle gibt es?", "Darf ich X-Ray?"];
+const STARTER =
+  "Ich bin die AlpenKI, ein automatischer Assistent. Frag mich direkt zu Serverbeitritt, Befehlen, Teams, Regeln, Mods, Claims oder Homes. Wenn ich etwas nicht sicher weiss, sage ich es.";
 
 function BotReply({
   text,
@@ -561,15 +561,6 @@ export function SiteMascot({
                   ),
                 )}
               </div>
-              {msgs.length === 1 ? (
-                <div className="flex flex-wrap gap-2 px-4 pb-2">
-                  {PROMPTS.map((prompt) => (
-                    <button key={prompt} type="button" className="ki-chip" onClick={() => send(prompt)}>
-                      {prompt}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
               <form
                 className="flex gap-2 border-t border-line p-3"
                 onSubmit={(event) => {

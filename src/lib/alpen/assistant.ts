@@ -145,12 +145,12 @@ function playerTeamAnswer(q: string): string | null {
     /team create|team erstell|team anleg|team gründ|team gruend|team prefix|team home|team sethome|team warp|teamchat|team echest|team pvp|friendly fire|team ally|team enemy/.test(
       q,
     ) ||
-    (/\bteams?\b/.test(q) &&
-      /prefix|erstell|anleg|gründ|gruend|create|home|warp|echest|chat|pvp|ally|feind|invite|einlad|mitglied|endertruhe/.test(q));
+    (/\bteams?\b|\bgruppe\b/.test(q) &&
+      /prefix|erstell|anleg|gründ|gruend|grund|create|home|warp|echest|chat|pvp|ally|feind|invite|einlad|mitglied|endertruhe|gruppe/.test(q));
   if (!player || (staffish && !/prefix|create|erstell|home|warp|echest|pvp|ally/.test(q))) return null;
 
   if (/prefix|farbe|farbcode/.test(q)) {
-    return "Der Team-Prefix ist nicht der Spielername. Er funktioniert nur, wenn schon ein Team mit /team create Name existiert. Sonst geht /team prefix nicht. Der Teamname hat 3 bis 10 Buchstaben, nur a bis z, ohne Farbcode. Gesperrt sind Gamers, Rise und Up. Danach: /team prefix und direkt Farbcode plus Buchstaben, ohne Leerzeichen. Beispiel: /team prefix &cAlpen. Farbcode und Text zusammen 3 bis 10 Zeichen. Im Tab steht der Prefix vor dem Spielernamen, nur dieser Text ist farbig. Im Chat folgt ein Leerzeichen.";
+    return "Der Team-Prefix ist nicht der Spielername. Er funktioniert nur, wenn schon ein Team mit /team create Name existiert. Sonst geht /team prefix nicht. Der Teamname hat 3 bis 10 Buchstaben, nur a bis z, ohne Farbcode. Gesperrt sind Gamers, Rise und Up. Danach: /team prefix und direkt Farbcode plus Buchstaben, ohne Leerzeichen. Beispiel: /team prefix &cAlpen. Farbcode und Text zusammen 3 bis 10 Zeichen. Im Tab steht der farbige Team-Prefix nach dem Spielernamen. Im Chat folgt ein Leerzeichen.";
   }
   if (/home|sethome/.test(q)) {
     return "Das Team-Home ist nicht dein persönliches /home. Erst /team create Name. Danach setzt der Owner /team sethome, und /team home bringt das Team hin. Der Teleport wartet 3 Sekunden und bricht ab, wenn du dich bewegst oder Schaden bekommst. Danach 120 Sekunden Pause. Ohne Team geht der Befehl nicht.";
@@ -237,7 +237,7 @@ export function answerQuestion(raw: string): string {
     return "Die Live-Karte ist gerade zu. Der Speicher auf dem Kartenserver ist voll. Schau ein anderes Mal wieder vorbei. Spielen geht trotzdem, die Welt selbst läuft.";
   }
   if (/prefix|teamfarbe|farbcode|namensfarbe/.test(q)) {
-    return "Der Team-Prefix ist nicht der Spielername. Er funktioniert nur, wenn schon ein Team mit /team create Name existiert. Sonst geht /team prefix nicht. Der Teamname hat 3 bis 10 Buchstaben, nur a bis z, ohne Farbcode. Gesperrt sind Gamers, Rise und Up. Danach: /team prefix und direkt Farbcode plus Buchstaben, ohne Leerzeichen. Beispiel: /team prefix &cAlpen. Farbcode und Text zusammen 3 bis 10 Zeichen. Im Tab steht der Prefix vor dem Spielernamen, nur dieser Text ist farbig. Im Chat folgt ein Leerzeichen.";
+    return "Der Team-Prefix ist nicht der Spielername. Er funktioniert nur, wenn schon ein Team mit /team create Name existiert. Sonst geht /team prefix nicht. Der Teamname hat 3 bis 10 Buchstaben, nur a bis z, ohne Farbcode. Gesperrt sind Gamers, Rise und Up. Danach: /team prefix und direkt Farbcode plus Buchstaben, ohne Leerzeichen. Beispiel: /team prefix &cAlpen. Farbcode und Text zusammen 3 bis 10 Zeichen. Im Tab steht der farbige Team-Prefix nach dem Spielernamen. Im Chat folgt ein Leerzeichen.";
   }
   if (/rtp|spawn|\/msg|call admin|befehl|command/.test(q)) {
     return "Java (Taste T): /spawn, /sethome Name, /home Name, /delhome Name, /tpa Spieler, /tpaccept, /back, /rtp, /warp, /msg, /w, /duel Spieler. Höchstens 5 Homes. Bedrock: dieselben Befehle, Namen mit Punkt. Claimen geht mit einer goldenen Schaufel. Team zuerst mit /team create Name.";
@@ -268,7 +268,7 @@ export function answerQuestion(raw: string): string {
   if (/was ist alpen|was macht alpen|erzähl.*server|über den server|wer seid ihr/.test(q)) {
     return "AlpenSMP ist ein deutscher Vanilla-Survival-Server. Java und Bedrock, eine Welt, ohne Pay-to-Win. Community, Claims, Homes und Voice Chat.";
   }
-  if (/wie join|wie komm|beitreten|joinen|mitspielen/.test(q)) {
+  if (/wie join|wie komm|wie verbinde|verbinde(n)? mich|beitreten|joinen|mitspielen/.test(q)) {
     return `Java: ${SITE.ip}, ohne Port. Bedrock: ${SITE.play}, Port ${SITE.bedrockPort}. Version ungefähr ${SITE.version}.`;
   }
   if (/mascot|maskottchen|häschen|hase|känchen|murmeltier/.test(q)) {
@@ -319,7 +319,7 @@ function knownFacts(q: string): string | null {
   if (/wie viele regeln|wieviel regeln|anzahl.*regeln|14 regeln/.test(q)) {
     return "Es gibt 14 Regeln. Frag zum Beispiel „Was steht in Regel 3?“ oder „Regel 11“.";
   }
-  if (/welche befehle|alle befehle|command liste|befehls?liste|was für befehle|welche commands/.test(q)) {
+  if (/welche (be)?fehle|alle (be)?fehle|command.?liste|kommando.?liste|befehls?liste|was für (be)?fehle|welche commands/.test(q)) {
     return cmds;
   }
   if (/punkt|\.spieler|bedrock.?name/.test(q)) {
@@ -589,7 +589,74 @@ const STOP = new Set([
   "deine",
 ]);
 
-type Doc = { text: string; answer: string };
+const SEARCH_ALIASES: Record<string, string> = {
+  beitreten: "joinen",
+  connecten: "joinen",
+  verbinden: "joinen",
+  verbinde: "joinen",
+  verbindet: "joinen",
+  kommando: "commands",
+  kommandos: "commands",
+  kommandoliste: "commands",
+  einloggen: "joinen",
+  einsteigen: "joinen",
+  adresse: "ip",
+  serveradresse: "ip",
+  ipadresse: "ip",
+  grundstueck: "claim",
+  grundstück: "claim",
+  bauplatz: "claim",
+  grund: "claim",
+  claims: "claim",
+  schützen: "schutz",
+  schuetzen: "schutz",
+  gruppe: "team",
+  teams: "team",
+  truppe: "team",
+  erstellen: "create",
+  erstell: "create",
+  gründen: "create",
+  gruenden: "create",
+  gruend: "create",
+  anlegen: "create",
+  farbcode: "prefix",
+  teamfarbe: "prefix",
+  kürzel: "prefix",
+  kuerzel: "prefix",
+  tag: "prefix",
+  befehl: "commands",
+  befehle: "commands",
+  command: "commands",
+  commands: "commands",
+  liste: "commands",
+  cheats: "cheat",
+  hack: "cheat",
+  hacks: "cheat",
+  modifikationen: "mod",
+  clientmod: "mod",
+  tod: "grab",
+  todesort: "grab",
+  todespunkt: "grab",
+  itemverlust: "grab",
+  ausrüstung: "grab",
+  ausruestung: "grab",
+  kumpel: "freund",
+  kumpels: "freund",
+  freunde: "freund",
+  spielerrechte: "rechte",
+  vertrauen: "trust",
+  vertrauenstufe: "trust",
+};
+
+function searchTokens(value: string) {
+  return value
+    .split(/[^\p{L}\p{N}]+/u)
+    .map((word) => fold(word))
+    .filter((word) => word.length > 2 && !STOP.has(word))
+    .map((word) => SEARCH_ALIASES[word] ?? word);
+}
+
+type Doc = { text: string; terms: Set<string>; answer: string };
 
 function knowledge(): Doc[] {
   const list: Doc[] = [];
@@ -599,33 +666,45 @@ function knowledge(): Doc[] {
     if (rule.allowed?.length) parts.push(`Erlaubt: ${rule.allowed.join(", ")}.`);
     if (rule.bullets?.length) parts.push(`${rule.bullets.join(", ")}.`);
     if (rule.note) parts.push(rule.note);
-    list.push({
-      text: fold(
+    const text = fold(
         [rule.title, ...rule.paragraphs, ...(rule.forbidden ?? []), ...(rule.allowed ?? []), ...(rule.bullets ?? []), rule.note ?? ""].join(
           " ",
         ),
-      ),
+      );
+    list.push({
+      text,
+      terms: new Set(searchTokens(text)),
       answer: parts.join(" "),
     });
   }
-  for (const item of FAQ) list.push({ text: fold(`${item.q} ${item.a}`), answer: item.a });
+  for (const item of FAQ) {
+    const text = fold(`${item.q} ${item.a}`);
+    list.push({ text, terms: new Set(searchTokens(text)), answer: item.a });
+  }
   for (const feature of FEATURES) {
+    const text = fold([feature.title, feature.summary, ...feature.body].join(" "));
     list.push({
-      text: fold([feature.title, feature.summary, ...feature.body].join(" ")),
+      text,
+      terms: new Set(searchTokens(text)),
       answer: feature.body.join(" "),
     });
   }
   for (const chapter of GUIDE) {
+    const text = fold([chapter.title, chapter.description, chapter.keywords, ...chapter.blocks].join(" "));
     list.push({
-      text: fold([chapter.title, chapter.description, chapter.keywords, ...chapter.blocks].join(" ")),
+      text,
+      terms: new Set(searchTokens(text)),
       answer: chapter.blocks.join(" "),
     });
   }
   for (const cmd of [...COMMANDS, ...BEDROCK_COMMANDS]) {
-    list.push({ text: fold(`${cmd.cmd} ${cmd.text}`), answer: `${cmd.cmd}: ${cmd.text}` });
+    const text = fold(`${cmd.cmd} ${cmd.text}`);
+    list.push({ text, terms: new Set(searchTokens(text)), answer: `${cmd.cmd}: ${cmd.text}` });
   }
+  const serverText = fold(`java ip ${SITE.ip} ${SITE.play} port ${SITE.javaPort} ${SITE.bedrockPort} version ${SITE.version} discord`);
   list.push({
-    text: fold(`java ip ${SITE.ip} ${SITE.play} port ${SITE.javaPort} ${SITE.bedrockPort} version ${SITE.version} discord`),
+    text: serverText,
+    terms: new Set(searchTokens(serverText)),
     answer: `Java: ${SITE.ip}, ohne Port. Bedrock: ${SITE.play}, Port ${SITE.bedrockPort}. Version ${SITE.version}.`,
   });
   return list;
@@ -639,28 +718,36 @@ function docs() {
 }
 
 function recall(q: string): string | null {
-  const tokens = [...new Set(q.split(" ").map((token) => fold(token)).filter((token) => token.length > 3 && !STOP.has(token)))];
+  const tokens = [...new Set(searchTokens(q))];
   if (!tokens.length) return null;
   const all = docs();
   const df = new Map<string, number>();
   for (const token of tokens) {
     let count = 0;
-    for (const doc of all) if (doc.text.includes(token)) count += 1;
+    for (const doc of all) if (doc.terms.has(token)) count += 1;
     df.set(token, count);
   }
   let bestScore = 0;
-  let best = "";
+  let bestMatches = 0;
+  let best: Doc | null = null;
   for (const doc of all) {
     let score = 0;
+    let matches = 0;
     for (const token of tokens) {
       const count = df.get(token) ?? 0;
-      if (!count || !doc.text.includes(token)) continue;
-      score += count <= 2 ? 4 : count <= 6 ? 2 : 1;
+      if (!count || !doc.terms.has(token)) continue;
+      matches += 1;
+      score += Math.log1p((all.length + 1) / (count + 1));
     }
-    if (score > bestScore) {
+    const phraseBonus = tokens.length > 1 && tokens.every((token) => doc.terms.has(token)) ? 0.75 : 0;
+    score += phraseBonus;
+    if (matches > bestMatches || (matches === bestMatches && score > bestScore)) {
+      bestMatches = matches;
       bestScore = score;
-      best = doc.answer;
+      best = doc;
     }
   }
-  return bestScore >= 4 ? best : null;
+  const coverage = bestMatches / tokens.length;
+  const canAnswer = bestMatches >= 2 || (tokens.length === 1 && bestMatches === 1);
+  return canAnswer && coverage >= 0.5 && bestScore >= 2.2 ? best?.answer ?? null : null;
 }
