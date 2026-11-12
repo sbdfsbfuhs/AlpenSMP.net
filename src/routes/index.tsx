@@ -118,12 +118,11 @@ function Home() {
               </Link>
             </div>
           </div>
+          <div className="home-hero-live">
+            <MotdNotice />
+            <StatusCard compact />
+          </div>
         </div>
-      </section>
-
-      <section className="shell home-live-section">
-        <MotdNotice />
-        <StatusCard compact />
       </section>
 
       <section className="shell py-14 md:py-16">
