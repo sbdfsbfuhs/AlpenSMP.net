@@ -333,6 +333,15 @@ export function PlayerChart() {
   const { status } = useServerStatus();
   const [range, setRange] = useState<"1h" | "5h" | "24h" | "7d">("24h");
   const [points, setPoints] = useState<HistoryPoint[]>([]);
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReducedMotion(preference.matches);
+    update();
+    preference.addEventListener("change", update);
+    return () => preference.removeEventListener("change", update);
+  }, []);
 
   useEffect(() => {
     let stop = false;
@@ -376,12 +385,19 @@ export function PlayerChart() {
           <h3 className="text-base font-semibold">Spieler online – Verlauf</h3>
           <p className="text-sm text-muted">Nur der gewählte Zeitraum. Älter als 7 Tage wird gelöscht.</p>
         </div>
-        <div className="flex gap-2" role="group" aria-label="Zeitraum auswählen">
+        <div
+          className="player-chart-ranges"
+          role="group"
+          aria-label="Zeitraum auswählen"
+          data-active-range={range}
+        >
+          <span className="player-chart-range-indicator" aria-hidden="true" />
           {(["1h", "5h", "24h", "7d"] as const).map((key) => (
             <button
               key={key}
               type="button"
               className="player-chart-range"
+              data-range={key}
               aria-pressed={key === range}
               onClick={() => setRange(key)}
             >
@@ -393,18 +409,34 @@ export function PlayerChart() {
       <div className="mt-4 h-56 min-w-0">
         <ChartGuard>
           {rows.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%" minWidth={1}>
-              <LineChart data={rows}>
-                <CartesianGrid stroke="var(--color-line)" vertical={false} />
-                <XAxis dataKey="label" hide />
-                <YAxis allowDecimals={false} width={28} stroke="var(--color-faint)" fontSize={12} />
-                <Tooltip
-                  contentStyle={{ background: "var(--color-surface)", border: "1px solid var(--color-line)", borderRadius: 12, color: "var(--color-fg)" }}
-                  labelStyle={{ color: "var(--color-muted)" }}
-                />
-                <Line type="monotone" dataKey="spieler" stroke="var(--color-brand)" strokeWidth={2} dot={rows.length < 30} />
-              </LineChart>
-            </ResponsiveContainer>
+            <div key={range} className="player-chart-canvas">
+              <ResponsiveContainer width="100%" height="100%" minWidth={1}>
+                <LineChart data={rows}>
+                  <CartesianGrid stroke="var(--color-line)" vertical={false} />
+                  <XAxis dataKey="label" hide />
+                  <YAxis allowDecimals={false} width={28} stroke="var(--color-faint)" fontSize={12} />
+                  <Tooltip
+                    contentStyle={{
+                      background: "var(--color-surface)",
+                      border: "1px solid var(--color-line)",
+                      borderRadius: 12,
+                      color: "var(--color-fg)",
+                    }}
+                    labelStyle={{ color: "var(--color-muted)" }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="spieler"
+                    stroke="var(--color-brand)"
+                    strokeWidth={2}
+                    dot={rows.length < 30}
+                    isAnimationActive={!reducedMotion}
+                    animationDuration={420}
+                    animationEasing="ease-in-out"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           ) : (
             <p className="text-sm text-muted">In diesem Zeitraum gibt es noch keine Messung.</p>
           )}
