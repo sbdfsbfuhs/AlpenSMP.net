@@ -13,6 +13,19 @@ describe("moderation role access", () => {
     assert.equal(can("supporter", "moderation"), false);
     assert.equal(can("supporter", "moderationRead"), true);
   });
+
+  it("allows only owners and admins to edit the shared player command catalog", () => {
+    for (const role of ["owner", "admin"]) {
+      assert.equal(can(role, "commandsRead"), true);
+      assert.equal(can(role, "commandsEdit"), true);
+    }
+    for (const role of ["helper", "supporter"]) {
+      assert.equal(can(role, "commandsRead"), true);
+      assert.equal(can(role, "commandsEdit"), false);
+    }
+    assert.equal(can("builder", "commandsRead"), false);
+    assert.equal(can("builder", "commandsEdit"), false);
+  });
 });
 
 describe("staff center personal layout", () => {

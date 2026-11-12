@@ -8,6 +8,7 @@ import { LockScreen } from "@/components/site/offline-run";
 import { MORE, NAV, SITE } from "@/lib/alpen/site";
 import { FooterReview } from "@/components/site/reviews";
 import { SiteSearch } from "@/components/site/site-search";
+import { PlayerCommandsProvider } from "@/components/site/player-commands-provider";
 
 export function Shell({ children }: { children: ReactNode }) {
   const path = useRouterState({ select: (state) => state.location.pathname });
@@ -56,6 +57,7 @@ export function Shell({ children }: { children: ReactNode }) {
     return <LockScreen notice={notice} />;
   }
   return (
+    <PlayerCommandsProvider>
     <div className="relative min-h-screen bg-bg text-fg">
       <div className="aurora" aria-hidden="true" />
       <div className="embers" aria-hidden="true">
@@ -76,6 +78,7 @@ export function Shell({ children }: { children: ReactNode }) {
       <Footer />
       </div>
     </div>
+    </PlayerCommandsProvider>
   );
 }
 

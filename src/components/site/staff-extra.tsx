@@ -1,5 +1,4 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { BEDROCK_COMMANDS, COMMANDS } from "@/lib/alpen/content";
 import { MASCOT_DEFAULT, type Act, type MascotMode, type MascotSettings } from "@/lib/alpen/mascot";
 import { can, type Area } from "@/lib/alpen/roles";
 import { MascotView } from "@/components/site/mascot-art";
@@ -12,98 +11,6 @@ function guard(real: string, area: Area, note: Note) {
   if (can(real, area)) return true;
   note("Deine echte Rolle darf das nicht");
   return false;
-}
-
-export function PlayerCommandEditor({ real, view, note }: { real: string; view: string; note: Note }) {
-  const java = useLive<{ cmd?: string; text?: string }>("playerCommands/java");
-  const bedrock = useLive<{ cmd?: string; text?: string }>("playerCommands/bedrock");
-  const edit = can(view, "commandsEdit");
-
-  return (
-    <div className="space-y-6">
-      <CommandList title="Java" path="playerCommands/java" rows={entries(java)} real={real} edit={edit} note={note} seed={COMMANDS} />
-      <CommandList title="Bedrock" path="playerCommands/bedrock" rows={entries(bedrock)} real={real} edit={edit} note={note} seed={BEDROCK_COMMANDS} />
-    </div>
-  );
-}
-
-function CommandList({
-  title,
-  path,
-  rows,
-  real,
-  edit,
-  note,
-  seed,
-}: {
-  title: string;
-  path: string;
-  rows: [string, { cmd?: string; text?: string }][];
-  real: string;
-  edit: boolean;
-  note: Note;
-  seed: { cmd: string; text: string }[];
-}) {
-  const [cmd, setCmd] = useState("");
-  const [text, setText] = useState("");
-
-  async function add(event: FormEvent) {
-    event.preventDefault();
-    if (!guard(real, "commandsEdit", note)) return;
-    if (!cmd.trim()) return note("Befehl fehlt");
-    await fbPush(path, { cmd: cmd.trim(), text: text.trim(), ts: Date.now() });
-    setCmd("");
-    setText("");
-    note("Gespeichert");
-  }
-
-  return (
-    <section className="card card-still p-5">
-      <h2 className="text-lg font-semibold">Spieler-Befehle · {title}</h2>
-      <p className="mt-1 text-sm text-muted">Leer lassen heisst: die Website zeigt die feste Liste. Sobald hier etwas steht, gilt das live.</p>
-      {edit ? (
-        <form className="mt-3 grid gap-2" onSubmit={add}>
-          <input className="field" placeholder="/befehl" value={cmd} onChange={(e) => setCmd(e.target.value)} />
-          <input className="field" placeholder="Beschreibung" value={text} onChange={(e) => setText(e.target.value)} />
-          <div className="flex flex-wrap gap-2">
-            <button className="btn-brand" type="submit">Hinzufügen</button>
-            {!rows.length ? (
-              <button
-                className="btn-ghost"
-                type="button"
-                onClick={() => {
-                  if (!guard(real, "commandsEdit", note)) return;
-                  void Promise.all(seed.map((item) => fbPush(path, { ...item, ts: Date.now() }))).then(() => note("Liste übernommen"));
-                }}
-              >
-                Aktuelle Website übernehmen
-              </button>
-            ) : null}
-          </div>
-        </form>
-      ) : null}
-      <ul className="mt-4 space-y-2">
-        {rows.map(([key, item]) => (
-          <li key={key} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-line px-3 py-2 text-sm">
-            <span><code className="text-brand">{item.cmd}</code> <span className="text-muted">{item.text}</span></span>
-            {edit ? (
-              <button
-                type="button"
-                className="btn-ghost px-3"
-                onClick={() => {
-                  if (!guard(real, "commandsEdit", note)) return;
-                  void fbRemove(`${path}/${key}`).then(() => note("Entfernt"));
-                }}
-              >
-                Löschen
-              </button>
-            ) : null}
-          </li>
-        ))}
-        {!rows.length ? <li className="text-sm text-muted">Noch nichts in Firebase. Die öffentliche Seite nutzt die feste Liste.</li> : null}
-      </ul>
-    </section>
-  );
 }
 
 export function RulesEditor({ real, view, note, staff }: { real: string; view: string; note: Note; staff?: boolean }) {

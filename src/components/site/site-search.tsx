@@ -1,6 +1,7 @@
 import { Search, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { COMMAND_GROUPS, FAQ, FEATURES, GUIDE, RULES } from "@/lib/alpen/content";
+import { usePlayerCommandGroups } from "@/components/site/player-commands-context";
+import { FAQ, FEATURES, GUIDE, RULES } from "@/lib/alpen/content";
 import { MORE, NAV, SITE } from "@/lib/alpen/site";
 
 type SearchEntry = {
@@ -37,14 +38,6 @@ const SEARCH_ENTRIES: SearchEntry[] = [
     description: `${feature.summary} ${feature.body.join(" ")}`,
     href: `/features#${feature.id}`,
   })),
-  ...COMMAND_GROUPS.flatMap((group) =>
-    group.rows.map((row) => ({
-      title: row.cmd,
-      type: `Befehl · ${group.title}`,
-      description: row.text,
-      href: `/features#commands-${group.id}`,
-    })),
-  ),
   ...GUIDE.map((chapter) => ({
     title: chapter.title,
     type: "Guide",
@@ -86,6 +79,7 @@ function rank(entry: SearchEntry, query: string, terms: string[]) {
 }
 
 export function SiteSearch() {
+  const { groups } = usePlayerCommandGroups();
   const dialog = useRef<HTMLDialogElement>(null);
   const input = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
@@ -111,21 +105,52 @@ export function SiteSearch() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
+  const searchEntries = useMemo(
+    () => [
+      ...SEARCH_ENTRIES,
+      ...groups.flatMap((group) =>
+        group.rows.flatMap((row) => {
+          const bedrockCmd = row.bedrockCmd ?? row.cmd.replaceAll("Spieler", ".Spieler");
+          return [
+            {
+              title: row.cmd,
+              type: `Befehl · ${group.title} · Java`,
+              description: row.text,
+              href: `/features#commands-${group.id}`,
+            },
+            ...(bedrockCmd !== row.cmd
+              ? [
+                  {
+                    title: bedrockCmd,
+                    type: `Befehl · ${group.title} · Bedrock`,
+                    description: row.text,
+                    href: `/features#commands-${group.id}`,
+                  },
+                ]
+              : []),
+          ];
+        }),
+      ),
+    ],
+    [groups],
+  );
+
   const results = useMemo(() => {
     const normalized = normalize(query);
     if (!normalized)
-      return SEARCH_ENTRIES.filter((entry) =>
+      return searchEntries.filter((entry) =>
         ["Server-IP und Beitreten", "Spieler-Guide", "Server-Regeln", "FAQ", "Community"].includes(
           entry.title,
         ),
       );
     const terms = normalized.split(" ").filter(Boolean);
-    return SEARCH_ENTRIES.map((entry) => ({ entry, score: rank(entry, normalized, terms) }))
+    return searchEntries
+      .map((entry) => ({ entry, score: rank(entry, normalized, terms) }))
       .filter((result) => result.score >= 0)
       .sort((a, b) => b.score - a.score || a.entry.title.localeCompare(b.entry.title, "de"))
       .slice(0, 8)
       .map(({ entry }) => entry);
-  }, [query]);
+  }, [query, searchEntries]);
 
   return (
     <>

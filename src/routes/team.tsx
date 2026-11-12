@@ -12,7 +12,7 @@ import { sendPasswordResetEmail } from "@/lib/alpen/fb-auth";
 const AbsenceBoard = lazy(() => import("@/components/site/staff-extra").then((m) => ({ default: m.AbsenceBoard })));
 const BanGuideEditor = lazy(() => import("@/components/site/staff-extra").then((m) => ({ default: m.BanGuideEditor })));
 const GuideEditor = lazy(() => import("@/components/site/staff-extra").then((m) => ({ default: m.GuideEditor })));
-const PlayerCommandEditor = lazy(() => import("@/components/site/staff-extra").then((m) => ({ default: m.PlayerCommandEditor })));
+const PlayerCommandEditor = lazy(() => import("@/components/site/staff-player-commands").then((m) => ({ default: m.PlayerCommandEditor })));
 const RulesEditor = lazy(() => import("@/components/site/staff-extra").then((m) => ({ default: m.RulesEditor })));
 const TasksBoard = lazy(() => import("@/components/site/staff-extra").then((m) => ({ default: m.TasksBoard })));
 const LiveNotices = lazy(() => import("@/components/site/staff-broadcast").then((m) => ({ default: m.LiveNotices })));
@@ -760,7 +760,7 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
             ) : null}
             {safeTab === "commands" ? (
               <div className="space-y-6">
-                {can(shown, "commandsRead") ? <PlayerCommandEditor real={shown} view={shown} note={note} /> : null}
+                {can(shown, "commandsRead") ? <PlayerCommandEditor real={real} view={shown} username={user.username} note={note} /> : null}
                 {can(shown, "staffCommands") ? <Commands user={displayedUser} view={shown} note={note} /> : null}
               </div>
             ) : null}
