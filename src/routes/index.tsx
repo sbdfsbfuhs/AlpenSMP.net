@@ -267,28 +267,65 @@ function Home() {
             </div>
           </div>
         </article>
-        <article id="mods" className="card flex scroll-mt-24 flex-col justify-between p-6">
-          <div>
-            <div className="flex items-center gap-2 text-ice">
-              <Mic className="size-4" />
-              <h3 className="font-semibold text-fg">Voice, Karte, Discord</h3>
+        <article id="mods" className="card scroll-mt-24 p-5 sm:p-6">
+          <div className="flex items-center gap-3">
+            <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-ice/10 text-ice">
+              <Mic className="size-5" />
+            </span>
+            <div>
+              <p className="kicker">Mehr entdecken</p>
+              <h3 className="text-xl font-semibold text-fg">Voice, Karte & Community</h3>
             </div>
-            <p className="mt-3 text-sm text-muted">
-              Simple Voice Chat ist optional. Die Live-Karte der Hauptworld ist gerade zu, der Speicher ist voll. Updates und Support laufen über Discord
-              und TikTok {SITE.tiktokHandle}.
+          </div>
+
+          <section className="mt-5 border-t border-line pt-5" aria-labelledby="home-voice-title">
+            <div className="flex items-center gap-2 text-brand">
+              <Mic className="size-4" />
+              <h4 id="home-voice-title" className="font-semibold text-fg">Voice Chat & Mods</h4>
+              <span className="rounded-full bg-surface px-2 py-0.5 text-xs text-muted">optional</span>
+            </div>
+            <p className="mt-2 text-sm text-muted">
+              Simple Voice Chat ist freiwillig. Du kannst auch ohne Mods auf dem Server spielen.
             </p>
-          </div>
-          <div className="mt-6 flex flex-col gap-2">
-            <ModrinthLink href={SITE.modrinthApp}>Modrinth App</ModrinthLink>
-            <Link to="/guide" hash="mods" className="btn-ghost">
-              Mods & Voice
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link to="/guide" hash="mods" className="btn-ghost">
+                Mods & Voice erklärt <ArrowRight className="size-4" />
+              </Link>
+              <ModrinthLink href={SITE.modrinthApp}>Modrinth App</ModrinthLink>
+            </div>
+          </section>
+
+          <section className="mt-5 border-t border-line pt-5" aria-labelledby="home-map-title">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-brand">
+                <Map className="size-4" />
+                <h4 id="home-map-title" className="font-semibold text-fg">Live-Karte</h4>
+              </div>
+              <span className="rounded-full border border-ember/30 bg-ember/10 px-2.5 py-1 text-xs font-medium text-fg">
+                Vorübergehend geschlossen
+              </span>
+            </div>
+            <p className="mt-2 text-sm text-muted">
+              Die Karte der Hauptwelt ist pausiert, weil der verfügbare Speicher voll ist.
+            </p>
+            <Link to="/karte" className="btn-ghost mt-3">
+              Kartenstatus ansehen <ArrowRight className="size-4" />
             </Link>
-            <Link to="/karte" className="btn-ghost">
-              Karte gerade zu
-            </Link>
-            <DiscordLink>Discord beitreten</DiscordLink>
-            <TikTokLink>TikTok</TikTokLink>
-          </div>
+          </section>
+
+          <section className="mt-5 border-t border-line pt-5" aria-labelledby="home-community-title">
+            <div className="flex items-center gap-2 text-brand">
+              <Users className="size-4" />
+              <h4 id="home-community-title" className="font-semibold text-fg">Community & Updates</h4>
+            </div>
+            <p className="mt-2 text-sm text-muted">
+              Support und Neuigkeiten im Discord, Clips und Einblicke auf TikTok {SITE.tiktokHandle}.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <DiscordLink>Discord beitreten</DiscordLink>
+              <TikTokLink />
+            </div>
+          </section>
         </article>
       </section>
     </Shell>
