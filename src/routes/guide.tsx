@@ -73,14 +73,11 @@ function GuidePage() {
     <Shell>
       <PageHero
         kicker="Spieler-Guide"
-        title="Alles für den Start."
-        lede="Zuerst Minecraft, danach der Server. Die Befehle für Java und Bedrock stehen direkt darunter."
+        title="Finde schnell deinen Einstieg."
+        lede="Lerne die Minecraft-Grundlagen, entdecke AlpenSMP oder suche gezielt nach einem Befehl."
       />
       <div id="start" className="shell scroll-mt-24 py-12">
         <LayerTabs layer={layer} onPick={setLayer} />
-        <div id="befehle" className="mb-16 scroll-mt-24">
-          <PlayerCommands />
-        </div>
         {layer === "basics" ? (
           <div className="space-y-8">
             <BeginnerGuide />
@@ -143,7 +140,10 @@ function GuidePage() {
             ) : null}
           </div>
         ) : null}
-        <SiteMascot home="guide" bias="look" inset line="Die Befehle kann ich dir auch erklären." />
+        <div id="befehle" className="mt-12 scroll-mt-24 border-t border-line pt-10">
+          <PlayerCommands initiallyCollapsed />
+        </div>
+        <SiteMascot home="guide" bias="look" inset line="Such einen Befehl oder frag mich direkt." />
           </>
         )}
       </div>
@@ -175,8 +175,8 @@ function LayerTabs({ layer, onPick }: { layer: Layer; onPick: (layer: Layer) => 
 
 function GuideTabs({ track, onPick }: { track: Track | null; onPick: (track: Track) => void }) {
   const tabs: { id: Track; label: string }[] = [
-    { id: "alpen", label: "Kenne Minecraft" },
-    { id: "mc", label: "Neu bei Minecraft" },
+    { id: "alpen", label: "Ich kenne Minecraft" },
+    { id: "mc", label: "Minecraft-Grundlagen" },
     { id: "mods", label: "Mods & Voice" },
   ];
   return (

@@ -126,9 +126,13 @@ export function BeginnerGuide() {
   const [open, setOpen] = useState<string | null>(LESSONS[0].id);
   return (
     <div className="space-y-4">
-      <p className="max-w-2xl text-sm text-muted">
-        Zuerst das Spiel. Survival, die erste Nacht, Essen, Crafting, Zaubern, Dörfer, Nether und End. Danach kommt AlpenSMP.
-      </p>
+      <div className="max-w-2xl">
+        <p className="kicker">Minecraft-Grundlagen</p>
+        <h2 className="display mt-2 text-3xl">Schritt für Schritt ins Spiel</h2>
+        <p className="mt-2 text-sm text-muted">
+          Öffne ein Thema, das dich interessiert. Du musst nicht alles lesen, bevor du losspielst.
+        </p>
+      </div>
       <section className="divide-y divide-line overflow-hidden rounded-lg border border-line">
         {LESSONS.map((lesson, index) => {
           const isOpen = open === lesson.id;

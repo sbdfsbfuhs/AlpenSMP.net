@@ -2167,6 +2167,62 @@
   gap: 0.5rem;
 }
 
+.player-commands-summary,
+.player-command-group > summary {
+  display: flex;
+  cursor: pointer;
+  list-style: none;
+}
+
+.player-commands-summary::-webkit-details-marker,
+.player-command-group > summary::-webkit-details-marker {
+  display: none;
+}
+
+.player-commands-summary {
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: 1.25rem;
+}
+
+.player-commands-summary:focus-visible,
+.player-command-group > summary:focus-visible {
+  outline: 2px solid var(--color-ice);
+  outline-offset: 3px;
+}
+
+.player-command-group {
+  overflow: hidden;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: color-mix(in oklab, var(--color-surface) 75%, transparent);
+}
+
+.player-command-group > summary {
+  align-items: center;
+  justify-content: space-between;
+  transition: background-color 160ms ease;
+}
+
+.player-command-group > summary:hover {
+  background: var(--color-bg-raised);
+}
+
+.player-command-group > summary::after {
+  content: "+";
+  color: var(--color-brand);
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.player-command-group[open] > summary::after {
+  content: "−";
+}
+
 .guide-step {
   overflow: hidden;
   border-radius: 18px;
