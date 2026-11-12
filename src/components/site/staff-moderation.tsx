@@ -323,8 +323,13 @@ function ModForm({
       ) : null}
       {path === "bans" && name.trim() ? (
         <p className="mt-2 text-sm text-muted">
-          {selectedBan ? (hasMinecraftBanReason(selectedBan.reason) ? "Aktiver Ingame-Bann gefunden." : "Aktiver Ingame-Bann gefunden – bitte einen konkreten Grund ergänzen.") : "Noch nicht ingame gebannt – beim Eintragen kannst du den Ingame-Bann bestätigen."}
+          {selectedBan
+            ? `${hasMinecraftBanReason(selectedBan.reason) ? "Aktiver Ingame-Bann gefunden." : "Aktiver Ingame-Bann gefunden – bitte einen konkreten Grund ergänzen."} Das ergänzt nur den Website-Eintrag; der bestehende Minecraft-Bann wird nicht geändert.`
+            : "Noch nicht ingame gebannt – beim Eintragen kannst du den Ingame-Bann bestätigen. Dein Staffname wird im Minecraft-Banngrund ergänzt; als Quelle zeigt Minecraft weiterhin Console (RCON)."}
         </p>
+      ) : null}
+      {path === "bans" && !selectedBan && !hasMinecraftBanReason(displayedReason) ? (
+        <p className="mt-2 text-xs text-muted">Bei einem Bann über die Website wird dein angemeldeter Staffname automatisch im Minecraft-Grund vermerkt. Minecraft führt den RCON-Befehl technisch weiterhin als Console.</p>
       ) : null}
       <label className="mt-3 block text-sm font-medium">
         {path === "bans" ? "Konkreter Grund" : "Grund der Verwarnung"}

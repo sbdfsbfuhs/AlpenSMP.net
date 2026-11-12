@@ -3,9 +3,10 @@ import { lazy, Suspense, useEffect, useRef, useState, type FormEvent } from "rea
 import { PageHero, Shell } from "@/components/site/shell";
 import { SiteMascot } from "@/components/site/assistant";
 import { StaffChat } from "@/components/site/staff-chat";
-import { CheckInBanner, PlayerSearch } from "@/components/site/staff-search";
-import { shallowCount, useLive } from "@/components/site/staff-live";
+import { PlayerSearch } from "@/components/site/staff-search";
+import { useLive } from "@/components/site/staff-live";
 import { can, roleLabel, ROLES, asRole, type Role } from "@/lib/alpen/roles";
+import { moveStaffLayoutTab, normalizeStaffLayout, reorderStaffLayoutTab, type StaffLayout } from "@/lib/alpen/staff-layout";
 import { sendPasswordResetEmail } from "@/lib/alpen/fb-auth";
 
 const AbsenceBoard = lazy(() => import("@/components/site/staff-extra").then((m) => ({ default: m.AbsenceBoard })));
@@ -107,14 +108,12 @@ type TabArea =
   | "channels"
   | "console";
 
-const TAB_GROUPS: TabGroup[] = ["Team", "Moderation & Support", "Inhalte & Kommunikation", "Verwaltung"];
-
 const TABS: { id: Tab; label: string; group: TabGroup; area: TabArea }[] = [
-  { id: "roster", label: "Team", group: "Team", area: "roster" },
-  { id: "tasks", label: "Aufgaben", group: "Team", area: "tasks" },
-  { id: "absence", label: "Abwesenheit", group: "Team", area: "absence" },
   { id: "moderation", label: "Moderation", group: "Moderation & Support", area: "moderation" },
-  { id: "help", label: "Hilfe", group: "Moderation & Support", area: "help" },
+  { id: "roster", label: "Team", group: "Team", area: "roster" },
+  { id: "absence", label: "Abwesenheit", group: "Team", area: "absence" },
+  { id: "tasks", label: "Aufgaben", group: "Team", area: "tasks" },
+  { id: "help", label: "Support-Anfragen", group: "Moderation & Support", area: "help" },
   { id: "community", label: "Community", group: "Moderation & Support", area: "community" },
   { id: "ban", label: "Ban-Leitfaden", group: "Moderation & Support", area: "banGuide" },
   { id: "archive", label: "Archiv", group: "Moderation & Support", area: "archive" },
@@ -131,10 +130,19 @@ const TABS: { id: Tab; label: string; group: TabGroup; area: TabArea }[] = [
   { id: "users", label: "Accounts", group: "Verwaltung", area: "roles" },
 ];
 
+const DEFAULT_LAYOUT = normalizeStaffLayout(
+  null,
+  TABS.map((item) => item.id),
+  ["moderation", "roster", "absence"],
+);
+
 function StaffPage() {
   const [user, setUser] = useState<StaffSession | null>(null);
   const [ready, setReady] = useState(false);
   const [toast, setToast] = useState("");
+  const [liveErrors, setLiveErrors] = useState<Array<{ code: string; message: string }>>([]);
+  const [bootstrapError, setBootstrapError] = useState("");
+  const toastTimer = useRef<number | null>(null);
 
   useEffect(() => {
     const saved = readSession();
@@ -154,16 +162,39 @@ function StaffPage() {
         }
         setReady(true);
       })
-      .catch(() => {
-        writeSession(null);
+      .catch((error: unknown) => {
+        console.error("[Staff Center] AUTH-STAFF-001: Staff-Zugang konnte nicht verifiziert werden.", error);
+        setBootstrapError(`Fehlercode AUTH-STAFF-001: Der Teamzugang konnte nicht verifiziert werden. Bitte Verbindung prüfen und erneut laden.`);
         setUser(null);
         setReady(true);
       });
   }, []);
 
+  useEffect(() => {
+    const onLiveError = (event: Event) => {
+      const { code, message } = (event as CustomEvent<{ code: string; message: string }>).detail;
+      setLiveErrors((current) => current.some((item) => item.code === code) ? current : [...current, { code, message }]);
+    };
+    const onLiveResolved = (event: Event) => {
+      const { code } = (event as CustomEvent<{ code: string }>).detail;
+      setLiveErrors((current) => current.filter((item) => item.code !== code));
+    };
+    window.addEventListener("staff-live:error", onLiveError);
+    window.addEventListener("staff-live:resolved", onLiveResolved);
+    return () => {
+      window.removeEventListener("staff-live:error", onLiveError);
+      window.removeEventListener("staff-live:resolved", onLiveResolved);
+      if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
+    };
+  }, []);
+
   function note(text: string) {
     setToast(text);
-    window.setTimeout(() => setToast(""), 6000);
+    if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => {
+      setToast("");
+      toastTimer.current = null;
+    }, 6000);
   }
 
   function logout() {
@@ -182,18 +213,35 @@ function StaffPage() {
         wide
         kicker="Nur fürs Team"
         title="Staff-Center"
-        lede="Dein interner Arbeitsbereich für Team, Support, Inhalte und Server-Verwaltung."
+        lede="Moderation zuerst. Team und Abwesenheiten sind direkt erreichbar; alle weiteren Werkzeuge bleiben unter „Weitere Bereiche“."
       />
       <SiteMascot home="team" bias="sit" align="end" line="Öffentliche Fragen beantworte ich auf den anderen Seiten." />
       <div className="shell-staff py-10">
+        {liveErrors.length ? (
+          <div className="mb-5 space-y-2" role="alert" aria-live="assertive">
+            {liveErrors.map(({ code, message }) => (
+              <p key={code} className="rounded-xl border border-red-500/60 bg-red-950/60 px-4 py-3 text-sm text-red-100">
+                Live-Daten konnten nicht geladen werden. Fehlercode <strong>{code}</strong>: {message}
+              </p>
+            ))}
+          </div>
+        ) : null}
+        {bootstrapError ? (
+          <p role="alert" className="mb-5 rounded-xl border border-red-500/60 bg-red-950/60 px-4 py-3 text-sm text-red-100">
+            {bootstrapError}
+          </p>
+        ) : null}
         {!ready ? <p className="text-muted">Lade Zugang…</p> : null}
-        {ready && !user ? <Login onIn={setUser} /> : null}
+        {ready && !user ? <Login onIn={(next) => {
+          setBootstrapError("");
+          setUser(next);
+        }} /> : null}
         {user?.mustChangePw ? (
           <ForcePassword user={user} onDone={setUser} note={note} />
         ) : user ? (
           <Desk user={user} onLogout={logout} note={note} />
         ) : null}
-        {toast ? <p className="panel-in fixed bottom-6 left-1/2 z-[80] -translate-x-1/2 rounded-md bg-brand px-4 py-2 text-sm text-fg shadow-lg">{toast}</p> : null}
+        {toast ? <p role="status" className="panel-in fixed bottom-6 left-1/2 z-[80] max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-md bg-brand px-4 py-2 text-sm text-fg shadow-lg">{toast}</p> : null}
       </div>
     </Shell>
   );
@@ -313,26 +361,29 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
   const real = user.role;
   const [view, setView] = useState<Role>(asRole(user.role));
   const shown = (real === "owner" ? view : user.role) as string;
-  const [counts, setCounts] = useState({ reviews: 0, images: 0, help: 0 });
-  useEffect(() => {
-    let stop = false;
-    void Promise.all([
-      shallowCount("community_reviews"),
-      shallowCount("community_images"),
-      shallowCount("helpRequests"),
-    ]).then(([reviews, images, help]) => {
-      if (!stop) setCounts({ reviews, images, help });
-    });
-    return () => {
-      stop = true;
-    };
-  }, []);
+  const previewing = shown !== real;
+  const displayedUser = previewing ? { ...user, role: shown } : user;
+  const [staffLayout, setStaffLayout] = useState<StaffLayout>(DEFAULT_LAYOUT);
+  const [layoutLoading, setLayoutLoading] = useState(true);
+  const [layoutSaving, setLayoutSaving] = useState(false);
+  const [layoutError, setLayoutError] = useState("");
+  const layoutWriteQueue = useRef<Promise<void>>(Promise.resolve());
+  const layoutWriteRevision = useRef(0);
   const tabs = TABS.filter((item) => {
     if (item.id === "moderation") return can(shown, "moderation") || can(shown, "moderationRead") || can(shown, "notes");
     if (item.id === "commands") return can(shown, "commandsRead") || can(shown, "staffCommands");
     if (item.id === "rules") return can(shown, "rulesRead") || can(shown, "rulesEdit");
     return can(shown, item.area);
   });
+  const orderedTabs = [...staffLayout.quickTabs, ...staffLayout.moreTabs]
+    .map((id) => tabs.find((item) => item.id === id))
+    .filter((item): item is (typeof tabs)[number] => Boolean(item));
+  const quickTabs = staffLayout.quickTabs
+    .map((id) => tabs.find((item) => item.id === id))
+    .filter((item): item is (typeof tabs)[number] => Boolean(item));
+  const otherTabs = staffLayout.moreTabs
+    .map((id) => tabs.find((item) => item.id === id))
+    .filter((item): item is (typeof tabs)[number] => Boolean(item));
   const canReadMinecraft = can(shown, "moderationRead") && can(real, "moderationRead");
   const canSyncMinecraft = can(shown, "moderation") && can(real, "moderation");
   const [minecraftPlayers, setMinecraftPlayers] = useState<string[]>([]);
@@ -374,13 +425,56 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
     }
   }, [banRows, warnRows, real, note]);
   const [tab, setTab] = useState<Tab>(() => {
-    if (typeof window === "undefined") return "roster";
+    if (typeof window === "undefined") return "moderation";
     const saved = window.sessionStorage.getItem("alpen-team-tab");
-    return (saved as Tab) || "roster";
+    return (saved as Tab) || "moderation";
   });
   const [chatOpen, setChatOpen] = useState(false);
-  const safeTab = tabs.some((item) => item.id === tab) ? tab : tabs[0]?.id;
+  const safeTab = tabs.some((item) => item.id === tab) ? tab : orderedTabs[0]?.id;
   const activeTab = tabs.find((item) => item.id === safeTab);
+  useEffect(() => {
+    let active = true;
+    setLayoutLoading(true);
+    setLayoutError("");
+    layoutWriteQueue.current = Promise.resolve();
+    void fbGet<unknown>(`staffUsers/${user.username}/teamCenterLayout`)
+      .then((saved) => {
+        if (active) {
+          setStaffLayout(normalizeStaffLayout(saved, TABS.map((item) => item.id), DEFAULT_LAYOUT.quickTabs));
+        }
+      })
+      .catch((error: unknown) => {
+        console.error("[Staff Center] LAYOUT-001: Persönliche Navigation konnte nicht geladen werden.", error);
+        if (active) setLayoutError("Fehlercode LAYOUT-001: Deine gespeicherte Navigation konnte nicht geladen werden. Die Standardansicht wird verwendet.");
+      })
+      .finally(() => {
+        if (active) setLayoutLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [user.username]);
+
+  function saveStaffLayout(next: StaffLayout) {
+    setStaffLayout(next);
+    setLayoutError("");
+    setLayoutSaving(true);
+    const revision = ++layoutWriteRevision.current;
+    const path = `staffUsers/${user.username}/teamCenterLayout`;
+    layoutWriteQueue.current = layoutWriteQueue.current
+      .catch(() => undefined)
+      .then(() => fbSet(path, next))
+      .then(() => {
+        if (layoutWriteRevision.current === revision) setLayoutSaving(false);
+      })
+      .catch((error: unknown) => {
+        console.error("[Staff Center] LAYOUT-002: Persönliche Navigation konnte nicht gespeichert werden.", error);
+        if (layoutWriteRevision.current === revision) {
+          setLayoutSaving(false);
+          setLayoutError("Fehlercode LAYOUT-002: Deine Anpassung konnte nicht gespeichert werden. Prüfe Verbindung und Berechtigung.");
+        }
+      });
+  }
   useEffect(() => {
     if (safeTab) window.sessionStorage.setItem("alpen-team-tab", safeTab);
   }, [safeTab]);
@@ -395,10 +489,7 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-  const tabGroups = TAB_GROUPS.map((group) => ({
-    group,
-    items: tabs.filter((item) => item.group === group),
-  })).filter((group) => group.items.length > 0);
+  const otherGroups = [...new Set(otherTabs.map((item) => item.group))];
   const helpRows = useLive<ModItem>("helpRequests");
   const absenceRows = useLive<ModItem>("absences");
   const seen = readSeen(user.username);
@@ -446,9 +537,33 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
   const seeTeamChat = showChat && shown !== "builder";
   const seeBuilderChat = showChat && (shown === "builder" || shown === "owner" || shown === "admin" || shown === "helper" || shown === "supporter");
 
+  function layoutItems(list: keyof StaffLayout) {
+    const ids = staffLayout[list].filter((id) => tabs.some((item) => item.id === id));
+    const destination = list === "quickTabs" ? "moreTabs" : "quickTabs";
+    return ids.map((id, index) => {
+      const item = tabs.find((candidate) => candidate.id === id);
+      if (!item) return null;
+      return (
+        <li key={id} className="staff-layout-item">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-fg">{item.label}</p>
+            <p className="text-xs text-faint">{item.group}</p>
+          </div>
+          <div className="staff-layout-actions">
+            <button type="button" className="staff-layout-action" disabled={layoutLoading || index === 0} aria-label={`${item.label} nach oben`} onClick={() => saveStaffLayout(reorderStaffLayoutTab(staffLayout, list, id, -1))}>↑</button>
+            <button type="button" className="staff-layout-action" disabled={layoutLoading || index === ids.length - 1} aria-label={`${item.label} nach unten`} onClick={() => saveStaffLayout(reorderStaffLayoutTab(staffLayout, list, id, 1))}>↓</button>
+            <button type="button" className="staff-layout-move" disabled={layoutLoading} onClick={() => saveStaffLayout(moveStaffLayoutTab(staffLayout, id, destination))}>
+              {destination === "quickTabs" ? "Anheften" : "Aus Schnellzugriff"}
+            </button>
+          </div>
+        </li>
+      );
+    });
+  }
+
   return (
     <div>
-      <section className="card card-still grid gap-5 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+      <section className="staff-profile card card-still grid gap-4 p-4 sm:p-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
         <div className="flex min-w-0 items-center gap-3">
           <span
             aria-hidden="true"
@@ -459,28 +574,13 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-faint">Angemeldet als</p>
             <p className="truncate text-lg font-semibold text-fg">{user.username}</p>
-            <p className="text-sm text-muted">{roleLabel(real)}</p>
+            <p className="text-sm text-muted">{roleLabel(shown)}</p>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
-          {[
-            { label: "Rezensionen", count: counts.reviews },
-            { label: "Bilder", count: counts.images },
-            { label: "Tickets", count: counts.help },
-          ].map((item) => (
-            <div
-              key={item.label}
-              className="min-w-0 rounded-md border border-line/80 bg-bg/50 px-3 py-2 text-center"
-            >
-              <p className="text-lg font-semibold tabular-nums text-fg">{item.count}</p>
-              <p className="truncate text-xs text-muted">{item.label}</p>
-            </div>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-2 lg:col-span-2 lg:justify-end">
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
           {can(shown, "help") ? (
-            <button type="button" className="btn-ghost" onClick={() => void askHelp(user, note)}>
-              Hilfe rufen
+            <button type="button" className="btn-ghost" disabled={previewing} onClick={() => void askHelp(user, note)}>
+              Teamhilfe anfordern
             </button>
           ) : null}
           <button type="button" className="btn-ghost" onClick={onLogout}>
@@ -492,7 +592,7 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
         <div className="mt-4 flex flex-col gap-3 rounded-md border border-line/70 bg-surface/60 p-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-semibold text-fg">Rollen-Vorschau</p>
-            <p className="text-xs text-muted">Nur für dich – deine echte Rolle bleibt unverändert.</p>
+            <p className="text-xs text-muted">Nur für dich – deine echte Rolle bleibt unverändert. {previewing ? `Vorschau als ${roleLabel(shown)}, schreibgeschützt.` : ""}</p>
           </div>
           <div className="flex flex-wrap gap-2">
             {ROLES.map((role) => (
@@ -513,61 +613,103 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
           </div>
         </div>
       ) : null}
-        {real === "owner" ? <StaffBackup /> : null}
-        {real === "owner" || real === "admin" ? (
+        {shown === "owner" ? <div inert={previewing}><StaffBackup /></div> : null}
+        {shown === "owner" || shown === "admin" ? (
           <Suspense fallback={null}>
-            <LiveNotices note={note} />
+            <div inert={previewing}><LiveNotices note={note} /></div>
           </Suspense>
         ) : null}
-      {shown === "streamer" ? null : <PlayerSearch />}
-      {real === "owner" ? <CheckInBanner /> : null}
-      <div className={`mt-6 grid min-w-0 items-start gap-5 ${dockChat ? "xl:grid-cols-[15rem_minmax(0,1fr)_26rem]" : "lg:grid-cols-[16rem_minmax(0,1fr)]"}`}>
-        <nav
-          className="card card-still min-w-0 p-2 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto"
-          aria-label="Team-Bereiche"
-        >
-          {can(shown, "console") && can(real, "console") ? (
-            <a className="btn-brand mb-2 flex min-h-10 items-center justify-center" href="https://panel.alpensmp.net/" target="_blank" rel="noopener noreferrer">
-              Konsole
-            </a>
-          ) : null}
-          <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:gap-3 lg:overflow-visible lg:pb-0">
-            {tabGroups.map(({ group, items }) => (
-              <section key={group} className="shrink-0 lg:shrink">
-                <h2 className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-faint">
-                  {group}
-                </h2>
-                <div className="flex gap-1 lg:flex-col">
-                  {items.map((item) => {
-                    const count = badges[item.id] || 0;
-                    const selected = item.id === safeTab;
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        aria-current={selected ? "page" : undefined}
-                        className={`flex min-h-10 items-center justify-between gap-3 whitespace-nowrap rounded-md px-3 py-2 text-left text-sm transition-colors lg:w-full lg:whitespace-normal ${
-                          selected
-                            ? "border border-brand/40 bg-brand/10 font-semibold text-fg lg:border-y-0 lg:border-r-0 lg:border-l-2 lg:pl-[calc(0.75rem-2px)]"
-                            : "border border-transparent text-muted hover:bg-surface-2 hover:text-fg"
-                        }`}
-                        onClick={() => setTab(item.id)}
-                      >
-                        <span>{item.label}</span>
-                        {count > 0 ? (
-                          <span className="inline-flex min-w-5 justify-center rounded-full bg-red-600 px-1.5 text-xs font-bold text-white">
-                            {count}
-                          </span>
-                        ) : null}
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-            ))}
+      <div className="staff-layout mt-5 min-w-0">
+        <nav className="staff-nav" aria-label="Team-Bereiche">
+          <div className="staff-primary-nav">
+            {quickTabs.map((item) => {
+              const count = badges[item.id] || 0;
+              const selected = item.id === safeTab;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  aria-current={selected ? "page" : undefined}
+                  className={`staff-nav-button${selected ? " is-active" : ""}`}
+                  onClick={() => setTab(item.id)}
+                >
+                  <span>{item.label}</span>
+                  {count > 0 ? <span className="staff-nav-badge">{count}</span> : null}
+                </button>
+              );
+            })}
           </div>
+          {otherTabs.length ? (
+            <details className="staff-more">
+              <summary>Weitere Bereiche <span className="staff-more-count">{otherTabs.length}</span></summary>
+              <div className="staff-more-panel">
+                {otherGroups.map((group) => (
+                  <section key={group} className="staff-more-group">
+                    <h2>{group}</h2>
+                    <div className="staff-more-items">
+                      {otherTabs.filter((item) => item.group === group).map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          aria-current={item.id === safeTab ? "page" : undefined}
+                          className={`staff-more-button${item.id === safeTab ? " is-active" : ""}`}
+                          onClick={(event) => {
+                            setTab(item.id);
+                            event.currentTarget.closest("details")?.removeAttribute("open");
+                          }}
+                        >
+                          {item.label}
+                          {(badges[item.id] || 0) > 0 ? <span className="staff-nav-badge">{badges[item.id]}</span> : null}
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            </details>
+          ) : null}
+          <details className="staff-customize" inert={layoutLoading || previewing}>
+            <summary>
+              Ansicht anpassen
+            </summary>
+            <div className="staff-customize-panel">
+              <header className="flex flex-wrap items-baseline justify-between gap-2">
+                <div>
+                  <h2 className="text-base font-semibold">Deine Navigation</h2>
+                  <p className="mt-1 text-xs text-muted">Nur für {user.username}. Änderungen werden mit deinem Teamkonto synchronisiert.</p>
+                </div>
+                <p className="text-xs text-faint" role="status" aria-live="polite">
+                  {previewing ? "In der Rollen-Vorschau nicht änderbar" : layoutLoading ? "Lade Ansicht…" : layoutSaving ? "Speichere…" : "Gespeichert"}
+                </p>
+              </header>
+              <div className="staff-layout-columns">
+                <section>
+                  <h3>Schnellzugriff</h3>
+                  <p className="staff-layout-hint">Reihenfolge der Hauptnavigation</p>
+                  <ol className="staff-layout-list">{layoutItems("quickTabs")}</ol>
+                  {!staffLayout.quickTabs.length ? <p className="staff-layout-empty">Noch keine Bereiche angeheftet.</p> : null}
+                </section>
+                <section>
+                  <h3>Weitere Bereiche</h3>
+                  <p className="staff-layout-hint">Bleiben immer über „Weitere Bereiche“ erreichbar</p>
+                  <ol className="staff-layout-list">{layoutItems("moreTabs")}</ol>
+                  {!staffLayout.moreTabs.some((id) => tabs.some((item) => item.id === id)) ? <p className="staff-layout-empty">Alle verfügbaren Bereiche sind im Schnellzugriff.</p> : null}
+                </section>
+              </div>
+            </div>
+          </details>
+          {can(shown, "console") ? (
+            previewing ? (
+              <span className="staff-console-link" aria-disabled="true">Control Center · Vorschau</span>
+            ) : (
+              <a className="staff-console-link" href="https://panel.alpensmp.net/" target="_blank" rel="noopener noreferrer">
+                Control Center
+              </a>
+            )
+          ) : null}
         </nav>
-        <section className="min-w-0">
+        {layoutError ? <p className="mt-2 rounded-lg border border-red-500/60 bg-red-950/50 px-3 py-2 text-sm text-red-100" role="alert">{layoutError}</p> : null}
+        <section inert={previewing} className="staff-content min-w-0">
           {activeTab ? (
             <header className="mb-4 flex items-end justify-between gap-3 px-1">
               <div>
@@ -593,18 +735,24 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
             {safeTab === "moderation" ? (
               <>
                 <Moderation
-                  user={user}
+                  user={displayedUser}
                   note={note}
                   ban={can(shown, "moderation") && can(real, "moderation")}
                   writeNotes={can(shown, "notes") && can(real, "notes")}
                   players={minecraftPlayers}
                   minecraftBans={minecraftBans}
                 />
+                {shown !== "streamer" ? (
+                  <details className="staff-utility-search mt-4">
+                    <summary>Spieler-Akte durchsuchen</summary>
+                    <PlayerSearch />
+                  </details>
+                ) : null}
               </>
             ) : null}
             {safeTab === "help" ? (
               <HelpDesk
-                user={user}
+              user={displayedUser}
                 note={note}
                 act={can(shown, "helpAct") && can(real, "helpAct")}
                 moderate={can(shown, "moderation") && can(real, "moderation")}
@@ -612,43 +760,43 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
             ) : null}
             {safeTab === "commands" ? (
               <div className="space-y-6">
-                {can(shown, "commandsRead") ? <PlayerCommandEditor real={real} view={shown} note={note} /> : null}
-                {can(shown, "staffCommands") ? <Commands user={user} view={shown} note={note} /> : null}
+                {can(shown, "commandsRead") ? <PlayerCommandEditor real={shown} view={shown} note={note} /> : null}
+                {can(shown, "staffCommands") ? <Commands user={displayedUser} view={shown} note={note} /> : null}
               </div>
             ) : null}
-            {safeTab === "community" ? <Community user={user} note={note} /> : null}
+            {safeTab === "community" ? <Community user={displayedUser} note={note} /> : null}
             {safeTab === "rules" ? (
               <div className="space-y-4">
-                <RulesEditor real={real} view={shown} note={note} />
-                {can(real, "rulesEdit") && shown === "owner" ? (
-                  <RulesEditor real={real} view={shown} note={note} staff />
+                <RulesEditor real={shown} view={shown} note={note} />
+                {can(shown, "rulesEdit") && shown === "owner" ? (
+                  <RulesEditor real={shown} view={shown} note={note} staff />
                 ) : null}
               </div>
             ) : null}
-            {safeTab === "ban" ? <BanGuideEditor real={real} view={shown} note={note} /> : null}
+            {safeTab === "ban" ? <BanGuideEditor real={shown} view={shown} note={note} /> : null}
             {safeTab === "tasks" ? (
-              <TasksBoard real={real} view={shown} note={note} username={user.username} />
+              <TasksBoard real={shown} view={shown} note={note} username={user.username} />
             ) : null}
             {safeTab === "absence" ? (
-              <AbsenceBoard real={real} view={shown} note={note} username={user.username} />
+              <AbsenceBoard real={shown} view={shown} note={note} username={user.username} />
             ) : null}
-            {safeTab === "guide" ? <GuideEditor real={real} view={shown} note={note} /> : null}
-            {safeTab === "roster" ? <Roster owner={real === "owner"} /> : null}
-            {safeTab === "settings" ? <Settings user={user} note={note} /> : null}
-            {safeTab === "news" ? <NewsEditor user={user} note={note} /> : null}
-            {safeTab === "status" ? <StatusDesk user={user} note={note} /> : null}
-            {safeTab === "stream" ? <StreamDesk user={user} note={note} /> : null}
+            {safeTab === "guide" ? <GuideEditor real={shown} view={shown} note={note} /> : null}
+            {safeTab === "roster" ? <Roster owner={shown === "owner"} /> : null}
+            {safeTab === "settings" ? <Settings user={displayedUser} note={note} /> : null}
+            {safeTab === "news" ? <NewsEditor user={displayedUser} note={note} /> : null}
+            {safeTab === "status" ? <StatusDesk user={displayedUser} note={note} /> : null}
+            {safeTab === "stream" ? <StreamDesk user={displayedUser} note={note} /> : null}
             {safeTab === "season" ? <SeasonDesk note={note} /> : null}
             {safeTab === "channels" ? <ChannelsDesk note={note} /> : null}
-            {safeTab === "website" ? <Website user={user} note={note} /> : null}
-            {safeTab === "archive" ? <Archive user={user} note={note} /> : null}
-            {safeTab === "users" ? <Accounts note={note} actor={user} /> : null}
+            {safeTab === "website" ? <Website user={displayedUser} note={note} /> : null}
+            {safeTab === "archive" ? <Archive user={displayedUser} note={note} /> : null}
+            {safeTab === "users" ? <Accounts note={note} actor={displayedUser} /> : null}
           </div>
           </Suspense>
         </section>
         {dockChat ? (
-          <div className="sticky top-20 hidden h-[calc(100vh-6rem)] min-w-0 xl:block">
-            <StaffChat user={user} team={seeTeamChat} builder={seeBuilderChat} dock />
+          <div inert={previewing} className="sticky top-20 hidden h-[calc(100vh-6rem)] min-w-0 xl:block">
+            <StaffChat user={displayedUser} team={seeTeamChat} builder={seeBuilderChat} dock />
           </div>
         ) : null}
       </div>
@@ -656,6 +804,7 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
         <>
           <button
             type="button"
+            inert={previewing}
             className={`btn-brand fixed bottom-24 right-3 z-40 ${safeTab === "moderation" ? "" : "xl:hidden"}`}
             aria-expanded={chatOpen}
             onClick={() => setChatOpen(true)}
@@ -665,8 +814,8 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
           {chatOpen ? (
             <div className="fixed inset-3 z-50 flex flex-col xl:inset-y-6 xl:left-auto xl:right-6 xl:w-[26rem]">
               <button type="button" className="btn-ghost mb-2 self-end" onClick={() => setChatOpen(false)}>Schliessen</button>
-              <div className="min-h-0 flex-1">
-                <StaffChat user={user} team={seeTeamChat} builder={seeBuilderChat} dock />
+              <div inert={previewing} className="min-h-0 flex-1">
+                <StaffChat user={displayedUser} team={seeTeamChat} builder={seeBuilderChat} dock />
               </div>
             </div>
           ) : null}

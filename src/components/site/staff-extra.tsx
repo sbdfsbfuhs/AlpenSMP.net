@@ -406,22 +406,48 @@ export function AbsenceBoard({ real, view, note, username }: { real: string; vie
   const [from, setFrom] = useState("");
   const [until, setUntil] = useState("");
   const [reason, setReason] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  async function saveAbsence(event: FormEvent) {
+    event.preventDefault();
+    if (!guard(real, "absence", note)) return;
+    if (!from || !until || from > until) {
+      setError("Bitte einen gültigen Zeitraum mit Ende am oder nach dem Start wählen.");
+      return;
+    }
+    setError("");
+    setSaving(true);
+    try {
+      const person = owner ? who || username : username;
+      await fbPush("absences", { by: person, from, until, reason: reason.trim(), ts: Date.now() });
+      setReason("");
+      setFrom("");
+      setUntil("");
+      note("Abwesenheit gespeichert");
+    } catch (failure) {
+      const detail = failure instanceof Error ? failure.message : "Unbekannter Fehler";
+      setError(`Fehlercode ABS-001: Abwesenheit konnte nicht gespeichert werden. ${detail}`);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function removeAbsence(key: string) {
+    if (!guard(real, "absence", note)) return;
+    try {
+      await fbRemove(`absences/${key}`);
+      note("Abwesenheit entfernt");
+    } catch (failure) {
+      const detail = failure instanceof Error ? failure.message : "Unbekannter Fehler";
+      note(`Fehlercode ABS-002: Abwesenheit konnte nicht entfernt werden. ${detail}`);
+    }
+  }
 
   return (
     <section className="space-y-3">
       {edit ? (
-        <form
-          className="card card-still p-5"
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (!guard(real, "absence", note)) return;
-            const person = owner ? who || username : username;
-            void fbPush("absences", { by: person, from, until, reason: reason.trim(), ts: Date.now() }).then(() => {
-              setReason("");
-              note("Abwesenheit gespeichert");
-            });
-          }}
-        >
+        <form className="card card-still p-5" onSubmit={(event) => void saveAbsence(event)}>
           <h2 className="text-lg font-semibold">{owner ? "Abwesenheit eintragen" : "Eigene Abwesenheit"}</h2>
           {owner ? (
             <select className="field mt-3" value={who} onChange={(e) => setWho(e.target.value)}>
@@ -429,10 +455,11 @@ export function AbsenceBoard({ real, view, note, username }: { real: string; vie
               {entries(people).map(([name]) => name === username ? null : <option key={name} value={name}>{name}</option>)}
             </select>
           ) : null}
-          <label className="mt-3 block text-sm">Von<input className="field mt-1" type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></label>
-          <label className="mt-2 block text-sm">Bis<input className="field mt-1" type="date" value={until} onChange={(e) => setUntil(e.target.value)} /></label>
+          <label className="mt-3 block text-sm">Von<input className="field mt-1" type="date" required value={from} onChange={(e) => setFrom(e.target.value)} /></label>
+          <label className="mt-2 block text-sm">Bis<input className="field mt-1" type="date" required value={until} onChange={(e) => setUntil(e.target.value)} /></label>
           <input className="field mt-2" placeholder="Grund" value={reason} onChange={(e) => setReason(e.target.value)} />
-          <button className="btn-brand mt-3" type="submit">Speichern</button>
+          {error ? <p className="mt-3 text-sm text-ember" role="alert">{error}</p> : null}
+          <button className="btn-brand mt-3" type="submit" disabled={saving}>{saving ? "Speichere…" : "Abwesenheit speichern"}</button>
         </form>
       ) : null}
       <AbsenceCalendar rows={entries(rows)} />
@@ -442,7 +469,7 @@ export function AbsenceBoard({ real, view, note, username }: { real: string; vie
           <p className="text-muted">{item.from} bis {item.until}</p>
           <p className="text-muted">{item.reason}</p>
           {(owner || item.by === username) && edit ? (
-            <button type="button" className="btn-ghost mt-2 px-3" onClick={() => guard(real, "absence", note) && void fbRemove(`absences/${key}`).then(() => note("Entfernt"))}>
+            <button type="button" className="btn-ghost mt-2 px-3" onClick={() => void removeAbsence(key)}>
               {owner ? "Löschen" : "Meine entfernen"}
             </button>
           ) : null}

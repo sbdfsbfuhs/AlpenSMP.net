@@ -1,25 +1,12 @@
 import { useEffect, useState } from "react";
-import { ensureIdToken } from "@/lib/alpen/fb-auth";
-import { SITE } from "@/lib/alpen/site";
-import { isMoved, loadPath } from "@/lib/alpen/security";
+import { isMoved } from "@/lib/alpen/security";
 import { fbGet, fbRemove, fbUpdate, type StaffSession } from "@/lib/alpen/staff";
 
-export function shallowCount(path: string) {
-  if (isMoved(path)) {
-    return loadPath(path)
-      .then((data) => (data && typeof data === "object" ? Object.keys(data as object).length : 0))
-      .catch(() => 0);
-  }
-  return ensureIdToken()
-    .then((token) => {
-      const url = new URL(`${SITE.fb}/${path}.json`);
-      url.searchParams.set("shallow", "true");
-      if (token) url.searchParams.set("auth", token);
-      return fetch(url);
-    })
-    .then((res) => (res.ok ? res.json() : null))
-    .then((data: Record<string, unknown> | null) => (data && typeof data === "object" ? Object.keys(data).length : 0))
-    .catch(() => 0);
+const liveFailurePaths = new Set<string>();
+
+function liveErrorCode(path: string) {
+  const slug = path.toUpperCase().replace(/[^A-Z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return `LIVE-${slug || "DATA"}-001`;
 }
 
 export function useLive<T>(path: string) {
@@ -31,9 +18,24 @@ export function useLive<T>(path: string) {
       if (document.hidden) return;
       fbGet<Record<string, T>>(path)
         .then((value) => {
-          if (!stop) setData(value ?? {});
+          if (stop) return;
+          setData(value ?? {});
+          if (liveFailurePaths.delete(path)) {
+            window.dispatchEvent(new CustomEvent("staff-live:resolved", { detail: { code: liveErrorCode(path) } }));
+          }
         })
-        .catch(() => {});
+        .catch((error: unknown) => {
+          if (stop || liveFailurePaths.has(path)) return;
+          liveFailurePaths.add(path);
+          const code = liveErrorCode(path);
+          console.error(`[Staff Center] ${code}: ${path} konnte nicht geladen werden.`, error);
+          window.dispatchEvent(new CustomEvent("staff-live:error", {
+            detail: {
+              code,
+              message: error instanceof Error ? error.message : "Unbekannter Fehler",
+            },
+          }));
+        });
     };
     pull();
     const id = window.setInterval(pull, wait);

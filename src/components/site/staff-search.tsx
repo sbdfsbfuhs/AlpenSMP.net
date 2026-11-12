@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLive } from "@/components/site/staff-live";
-import { entries, formatRemaining, formatWhen, isPermanentBan, lateDays, type ModItem } from "@/lib/alpen/staff";
+import { entries, formatRemaining, formatWhen, isPermanentBan, type ModItem } from "@/lib/alpen/staff";
 
 export function PlayerSearch() {
   const bans = useLive<ModItem>("bans");
@@ -50,26 +50,6 @@ export function PlayerSearch() {
         {needle.length >= 2 && grouped.size === 0 ? <p className="text-sm text-muted">Nichts zu diesem Namen</p> : null}
       </div>
     </section>
-  );
-}
-
-export function CheckInBanner() {
-  const users = useLive<{ disabled?: boolean; lateDays?: number }>("staffUsers");
-  const presence = useLive<{ lastSeen?: number }>("presence");
-  const absences = useLive<{ by?: string; from?: string; until?: string }>("absences");
-  const today = new Date().toISOString().slice(0, 10);
-  const away = new Set(entries(absences).filter(([, item]) => item.from && item.until && item.from <= today && today <= item.until).map(([, item]) => item.by || ""));
-  const now = Date.now();
-  const late = entries(users).filter(([name, item]) => {
-    if (item.disabled || away.has(name)) return false;
-    const seen = presence[name]?.lastSeen || 0;
-    return !seen || now - seen > lateDays(item.lateDays) * 86_400_000;
-  });
-  if (!late.length) return null;
-  return (
-    <p className="mt-4 rounded-md border border-red-500 bg-red-950/40 px-3 py-2 text-sm text-red-200">
-      Überfällig und nicht abwesend: {late.map(([name]) => name).join(", ")}
-    </p>
   );
 }
 
