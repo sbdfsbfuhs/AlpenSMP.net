@@ -158,6 +158,7 @@ export const RULES: Rule[] = [
 
 export type Feature = {
   id: string;
+  category: "Welt & Schutz" | "Gemeinsam spielen" | "Komfort";
   title: string;
   summary: string;
   body: string[];
@@ -166,85 +167,89 @@ export type Feature = {
 export const FEATURES: Feature[] = [
   {
     id: "survival",
-    title: "Survival",
-    summary: "Klassisches Survival auf einer gemeinsamen Welt.",
+    category: "Welt & Schutz",
+    title: "Survival ohne Pay-to-Win",
+    summary: "Eine gemeinsame Welt, in der dein Fortschritt von dir kommt.",
     body: [
-      "Klassisches Vanilla-Survival auf einer gemeinsamen Welt. Keine Pay-to-Win-Mechaniken, keine überladenen Minigames – du baust, erkundest und spielst, wie Minecraft gedacht ist.",
-      "Mit fairer Community und persönlicher Serverleitung.",
+      "Sammeln, bauen, erkunden und eigene Projekte umsetzen – ohne verkaufte Spielvorteile oder Pay-to-Win.",
+      "Die Welt ist auf gemeinsames Survival ausgelegt. Besondere Aktionen und Spielbereiche ergänzen das normale Minecraft, statt es zu ersetzen.",
     ],
   },
   {
     id: "claims",
-    title: "Claims",
-    summary: "GriefPrevention schützt deine Builds.",
+    category: "Welt & Schutz",
+    title: "Deine Builds bleiben geschützt",
+    summary: "Sichere dein Gebiet und gib Freunden passende Rechte.",
     body: [
-      "Mit GriefPrevention (Claims) schützt du deine Builds vor Griefing.",
-      "Am Anfang ist es am schwierigsten. Nimm eine normale goldene Schaufel. Rechtsklick auf den Boden: ein Diamantblock erscheint. Geh in die andere Ecke und klicke nochmal rechts. Dann steht ein Viereck aus Glowstone und Goldblöcken. Ein Video auf Deutsch kommt. Das englische Video vom Plugin erklärt es nicht gut.",
-      "Je länger du online bist, desto mehr Claim-Blöcke bekommst du. Pro 1 Stunde Spielzeit: +1000 Blöcke.",
-      "Beanspruche dein Gebiet und lade Freunde mit /trust ein. Fremde können dort nichts abbauen oder platzieren.",
+      "Claims schützen dein Grundstück vor unerlaubtem Abbauen und Platzieren. Berechtigungen kannst du gezielt mit Freunden teilen.",
+      "Zum Anlegen verwendest du eine goldene Schaufel: Markiere mit zwei Rechtsklicks die Ecken deines Gebiets. Die genaue Anleitung und passende Rechte-Befehle findest du im Guide.",
+      "Deine Claim-Blöcke wachsen mit deiner Spielzeit: pro Stunde erhältst du 1.000 zusätzliche Blöcke.",
     ],
   },
   {
     id: "voice",
+    category: "Gemeinsam spielen",
     title: "Simple Voice Chat",
-    summary: "Nähe-basierte Sprache direkt im Spiel.",
+    summary: "Sprich mit Spielern in deiner Nähe – wenn du möchtest.",
     body: [
-      "Simple Voice Chat ist auf dem Server aktiv. Mit dem passenden Client-Mod (Java) kannst du im Spiel mit anderen sprechen – ohne extra Discord-Call.",
-      "Der Mod ist optional. Ohne ihn kannst du trotzdem joinen und normal spielen. Empfohlen ist die Version passend zu Minecraft 1.21.11, zum Beispiel über Modrinth (Fabric, Forge, NeoForge und mehr).",
-      "Im Voice Chat gelten dieselben Regeln zu Respekt, Diskriminierung und anstössigen Inhalten. Kein Schreien, Stören oder Soundboard-Spam.",
+      "Mit dem passenden Client-Mod kannst du direkt im Spiel mit Menschen in deiner Nähe sprechen.",
+      "Der Voice Chat ist optional. Du kannst auch ohne Mod ganz normal auf den Server kommen. Eine Installationshilfe findest du im Guide.",
+      "Auch im Voice Chat gelten die Serverregeln: respektvoll bleiben und niemanden absichtlich stören.",
     ],
   },
   {
     id: "graves",
-    title: "Todesgräber",
-    summary: "Items bleiben nach dem Tod auffindbar.",
+    category: "Welt & Schutz",
+    title: "Items nach dem Tod wiederfinden",
+    summary: "Dein Todesgrab hilft dir, verlorene Ausrüstung zurückzuholen.",
     body: [
-      "Wenn du stirbst, bleiben deine Items in einem Todesgrab auffindbar. Du verlierst sie nicht einfach in Lava oder der Leere.",
-      "Hol sie dir in Ruhe zurück – sofern das Grab erreichbar ist.",
+      "Nach einem Tod werden deine Gegenstände an einem Grab gesammelt, damit du sie wiederfinden kannst.",
+      "Je nach Todesort kann das Grab schwer erreichbar sein. Deine Ausrüstung ist nicht in jeder Situation garantiert sicher.",
     ],
   },
   {
     id: "homes",
-    title: "Homes",
-    summary: "Setze Homes und kehre jederzeit zurück.",
+    category: "Komfort",
+    title: "Homes, Spawn & Warps",
+    summary: "Speichere Orte und finde wichtige Ziele schnell wieder.",
     body: [
-      "Mit /sethome Name speicherst du einen Punkt. Höchstens 5 Homes.",
-      "/home Name bringt dich dorthin, /delhome Name löscht den Punkt.",
-      "Das persönliche Home ist nicht das Team-Home. /team home gibt es erst, nachdem ein Team mit /team create existiert.",
+      "Lege persönliche Homes an und kehre später dorthin zurück. Dazu kommen feste Ziele wie Spawn und Server-Warps.",
+      "Die verfügbaren Befehle und Grenzen stehen in der gemeinsamen Befehlsübersicht weiter unten.",
     ],
   },
   {
     id: "teams",
+    category: "Gemeinsam spielen",
     title: "Spieler-Teams",
-    summary: "Erst /team create. Ohne Team geht der Rest nicht.",
+    summary: "Gründe ein Team, teile Wege und spiele gemeinsam.",
     body: [
-      "Ein Team legst du mit /team create Name an. Der Name hat 3 bis 10 Buchstaben, nur a bis z, keine Leerzeichen und keinen Farbcode. Gamers, Rise und Up sind gesperrt. Erstellen kostet nichts. Höchstens 20 Mitglieder, und du bist nur in einem Team.",
-      "Ohne dieses Team funktionieren /team prefix, /team home, /team warp, /tc und /team pvp nicht. /team list zeigt die Teams auch so.",
-      "Der Prefix kommt danach: /team prefix und direkt Farbcode plus Buchstaben, zusammen 3 bis 10 Zeichen. Beispiel: /team prefix &cAlpen. Im Tab steht er vor dem Namen. Im Chat folgt ein Leerzeichen.",
-      "Team-Home und Warps warten 3 Sekunden und brechen ab, wenn du dich bewegst oder Schaden bekommst. Danach 120 Sekunden Pause. Warps: höchstens 3. Die Endertruhe hat 3 Reihen.",
-      "Friendly Fire ist in neuen Teams aus, /team pvp schaltet es um. Verbündete höchstens 4, Feinde höchstens 2. Beim Joinen kann eine Team-Nachricht erscheinen, 5 bis 40 Zeichen. Mit Lunar Client siehst du Teammitglieder auf der Minimap. Java und Bedrock können im selben Team sein.",
+      "Erstelle ein Team, lade andere ein und nutze Team-Funktionen wie gemeinsamen Chat und eigene Ziele.",
+      "Java- und Bedrock-Spieler können gemeinsam in einem Team spielen. Die Befehlsübersicht erklärt Einrichtung, Prefix und weitere Team-Funktionen.",
     ],
   },
   {
     id: "tpa",
-    title: "TPA",
-    summary: "Teleportiere dich zu anderen Spielern.",
+    category: "Komfort",
+    title: "Spieler treffen",
+    summary: "Teleport-Anfragen machen Verabredungen einfacher.",
     body: [
-      "Mit /tpa und dem Spielernamen schickst du eine Teleport-Anfrage.",
-      "Der andere kann annehmen – so trefft ihr euch schnell, ohne Koordinaten zu tauschen.",
+      "Sende einem anderen Spieler eine Teleport-Anfrage. Erst wenn die Person sie annimmt, wirst du zu ihr teleportiert.",
+      "So könnt ihr euch treffen, ohne erst Koordinaten auszutauschen.",
     ],
   },
   {
     id: "back",
-    title: "/back",
-    summary: "Zurück zu deinem letzten Tod.",
+    category: "Komfort",
+    title: "Zurück zum letzten Ort",
+    summary: "Kehre nach einem Tod oder einer Teleportation zurück.",
     body: [
-      "/back bringt dich zurück zu deinem letzten Todesort.",
-      "Ideal, um Items zu holen oder den Ort nochmal zu checken.",
+      "Der Zurück-Befehl kann dich an deinen letzten gespeicherten Ort zurückbringen, zum Beispiel nach einem Tod.",
+      "Welche Rückkehrpunkte verfügbar sind, hängt von der Situation ab. Die Befehlsübersicht zeigt den bestätigten Umfang.",
     ],
   },
   {
     id: "crossplay",
+    category: "Gemeinsam spielen",
     title: "Java + Bedrock",
     summary: "Beide Editionen spielen auf derselben Welt.",
     body: [
@@ -252,6 +257,46 @@ export const FEATURES: Feature[] = [
       "Java: alpensmp.net. Den Port trägst du nicht ein. Der SRV-Eintrag schickt den Client auf play.alpensmp.net, Port 25565.",
       "Bedrock: play.alpensmp.net, Port 19132. Bedrock ignoriert den SRV-Eintrag.",
       "Empfohlene Version: Minecraft 1.21.11. Andere Versionen können funktionieren. Minecraft 26.2+ kann aktuell Verbindungsprobleme verursachen.",
+    ],
+  },
+  {
+    id: "duels",
+    category: "Gemeinsam spielen",
+    title: "Duelle & Arenen",
+    summary: "Fordere andere zu einem fairen Kampf heraus.",
+    body: [
+      "Wenn ihr euch messen möchtet, könnt ihr Duelle austragen und dafür vorgesehene Arenen nutzen.",
+      "Das normale Survival bleibt davon getrennt: Kämpfe gehören in die dafür vorgesehenen Bereiche und Situationen.",
+    ],
+  },
+  {
+    id: "building",
+    category: "Komfort",
+    title: "Bauen mit kleinen Extras",
+    summary: "Praktische Bau- und Alltagsfunktionen, die Handgriffe sparen.",
+    body: [
+      "Neben klassischem Bauen gibt es praktische Extras wie Sitzen, Gegenstände präsentieren und komfortablere Handgriffe beim Sammeln und Bauen.",
+      "Die Funktionen sollen den Alltag erleichtern, ohne dir Fortschritt oder Ressourcen einfach zu schenken.",
+    ],
+  },
+  {
+    id: "shops",
+    category: "Komfort",
+    title: "Handel & Shops",
+    summary: "Tausche, handle und entdecke Angebote in der Welt.",
+    body: [
+      "Für den Handel gibt es Shops und weitere Möglichkeiten, mit anderen Spielern oder der Spielwelt zu tauschen.",
+      "Achte bei Spielershops auf die angebotenen Waren und vereinbare grössere Tauschgeschäfte klar mit der anderen Person.",
+    ],
+  },
+  {
+    id: "activity",
+    category: "Gemeinsam spielen",
+    title: "Spielzeit & Aktivität",
+    summary: "Behalte deine Zeit und wichtige Serverinfos im Blick.",
+    body: [
+      "Spielzeit- und Weltstatistiken geben dir einen Überblick über deine Aktivität und das Geschehen auf AlpenSMP.",
+      "Wenn du kurz weg musst, kannst du deinen Status als AFK kennzeichnen. Für Neuigkeiten und Hilfe ist das Team über die Community erreichbar.",
     ],
   },
 ];
@@ -326,7 +371,10 @@ export const COMMAND_GROUPS: CommandGroup[] = [
     title: "Teams",
     note: "Zuerst /team create Name. Ohne Team gehen Prefix, Team-Home, Warps und Teamchat nicht.",
     rows: [
-      { cmd: "/team create Name", text: "Legt dein Team an. Danach erst gehen die anderen Team-Befehle." },
+      {
+        cmd: "/team create Name",
+        text: "Legt dein Team an. Danach erst gehen die anderen Team-Befehle.",
+      },
       { cmd: "/team disband", text: "Löst das Team auf. Nur als Owner." },
       { cmd: "/team leave", text: "Verlässt das Team." },
       { cmd: "/team invite Spieler", text: "Lädt jemanden ein." },
