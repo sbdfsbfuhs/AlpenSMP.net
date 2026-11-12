@@ -31,15 +31,27 @@ function GuidePage() {
   const [topics, setTopics] = useState<{ title?: string; description?: string; category?: string; steps?: string; image?: string }[]>([]);
 
   useEffect(() => {
-    if (window.location.hash === "#mods") {
+    const hash = window.location.hash.slice(1);
+    if (hash === "mods") {
       setLayer("server");
       setTrack("mods");
+      return;
+    }
+    const chapter = GUIDE.find((item) => item.id === hash);
+    if (chapter) {
+      setLayer("server");
+      setTrack(chapter.track);
     }
   }, []);
 
   useEffect(() => {
-    if (track !== "mods" || window.location.hash !== "#mods") return;
-    document.getElementById("mods")?.scrollIntoView();
+    const id = window.location.hash.slice(1);
+    if (track === "mods" && id === "mods") {
+      window.requestAnimationFrame(() => document.getElementById("mods")?.scrollIntoView({ block: "start" }));
+      return;
+    }
+    if (!GUIDE.some((chapter) => chapter.id === id && chapter.track === track)) return;
+    window.requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: "start" }));
   }, [track]);
 
   useEffect(() => {
@@ -208,7 +220,7 @@ function Choice({ onPick }: { onPick: (track: Track) => void }) {
 
 function Chapter({ chapter, index, total }: { chapter: GuideChapter; index: number; total: number }) {
   return (
-    <article className="card cmd-in p-6" style={{ animationDelay: `${index * 40}ms` }}>
+    <article id={chapter.id} className="card cmd-in scroll-mt-24 p-6" style={{ animationDelay: `${index * 40}ms` }}>
       <p className="text-xs text-faint">
         {index} / {total}
       </p>

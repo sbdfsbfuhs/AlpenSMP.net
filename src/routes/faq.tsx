@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PageHero, Shell } from "@/components/site/shell";
 import { SiteMascot } from "@/components/site/assistant";
 import { FAQ } from "@/lib/alpen/content";
@@ -16,6 +16,19 @@ export const Route = createFileRoute("/faq")({
 
 function FaqPage() {
   const [open, setOpen] = useState<number | null>(0);
+  useEffect(() => {
+    const syncHash = () => {
+      const match = /^#faq-(\d+)$/.exec(window.location.hash);
+      if (!match) return;
+      const index = Number(match[1]);
+      if (!FAQ[index]) return;
+      setOpen(index);
+      window.requestAnimationFrame(() => document.getElementById(`faq-${index}`)?.scrollIntoView({ block: "start" }));
+    };
+    syncHash();
+    window.addEventListener("hashchange", syncHash);
+    return () => window.removeEventListener("hashchange", syncHash);
+  }, []);
   return (
     <Shell>
       <PageHero
@@ -28,7 +41,7 @@ function FaqPage() {
           {FAQ.map((item, index) => {
             const isOpen = open === index;
             return (
-              <div key={item.q} className="faq-row bg-surface" data-open={isOpen}>
+              <div id={`faq-${index}`} key={item.q} className="faq-row scroll-mt-24 bg-surface" data-open={isOpen}>
                 <button
                   type="button"
                   className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left font-semibold"

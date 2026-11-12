@@ -44,11 +44,11 @@ function FeaturesPage() {
       <section className="border-t border-line bg-bg-raised py-14">
         <div className="shell">
           <p className="kicker">Befehle</p>
-          <h2 className="display mt-3 text-4xl">Wichtige Commands</h2>
+          <h2 id="commands" className="display mt-3 scroll-mt-24 text-4xl">Wichtige Commands</h2>
           <p className="mt-3 max-w-2xl text-muted">Nur Befehle, die auf AlpenSMP bestätigt sind. Die gleiche Liste steht im Guide, dort zum Kopieren.</p>
           <div className="mt-8 space-y-8">
             {COMMAND_GROUPS.map((group) => (
-              <section key={group.id}>
+              <section id={`commands-${group.id}`} key={group.id} className="scroll-mt-24">
                 <h3 id={group.id === "teams" ? "teams" : undefined} className={`text-2xl font-semibold ${group.id === "teams" ? "scroll-mt-24" : ""}`}>{group.title}</h3>
                 {group.note ? <p className="mt-2 max-w-2xl text-sm text-muted">{group.note}</p> : null}
                 <ul className="mt-4 divide-y divide-line overflow-hidden rounded-lg border border-line">

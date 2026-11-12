@@ -1,12 +1,13 @@
 import type { ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Menu, X } from "lucide-react";
+import { ChevronDown, Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CautionTape, useSiteNotice } from "@/components/site/live";
 import { LiveDock, LiveHero, ServerStatusBanner } from "@/components/site/broadcast";
 import { LockScreen } from "@/components/site/offline-run";
 import { MORE, NAV, SITE } from "@/lib/alpen/site";
 import { FooterReview } from "@/components/site/reviews";
+import { SiteSearch } from "@/components/site/site-search";
 
 export function Shell({ children }: { children: ReactNode }) {
   const path = useRouterState({ select: (state) => state.location.pathname });
@@ -86,7 +87,10 @@ function Header() {
   const path = useRouterState({ select: (state) => state.location.pathname });
   const frame = path.startsWith("/team") ? "shell-staff" : "shell";
   const [open, setOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const close = () => setOpen(false);
+  const primary = NAV.filter((item) => ["/server", "/guide", "/features", "/community", "/changelog"].includes(item.to));
+  const additional = [...NAV.filter((item) => !primary.some((main) => main.to === item.to)), ...MORE];
   return (
     <header className="sticky top-0 z-40 border-b border-line/80 bg-bg/90 backdrop-blur">
       <div className={`${frame} flex h-16 items-center gap-4`}>
@@ -96,8 +100,8 @@ function Header() {
             Alpen<span className="text-brand">SMP</span>
           </span>
         </Link>
-        <nav className="ml-auto hidden min-w-0 items-center gap-1 overflow-x-auto lg:flex" aria-label="Hauptnavigation">
-          {NAV.map((item) => (
+        <nav className="ml-auto hidden min-w-0 items-center gap-1 lg:flex" aria-label="Hauptnavigation">
+          {primary.map((item) => (
             <Link
               key={item.to}
               to={item.to}
@@ -107,7 +111,28 @@ function Header() {
               {item.label}
             </Link>
           ))}
+          <div className="site-more-menu">
+            <button
+              type="button"
+              className="nav-link inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm text-muted hover:text-fg"
+              aria-expanded={moreOpen}
+              aria-controls="site-more-links"
+              onClick={() => setMoreOpen((value) => !value)}
+            >
+              Weitere <ChevronDown className={`size-4 transition-transform ${moreOpen ? "rotate-180" : ""}`} />
+            </button>
+            {moreOpen ? (
+              <nav id="site-more-links" className="site-more-links" aria-label="Weitere Seiten">
+                {additional.map((item) => (
+                  <Link key={item.to} to={item.to} onClick={() => setMoreOpen(false)}>
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
+            ) : null}
+          </div>
         </nav>
+        <SiteSearch />
         <Link to="/server" className="btn-brand hidden sm:inline-flex">
           Beitreten
         </Link>
@@ -124,7 +149,7 @@ function Header() {
       {open ? (
         <nav className="border-t border-line bg-bg-raised lg:hidden" aria-label="Mobile Navigation">
           <div className={`${frame} flex flex-col py-3`}>
-            {[...NAV, ...MORE].map((item) => (
+            {primary.map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
@@ -134,6 +159,16 @@ function Header() {
                 {item.label}
               </Link>
             ))}
+            <details className="site-mobile-more">
+              <summary>Weitere Bereiche</summary>
+              <div>
+                {additional.map((item) => (
+                  <Link key={item.to} to={item.to} onClick={close}>
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            </details>
             <Link to="/server" className="btn-brand mt-2" onClick={close}>
               Beitreten
             </Link>
