@@ -37,9 +37,13 @@ export type ModItem = {
   minecraftCreated?: string;
   minecraftSource?: string;
   minecraftExpires?: string;
+  pendingMinecraftSync?: boolean;
   reasonSource?: "minecraft" | "staff";
   reasonAddedAt?: number;
+  reasonAddedBy?: string;
   by?: string;
+  unbannedBy?: string;
+  unbannedAt?: number;
   ts?: number;
   text?: string;
   archived?: boolean;

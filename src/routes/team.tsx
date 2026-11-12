@@ -582,6 +582,7 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
           {canReadMinecraft ? (
           <MinecraftBanList
             canSync={canSyncMinecraft}
+            actor={user.username}
             visible={safeTab === "moderation"}
             onPlayersChange={setMinecraftPlayers}
             onBansChange={setMinecraftBans}
@@ -703,13 +704,24 @@ async function syncMinecraftBans(bans: MinecraftBan[]) {
 
   for (const ban of bans) {
     const key = minecraftBanKey(ban);
-    const existing = records.get(key);
+    const pendingRecord = Object.entries(rows).find(([, item]) =>
+      item.pendingMinecraftSync && item.name?.toLocaleLowerCase() === ban.name.toLocaleLowerCase(),
+    );
+    const existing = records.get(key) || (pendingRecord ? [pendingRecord[0], pendingRecord[1]] as const : undefined);
     const reason = hasBanReason(ban.reason) ? ban.reason.trim() : "";
     const { duration, endsAt } = minecraftBanDuration(ban);
 
     if (existing) {
       const [id, item] = existing;
       const patch: Partial<ModItem> = {};
+      if (item.pendingMinecraftSync) {
+        patch.minecraftBanKey = key;
+        patch.pendingMinecraftSync = false;
+        if (ban.source) patch.minecraftSource = ban.source;
+        if (ban.uuid) patch.minecraftUuid = ban.uuid;
+        if (ban.created) patch.minecraftCreated = ban.created;
+        if (ban.until) patch.minecraftExpires = ban.until;
+      }
       if (item.duration !== duration) patch.duration = duration;
       if (item.endsAt !== endsAt) patch.endsAt = endsAt;
       if (ban.uuid && item.minecraftUuid !== ban.uuid) patch.minecraftUuid = ban.uuid;
@@ -734,6 +746,7 @@ async function syncMinecraftBans(bans: MinecraftBan[]) {
         await fbUpdate(`bans/${id}`, patch);
         updated += 1;
       }
+      records.set(key, [id, { ...item, ...patch }]);
       continue;
     }
 
@@ -781,11 +794,13 @@ async function syncMinecraftBans(bans: MinecraftBan[]) {
 
 function MinecraftBanList({
   canSync,
+  actor,
   visible,
   onPlayersChange,
   onBansChange,
 }: {
   canSync: boolean;
+  actor: string;
   visible: boolean;
   onPlayersChange: (players: string[]) => void;
   onBansChange: (bans: MinecraftBan[]) => void;
@@ -863,15 +878,33 @@ function MinecraftBanList({
     return !needle || `${ban.name} ${ban.reason} ${ban.source}`.toLocaleLowerCase().includes(needle);
   }) || [];
 
-  async function unbanPlayer(name: string) {
+  async function unbanPlayer(ban: MinecraftBan) {
     if (!canSync || unbanningName) return;
-    if (!window.confirm(`Soll ${name} wirklich in Minecraft entbannt werden?`)) return;
-    setUnbanningName(name);
+    if (!window.confirm(`Soll ${ban.name} wirklich in Minecraft entbannt werden?`)) return;
+    setUnbanningName(ban.name);
     setUnbanError("");
     setUnbanMessage("");
     try {
-      await executeMinecraftUnban({ name });
-      setUnbanMessage(`${name} wurde in Minecraft entbannt.`);
+      await executeMinecraftUnban({ name: ban.name });
+      try {
+        const rows = await fbGet<Record<string, ModItem>>("bans") || {};
+        const existing = Object.entries(rows).find(([, item]) => item.minecraftBanKey === minecraftBanKey(ban));
+        if (existing) {
+          const unbannedAt = Date.now();
+          await fbUpdate(`bans/${existing[0]}`, {
+            archived: true,
+            archivedBy: actor,
+            archivedAt: unbannedAt,
+            archiveReason: "In Minecraft entbannt",
+            unbannedBy: actor,
+            unbannedAt,
+            updatedAt: unbannedAt,
+          });
+        }
+      } catch (error) {
+        throw new Error(`Minecraft-Entbann ausgeführt, aber der Website-Eintrag konnte nicht aktualisiert werden: ${error instanceof Error ? error.message : "Speichern fehlgeschlagen"}`);
+      }
+      setUnbanMessage(`${ban.name} wurde in Minecraft entbannt und von ${actor} protokolliert.`);
     } catch (failure) {
       setUnbanError(failure instanceof Error ? failure.message : "Minecraft-Entbannen fehlgeschlagen.");
     } finally {
@@ -931,7 +964,7 @@ function MinecraftBanList({
                     type="button"
                     className="btn-ghost mt-2 px-3 py-1 text-xs"
                     disabled={unbanningName !== null}
-                    onClick={() => void unbanPlayer(ban.name)}
+                    onClick={() => void unbanPlayer(ban)}
                   >
                     {unbanningName === ban.name ? "Entbanne…" : "In Minecraft entbannen"}
                   </button>

@@ -5,6 +5,7 @@ import { suggestMinecraftPlayers } from "@/lib/alpen/minecraft";
 import {
   entries,
   executeMinecraftBan,
+  executeMinecraftUnban,
   fbGet,
   fbPush,
   fbSet,
@@ -217,6 +218,7 @@ function ModForm({
       if (selectedBan.until) body.minecraftExpires = selectedBan.until;
       body.reasonSource = serverReason ? "minecraft" : "staff";
       body.reasonAddedAt = serverReason ? createdAt : savedReason ? selectedRecord?.reasonAddedAt || Date.now() : Date.now();
+      body.reasonAddedBy = user.username;
       body.updatedAt = Date.now();
       try {
         const rows = await fbGet<Record<string, ModItem>>("bans") || {};
@@ -392,12 +394,27 @@ function ModForm({
                   setFormError("");
                   try {
                     const result = await executeMinecraftBan(confirmBan);
+                    try {
+                      await fbPush("bans", {
+                        name: confirmBan.name,
+                        reason: confirmBan.reason.trim(),
+                        duration: confirmBan.duration.trim(),
+                        endsAt: parseDuration(confirmBan.duration.trim()),
+                        by: user.username,
+                        ts: Date.now(),
+                        pendingMinecraftSync: true,
+                      } satisfies ModItem);
+                    } catch (error) {
+                      setConfirmBan(null);
+                      setFormError(`Minecraft-Bann ausgeführt, aber der Website-Eintrag konnte nicht gespeichert werden: ${error instanceof Error ? error.message : "Speichern fehlgeschlagen"}`);
+                      return;
+                    }
                     setConfirmBan(null);
                     setName("");
                     setReason("");
                     setDuration("");
                     void logStaff(user.username, "Minecraft-Bann", `${confirmBan.name} · ${confirmBan.duration} · ${confirmBan.reason}`);
-                    note(result.action === "tempban" ? "Tempban ausgeführt; die Website synchronisiert ihn automatisch." : "Permanent gebannt; die Website synchronisiert ihn automatisch.");
+                    note(result.action === "tempban" ? "Tempban ausgeführt und mit deinem Namen in der Bannliste erfasst." : "Permanent gebannt und mit deinem Namen in der Bannliste erfasst.");
                   } catch (error) {
                     setFormError(error instanceof Error ? error.message : "Minecraft-Bann fehlgeschlagen.");
                   } finally {
@@ -461,6 +478,7 @@ function List({
 }) {
   const [filter, setFilter] = useState<Filter>(notes ? "all" : "active");
   const [q, setQ] = useState("");
+  const [unbanningKey, setUnbanningKey] = useState<string | null>(null);
   const counts = useMemo(() => {
     let activeCount = 0;
     let expiredCount = 0;
@@ -505,16 +523,60 @@ function List({
         {rows.map(([key, item]) => {
           const perm = path === "bans" && isPermanentBan(item) && !item.archived;
           const waiting = Boolean(perm && item.pending);
+          const banName = item.name || "";
           return (
           <li key={key} className={`cmd-in rounded-md border bg-bg px-3 py-2 text-sm${perm && !waiting ? " border-red-500 bg-red-950/40" : waiting ? " border-amber-500" : freshStamp(item.ts, item.updatedAt) ? " mark-new border-line" : " border-line"}`}>
             <p className={`font-semibold${perm && !waiting ? " text-red-200" : ""}`}>{notes ? item.name || item.text : item.name}<Neu ts={item.ts} updatedAt={item.updatedAt} /></p>
             {!notes ? <p className="text-muted">{item.reason}</p> : <p className="text-muted">{item.text}</p>}
             <p className="text-xs text-faint">
-              {timed && !waiting ? formatRemaining(item.endsAt) : ""} {item.duration ? `· ${item.duration}` : ""} · {item.by} · {formatWhen(item.ts)}
+              {timed && !waiting ? formatRemaining(item.endsAt) : ""} {item.duration ? `· ${item.duration}` : ""} · Erfasst von {item.by || "unbekannt"} · {formatWhen(item.ts)}
+              {item.minecraftSource ? ` · Minecraft-Quelle: ${item.minecraftSource}` : ""}
+              {item.reasonAddedBy ? ` · Grund erfasst von ${item.reasonAddedBy}` : ""}
+              {item.unbannedBy ? ` · Entbannt von ${item.unbannedBy} am ${formatWhen(item.unbannedAt)}` : ""}
+              {item.pendingMinecraftSync ? " · Minecraft-Abgleich ausstehend" : ""}
             </p>
             {waiting ? <p className="text-xs font-semibold text-amber-300">Permanent. Wartet auf den Owner.</p> : null}
             {perm && !waiting ? <p className="text-xs font-semibold text-red-300">{permLeft(item.confirmedAt || item.ts)}</p> : null}
             <div className="mt-2 flex flex-wrap gap-2">
+              {path === "bans" && write && banName && !item.archived && !waiting && (!item.endsAt || item.endsAt > Date.now()) ? (
+                <button
+                  type="button"
+                  className="btn-ghost px-3"
+                  disabled={unbanningKey !== null}
+                  onClick={async () => {
+                    if (unbanningKey) return;
+                    if (!window.confirm(`Soll ${banName} wirklich in Minecraft entbannt werden?`)) return;
+                    setUnbanningKey(key);
+                    try {
+                      await executeMinecraftUnban({ name: banName });
+                    } catch (error) {
+                      note(error instanceof Error ? error.message : "Minecraft-Entbannen fehlgeschlagen.");
+                      setUnbanningKey(null);
+                      return;
+                    }
+                    const unbannedAt = Date.now();
+                    try {
+                      await fbUpdate(`${path}/${key}`, {
+                        archived: true,
+                        archivedBy: user.username,
+                        archivedAt: unbannedAt,
+                        archiveReason: "In Minecraft entbannt",
+                        unbannedBy: user.username,
+                        unbannedAt,
+                        updatedAt: unbannedAt,
+                      });
+                      void logStaff(user.username, "Minecraft-Entbann", banName);
+                      note(`${banName} in Minecraft entbannt und Bann archiviert.`);
+                    } catch (error) {
+                      note(`Minecraft-Entbann ausgeführt, aber der Bann-Eintrag konnte nicht aktualisiert werden: ${error instanceof Error ? error.message : "Speichern fehlgeschlagen"}`);
+                    } finally {
+                      setUnbanningKey(null);
+                    }
+                  }}
+                >
+                  {unbanningKey === key ? "Entbanne…" : "In Minecraft entbannen"}
+                </button>
+              ) : null}
               {waiting && user.role === "owner" ? (
                 <button type="button" className="btn-brand px-3" onClick={() => void fbUpdate(`${path}/${key}`, { pending: false, confirmedBy: user.username, confirmedAt: Date.now(), updatedAt: Date.now() }).then(() => note("Ban gilt jetzt")).catch((err) => note(err instanceof Error ? err.message : "Bestätigen fehlgeschlagen"))}>
                   Bestätigen

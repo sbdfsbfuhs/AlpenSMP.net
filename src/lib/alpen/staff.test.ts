@@ -1,6 +1,18 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { shouldArchivePermanentBan, type PermanentBanState } from "./moderation.ts";
+import { can } from "./roles.ts";
+
+describe("moderation role access", () => {
+  it("allows owner, admin, and helper to moderate while supporters can only read", () => {
+    for (const role of ["owner", "admin", "helper"]) {
+      assert.equal(can(role, "moderation"), true);
+      assert.equal(can(role, "moderationRead"), true);
+    }
+    assert.equal(can("supporter", "moderation"), false);
+    assert.equal(can("supporter", "moderationRead"), true);
+  });
+});
 
 describe("permanent-ban archiving", () => {
   const now = Date.parse("2026-11-10T12:00:00.000Z");
