@@ -8,8 +8,8 @@ import { TEAM_BLOCKED } from "@/lib/alpen/content";
 export const Route = createFileRoute("/prefix")({
   head: () => ({
     meta: [
-      { title: "Team-Prefix · AlpenSMP" },
-      { name: "description", content: "Team-Prefix nur nach /team create. Danach /team prefix, Farbcode und Buchstaben, zusammen 3 bis 10 Zeichen. Ohne Team geht der Befehl nicht." },
+      { title: "Team erstellen · AlpenSMP" },
+      { name: "description", content: "Erstelle dein Team mit /team create und gestalte anschliessend den farbigen Team-Prefix mit Vorschau und fertigen Befehlen." },
     ],
   }),
   component: PrefixPage,
@@ -37,13 +37,15 @@ const COLORS: { code: string; hex: string; ink: string; name: string }[] = [
 function PrefixPage() {
   const [code, setCode] = useState("c");
   const [name, setName] = useState("Alpen");
+  const [teamName, setTeamName] = useState("Alpen");
   const color = COLORS.find((item) => item.code === code) ?? COLORS[1];
   const clean = name.replace(/[^a-zA-Z]/g, "").slice(0, 8);
+  const cleanTeamName = teamName.replace(/[^a-zA-Z]/g, "").slice(0, 10);
   const token = `&${code}${clean}`;
   const command = `/team prefix ${token}`;
-  const blocked = TEAM_BLOCKED.some((tag) => tag.toLowerCase() === clean.toLowerCase());
-  const prefixOk = clean.length > 0 && token.length >= 3 && token.length <= 10 && !blocked;
-  const createOk = clean.length >= 3 && clean.length <= 10 && !blocked;
+  const blocked = TEAM_BLOCKED.some((tag) => tag.toLowerCase() === cleanTeamName.toLowerCase());
+  const prefixOk = clean.length > 0 && token.length >= 3 && token.length <= 10;
+  const createOk = cleanTeamName.length >= 3 && cleanTeamName.length <= 10 && !blocked;
   const left = COLORS.filter((_, index) => index < 8);
   const right = COLORS.filter((_, index) => index >= 8);
 
@@ -51,34 +53,40 @@ function PrefixPage() {
     <Shell>
       <PageHero
         kicker="Ingame"
-        title="Team-Prefix"
-        lede="Der Prefix gehört zum Team, nicht zum Spielernamen. Ohne Team, also ohne /team create, funktioniert /team prefix nicht."
+        title="Wie erstelle ich ein Team auf dem Server?"
+        lede="Lege zuerst dein Team an. Danach kannst du einen farbigen Prefix gestalten – mit Vorschau und fertigen Befehlen zum Kopieren."
       />
       <div className="shell py-12">
         <section className="card card-still p-5">
-          <p className="kicker">Zuerst</p>
-          <h2 className="mt-2 text-lg font-semibold">Ohne Team geht das nicht</h2>
+          <p className="kicker">Schritt 1</p>
+          <h2 className="mt-2 text-lg font-semibold">Team anlegen</h2>
           <p className="mt-2 text-sm text-muted">
-            <code className="text-brand">/team prefix</code> ändert den Prefix nur von einem Team, das es schon gibt.
-            Bist du in keinem, kommt nichts an. Dasselbe gilt für Team-Home, Warps, die Endertruhe, <code className="text-brand">/tc</code> und <code className="text-brand">/team pvp</code>.
+            Wähle einen Namen mit 3 bis 10 Buchstaben (a bis z). Keine Leerzeichen oder Farbcodes. Gesperrt sind {TEAM_BLOCKED.join(", ")}. Ein Team ist kostenlos und kann höchstens 20 Mitglieder haben.
           </p>
-          <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm text-muted">
-            <li>
-              Team anlegen: <code className="text-brand">/team create Name</code>. 3 bis 10 Buchstaben, nur a bis z, kein Farbcode, keine Leerzeichen.
-              Gesperrt: {TEAM_BLOCKED.join(", ")}. Kostenlos, höchstens 20 Mitglieder.
-            </li>
-            <li>
-              Danach der Prefix: ein Farbcode und danach nur Buchstaben. Beides zusammen 3 bis 10 Zeichen.
-              Beispiel <code className="text-brand">/team prefix &cAlpen</code>.
-            </li>
-          </ol>
-          <p className="mt-3 text-sm text-muted">
-            Im Tab steht der Prefix vor dem Namen, farbig ist nur dieser Text. Im Chat folgt danach ein Leerzeichen, ohne Klammern.
+          <label className="mt-4 block text-sm font-medium" htmlFor="team-name">Dein Teamname</label>
+          <input
+            id="team-name"
+            className="field mt-2"
+            maxLength={10}
+            placeholder="Zum Beispiel Alpen"
+            value={teamName}
+            onChange={(event) => setTeamName(event.target.value.replace(/[^a-zA-Z]/g, "").slice(0, 10))}
+          />
+          <p className={`mt-2 text-sm ${!createOk ? "text-brand" : "text-muted"}`}>
+            {cleanTeamName.length}/10 Buchstaben
+            {cleanTeamName.length < 3 ? " · mindestens 3 Buchstaben" : ""}
+            {blocked ? " · dieser Teamname ist gesperrt" : ""}
           </p>
+          {createOk ? (
+            <div className="mt-3">
+              <CopyIp value={`/team create ${cleanTeamName}`} label="Team anlegen kopieren" />
+            </div>
+          ) : null}
         </section>
         <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_0.9fr]">
         <section className="card card-still p-5">
-          <h2 className="text-lg font-semibold">1. Farbe wählen</h2>
+          <p className="kicker">Schritt 2</p>
+          <h2 className="mt-2 text-lg font-semibold">Farbe für deinen Prefix wählen</h2>
           <p className="mt-1 text-sm text-muted">Das sind die Minecraft-Codes. Antippen, nicht abtippen.</p>
           <div className="mt-4 grid grid-cols-2 gap-3">
             {[left, right].map((column) => (
@@ -88,6 +96,7 @@ function PrefixPage() {
                     key={item.code}
                     type="button"
                     className="w-full rounded-full border-2 px-4 py-3 text-center text-sm font-bold"
+                    aria-pressed={item.code === code}
                     style={{
                       background: item.hex,
                       color: item.ink,
@@ -105,9 +114,12 @@ function PrefixPage() {
         </section>
         <section className="space-y-4">
           <article className="card card-still p-5">
-            <h2 className="text-lg font-semibold">2. Team-Prefix</h2>
+            <p className="kicker">Schritt 3</p>
+            <h2 className="mt-2 text-lg font-semibold">Prefix gestalten</h2>
             <p className="mt-1 text-sm text-muted">Nicht der Spielername. Ein Farbcode am Anfang, danach nur Buchstaben. Zusammen 3 bis 10 Zeichen.</p>
+            <label className="mt-3 block text-sm font-medium" htmlFor="team-prefix">Prefix-Text</label>
             <input
+              id="team-prefix"
               className="field mt-3"
               maxLength={8}
               placeholder="Zum Beispiel Alpen"
@@ -117,18 +129,11 @@ function PrefixPage() {
             <p className={`mt-2 text-sm ${!prefixOk ? "text-brand" : "text-muted"}`}>
               <code>{token || `&${code}`}</code> · {token.length}/10
               {clean.length === 0 ? " · mindestens ein Buchstabe" : ""}
-              {blocked ? " · dieser Name ist gesperrt" : ""}
             </p>
-            {createOk ? (
-              <p className="mt-2 text-sm text-muted">
-                Team dazu, falls du noch keins hast: <code className="text-brand">/team create {clean}</code>
-              </p>
-            ) : (
-              <p className="mt-2 text-sm text-muted">Für /team create brauchst du 3 bis 10 Buchstaben. Der Prefix darf mit Farbcode kürzer wirken, der Teamname nicht.</p>
-            )}
+            <p className="mt-2 text-sm text-muted">Der Prefix gehört zum Team und wird vor dem Spielernamen angezeigt. Farbcode und Buchstaben dürfen zusammen höchstens 10 Zeichen haben.</p>
           </article>
           <article className="card card-still p-5">
-            <h2 className="text-lg font-semibold">3. So siehst du den Team-Prefix im Tab</h2>
+            <h2 className="text-lg font-semibold">Vorschau im Tab</h2>
             <div className="mc-tab" aria-label="Vorschau der Tab-Liste">
               <p className="dim">Steve</p>
               <p>
@@ -139,21 +144,16 @@ function PrefixPage() {
             </div>
             <p className="mt-4 text-sm text-muted">Farbig ist nur der Team-Prefix. Der Spielername dahinter bleibt weiss und zählt nicht zu den 10 Zeichen.</p>
             <div className="mt-3">
-              <CopyIp value={prefixOk ? command : "/team prefix &cAlpen"} label="Prefix kopieren" />
+              {prefixOk ? <CopyIp value={command} label="Prefix kopieren" /> : <p className="text-sm text-brand">Gib mindestens einen Buchstaben für den Prefix ein.</p>}
             </div>
-            {createOk ? (
-              <div className="mt-3">
-                <CopyIp value={`/team create ${clean}`} label="Team anlegen kopieren" />
-              </div>
-            ) : null}
             <p className="mt-3 text-sm text-muted">
-              Beispiel: <code className="text-brand">/team prefix &cAlpen</code> · das sind 7 von 10 Zeichen. Ohne vorheriges <code className="text-brand">/team create</code> setzt der Befehl nichts.
+              Beispiel: <code className="text-brand">/team prefix &cAlpen</code> · 7 von 10 Zeichen. Der Befehl funktioniert erst, wenn du dein Team angelegt hast.
             </p>
           </article>
         </section>
         </div>
       </div>
-      <SiteMascot home="prefix" bias="look" line="Erst /team create. Sonst geht der Prefix nicht." />
+      <SiteMascot home="prefix" bias="look" line="Wähle erst deinen Teamnamen. Danach gestalten wir den Prefix zusammen." />
     </Shell>
   );
 }

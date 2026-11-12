@@ -61,14 +61,12 @@ function ServerPage() {
             </div>
           </article>
           <article className="card p-6">
-            <h2 className="text-xl font-semibold">Team-Prefix</h2>
+            <h2 className="text-xl font-semibold">Team erstellen</h2>
             <p className="mt-3 text-muted">
-              Zuerst ein Team mit <code className="text-brand">/team create Name</code>, 3 bis 10 Buchstaben. Ohne Team funktioniert <code className="text-brand">/team prefix</code> nicht.
-              Danach Farbcode und Teamname direkt hintereinander, zusammen höchstens 10 Zeichen, ohne Leerzeichen. Nicht der Spielername.
-              Im Tab steht der Prefix vor dem Namen, der Text selbst ist farbig. Beispiel: <code className="text-brand">/team prefix &cAlpen</code>
+              Lege zuerst dein Team an. Danach kannst du eine Farbe und einen Prefix wählen. Die Anleitung führt dich Schritt für Schritt durch beides.
             </p>
             <Link to="/prefix" className="btn-brand mt-5">
-              Farben und Befehl
+              Team erstellen
             </Link>
           </article>
           <article className="card p-6">

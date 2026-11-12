@@ -27,7 +27,7 @@ export const NAV = [
   { to: "/", label: "Start" },
   { to: "/server", label: "Server" },
   { to: "/features", label: "Features" },
-  { to: "/prefix", label: "Team-Prefix" },
+  { to: "/prefix", label: "Team erstellen" },
   { to: "/regeln", label: "Regeln" },
   { to: "/team", label: "Staff" },
   { to: "/karte", label: "Karte" },

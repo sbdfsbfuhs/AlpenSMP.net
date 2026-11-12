@@ -376,12 +376,13 @@ export function PlayerChart() {
           <h3 className="text-base font-semibold">Spieler online – Verlauf</h3>
           <p className="text-sm text-muted">Nur der gewählte Zeitraum. Älter als 7 Tage wird gelöscht.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2" role="group" aria-label="Zeitraum auswählen">
           {(["1h", "5h", "24h", "7d"] as const).map((key) => (
             <button
               key={key}
               type="button"
-              className={key === range ? "btn-brand px-3" : "btn-ghost px-3"}
+              className="player-chart-range"
+              aria-pressed={key === range}
               onClick={() => setRange(key)}
             >
               {key === "1h" ? "1 Std" : key === "5h" ? "5 Std" : key === "24h" ? "24 Std" : "7 Tage"}

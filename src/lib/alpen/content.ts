@@ -224,7 +224,7 @@ export const FEATURES: Feature[] = [
     summary: "Gründe ein Team, teile Wege und spiele gemeinsam.",
     body: [
       "Erstelle ein Team, lade andere ein und nutze Team-Funktionen wie gemeinsamen Chat und eigene Ziele.",
-      "Java- und Bedrock-Spieler können gemeinsam in einem Team spielen. Die Befehlsübersicht erklärt Einrichtung, Prefix und weitere Team-Funktionen.",
+      "Java- und Bedrock-Spieler können gemeinsam in einem Team spielen. Eine Schritt-für-Schritt-Anleitung hilft dir beim Erstellen und beim Einrichten des Prefix.",
     ],
   },
   {
@@ -240,11 +240,10 @@ export const FEATURES: Feature[] = [
   {
     id: "back",
     category: "Komfort",
-    title: "Zurück zum letzten Ort",
-    summary: "Kehre nach einem Tod oder einer Teleportation zurück.",
+    title: "Zurück zum letzten Todesort",
+    summary: "Kehre mit /back zu deinem letzten Todespunkt zurück.",
     body: [
-      "Der Zurück-Befehl kann dich an deinen letzten gespeicherten Ort zurückbringen, zum Beispiel nach einem Tod.",
-      "Welche Rückkehrpunkte verfügbar sind, hängt von der Situation ab. Die Befehlsübersicht zeigt den bestätigten Umfang.",
+      "Der Befehl /back bringt dich zu deinem letzten Todespunkt zurück. Er ist nicht dafür gedacht, zu einem früheren Teleportationsort zurückzukehren.",
     ],
   },
   {
@@ -267,36 +266,6 @@ export const FEATURES: Feature[] = [
     body: [
       "Wenn ihr euch messen möchtet, könnt ihr Duelle austragen und dafür vorgesehene Arenen nutzen.",
       "Das normale Survival bleibt davon getrennt: Kämpfe gehören in die dafür vorgesehenen Bereiche und Situationen.",
-    ],
-  },
-  {
-    id: "building",
-    category: "Komfort",
-    title: "Bauen mit kleinen Extras",
-    summary: "Praktische Bau- und Alltagsfunktionen, die Handgriffe sparen.",
-    body: [
-      "Neben klassischem Bauen gibt es praktische Extras wie Sitzen, Gegenstände präsentieren und komfortablere Handgriffe beim Sammeln und Bauen.",
-      "Die Funktionen sollen den Alltag erleichtern, ohne dir Fortschritt oder Ressourcen einfach zu schenken.",
-    ],
-  },
-  {
-    id: "shops",
-    category: "Komfort",
-    title: "Handel & Shops",
-    summary: "Tausche, handle und entdecke Angebote in der Welt.",
-    body: [
-      "Für den Handel gibt es Shops und weitere Möglichkeiten, mit anderen Spielern oder der Spielwelt zu tauschen.",
-      "Achte bei Spielershops auf die angebotenen Waren und vereinbare grössere Tauschgeschäfte klar mit der anderen Person.",
-    ],
-  },
-  {
-    id: "activity",
-    category: "Gemeinsam spielen",
-    title: "Spielzeit & Aktivität",
-    summary: "Behalte deine Zeit und wichtige Serverinfos im Blick.",
-    body: [
-      "Spielzeit- und Weltstatistiken geben dir einen Überblick über deine Aktivität und das Geschehen auf AlpenSMP.",
-      "Wenn du kurz weg musst, kannst du deinen Status als AFK kennzeichnen. Für Neuigkeiten und Hilfe ist das Team über die Community erreichbar.",
     ],
   },
 ];
@@ -386,7 +355,7 @@ export const COMMAND_GROUPS: CommandGroup[] = [
         cmd: "/team prefix &cAlpen",
         text: "Setzt Farbe und Kürzel. Geht erst nach /team create.",
         href: "/prefix",
-        hrefLabel: "Prefix bauen",
+        hrefLabel: "Team erstellen",
       },
       { cmd: "/team ally", text: "Verbündet ein Team oder nimmt es weg." },
       { cmd: "/team enemy", text: "Markiert ein Feind-Team oder nimmt es weg." },

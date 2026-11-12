@@ -1,16 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
-  Activity,
   ArrowDown,
+  ArrowRight,
   Compass,
   Home,
-  Hammer,
   Map,
   Mic,
   PackageCheck,
   RotateCcw,
   Shield,
-  ShoppingBag,
   Trophy,
   Users,
   Waypoints,
@@ -30,7 +28,7 @@ export const Route = createFileRoute("/features")({
       {
         name: "description",
         content:
-          "Gemeinsam Survival spielen: Claims, Java-Bedrock-Crossplay, Spieler-Teams, Duelle, Homes, Shops, Voice Chat und praktische Komfortfunktionen.",
+          "Gemeinsam Survival spielen: Claims, Java-Bedrock-Crossplay, Spieler-Teams, Duelle, Homes und Voice Chat.",
       },
     ],
   }),
@@ -49,9 +47,6 @@ function FeaturesPage() {
     back: RotateCcw,
     crossplay: Map,
     duels: Trophy,
-    building: Hammer,
-    shops: ShoppingBag,
-    activity: Activity,
   };
   const sections = [
     {
@@ -64,7 +59,7 @@ function FeaturesPage() {
     },
     {
       title: "Komfort",
-      description: "Nützliche Extras für Wege, Bauen und den Alltag.",
+      description: "Finde wichtige Orte wieder und triff andere Spieler.",
     },
   ] as const;
   return (
@@ -135,6 +130,11 @@ function FeaturesPage() {
                             ))}
                           </div>
                         </details>
+                        {feature.id === "teams" ? (
+                          <Link to="/prefix" className="btn-brand mt-4">
+                            Team erstellen <ArrowRight className="size-4" />
+                          </Link>
+                        ) : null}
                       </article>
                     );
                   })}
@@ -155,7 +155,7 @@ function FeaturesPage() {
               Mods & Voice
             </Link>
             <Link to="/prefix" className="btn-ghost">
-              Team-Prefix setzen
+              Team erstellen & Prefix gestalten
             </Link>
           </div>
           <p className="mt-4 max-w-2xl text-sm text-muted">

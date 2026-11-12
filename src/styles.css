@@ -2334,6 +2334,37 @@
   width: 100%;
 }
 
+.player-chart-range {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-line);
+  border-radius: 0.6rem;
+  padding-inline: 0.75rem;
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.player-chart-range:hover {
+  border-color: color-mix(in oklab, var(--color-brand) 55%, var(--color-line));
+  color: var(--color-fg);
+}
+
+.player-chart-range[aria-pressed="true"] {
+  border-color: var(--color-brand);
+  background: color-mix(in oklab, var(--color-brand) 14%, var(--color-surface));
+  color: var(--color-fg);
+}
+
+.player-chart-range:focus-visible {
+  outline: 2px solid var(--color-ice);
+  outline-offset: 3px;
+}
+
 .home-stats-disclosure > summary {
   display: inline-flex;
   min-height: 2.75rem;
@@ -2386,7 +2417,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .home-discovery-card {
+  .home-discovery-card,
+  .player-chart-range {
     transition: none;
   }
 }
