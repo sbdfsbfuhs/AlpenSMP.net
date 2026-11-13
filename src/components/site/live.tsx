@@ -350,8 +350,7 @@ export function PlayerChart() {
     let stop = false;
     const load = () => {
       if (document.hidden) return;
-      const cap = range === "7d" ? 700 : range === "24h" ? 300 : range === "5h" ? 80 : 24;
-      fetchHistory(cap)
+      fetchHistory(700)
         .then((rows) => {
           if (!stop) setPoints(rows);
         })
@@ -366,7 +365,7 @@ export function PlayerChart() {
       window.clearInterval(id);
       document.removeEventListener("visibilitychange", load);
     };
-  }, [range]);
+  }, []);
 
   const rows = useMemo(() => {
     const span = range === "1h" ? 3600000 : range === "5h" ? 18000000 : range === "24h" ? 86400000 : 7 * 86400000;
@@ -471,7 +470,13 @@ export function PlayerChart() {
                 <LineChart data={chartRows}>
                   <CartesianGrid stroke="var(--color-line)" vertical={false} />
                   <XAxis dataKey="label" hide />
-                  <YAxis allowDecimals={false} width={28} stroke="var(--color-faint)" fontSize={12} />
+                  <YAxis
+                    allowDecimals={false}
+                    domain={[0, status && status.max > 0 ? status.max : 30]}
+                    width={28}
+                    stroke="var(--color-faint)"
+                    fontSize={12}
+                  />
                   <Tooltip
                     contentStyle={{
                       background: "var(--color-surface)",
