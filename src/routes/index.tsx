@@ -337,15 +337,15 @@ function Home() {
                 <Map className="size-4" />
                 <h4 id="home-map-title" className="font-semibold text-fg">Live-Karte</h4>
               </div>
-              <span className="rounded-full border border-ember/30 bg-ember/10 px-2.5 py-1 text-xs font-medium text-fg">
-                Vorübergehend geschlossen
+              <span className="rounded-full border border-brand/30 bg-brand/10 px-2.5 py-1 text-xs font-medium text-brand">
+                Jetzt verfügbar
               </span>
             </div>
             <p className="mt-2 text-sm text-muted">
-              Die Karte der Hauptwelt ist pausiert, weil der verfügbare Speicher voll ist.
+              Erkunde die Hauptworld live in der eingebetteten BlueMap.
             </p>
             <Link to="/karte" className="btn-ghost mt-3">
-              Kartenstatus ansehen <ArrowRight className="size-4" />
+              Live-Karte ansehen <ArrowRight className="size-4" />
             </Link>
           </section>
 

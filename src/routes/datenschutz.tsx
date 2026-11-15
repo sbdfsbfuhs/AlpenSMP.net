@@ -96,7 +96,7 @@ function PrivacyPage() {
       <section className="space-y-3">
         <h2 className="text-xl font-semibold text-fg">Weitere Dienste und Datenübermittlungen</h2>
         <p>
-          Die serverseitige Live-Statistik fragt mcsrvstat.us, die Discord-API und Firebase ab. Diese Dienste erhalten dabei die Serveradresse oder die für die Abfrage nötigen Statistikdaten, nicht deine Browser-IP. Discord, TikTok, Modrinth und YouTube öffnen sich erst, wenn du den jeweiligen Link anklickst. YouTube-Videos und Vorschaubilder werden nicht eingebettet.
+          Die BlueMap wird auf der Seite /karte über map.alpensmp.net eingebettet. Beim Aufruf stellt dein Browser eine direkte HTTPS-Verbindung zum vom Betreiber betriebenen Kartenserver her; dabei werden technische Verbindungsdaten wie IP-Adresse, Zeitpunkt und angeforderte Karteninhalte verarbeitet. Die serverseitige Live-Statistik fragt mcsrvstat.us, die Discord-API und Firebase ab. Diese Dienste erhalten dabei die Serveradresse oder die für die Abfrage nötigen Statistikdaten, nicht deine Browser-IP. Discord, TikTok, Modrinth und YouTube öffnen sich erst, wenn du den jeweiligen Link anklickst. YouTube-Videos und Vorschaubilder werden nicht eingebettet.
         </p>
         <p>
           Vercel, Oracle Cloud, Google, Discord und Groq können Daten je nach Dienst außerhalb der Schweiz oder des EWR verarbeiten. Für Übermittlungen gelten die jeweils anwendbaren Angemessenheitsbeschlüsse und vertraglichen Schutzmaßnahmen der Anbieter. Die Anbieterinformationen sind oben verlinkt; Vercel stellt seine{" "}
