@@ -116,8 +116,8 @@ function Home() {
       <section className="hero-sky home-hero relative overflow-hidden border-b border-line" data-sky={sky || undefined}>
         <div ref={hero} className="hero-parallax">
           <img
-            src="/media/ridge.jpg"
-            alt="Abendlicht über einem Alpenkamm und Fichtenwald"
+            src="/media/home-hero-sunset.jpg"
+            alt="Sonnenuntergang über einem verschneiten Alpenberg mit Spiegelung im See"
             className="hero-drift tone-red absolute inset-0 h-full w-full object-cover opacity-75"
             fetchPriority="high"
             decoding="async"

@@ -668,7 +668,7 @@ export const GUIDE: GuideChapter[] = [
     description: "Java und Bedrock, jeweils zum Kopieren.",
     keywords: "spawn home tpa back rtp msg admin java bedrock team prefix",
     blocks: [
-      "Claims, Homes, Teleport, Nachrichten, Teams, Voice und Sitz-Befehle stehen unten nach Gruppen. Kopieren geht pro Befehl.",
+      "Öffne oben den Bereich „Spieler-Befehle“. Dort kannst du Befehle nach Name oder Thema suchen und direkt kopieren.",
       "Claimen: goldene Schaufel, Rechtsklick, andere Ecke, nochmal Rechtsklick.",
       "Bedrock: dieselben Befehle, Chat-Taste, Namen mit Punkt.",
     ],

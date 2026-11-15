@@ -42,7 +42,7 @@ const SEARCH_ENTRIES: SearchEntry[] = [
     title: chapter.title,
     type: "Guide",
     description: `${chapter.description} ${chapter.keywords} ${chapter.blocks.join(" ")}`,
-    href: `/guide#${chapter.id}`,
+    href: chapter.track === "mc" ? "/guide#grundlagen" : `/guide#${chapter.id}`,
   })),
   ...RULES.map((rule) => ({
     title: `Regel ${rule.id}: ${rule.title}`,
