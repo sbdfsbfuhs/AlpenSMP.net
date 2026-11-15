@@ -1,4 +1,4 @@
-import { SITE } from "@/lib/alpen/site";
+import { createServerFn } from "@tanstack/react-start";
 import { loadPath, relayDetail } from "@/lib/alpen/security";
 import { createTicketCode, normalizeTicketCode, ticketAccessIsValid, TICKET_ACCESS_TTL_MS } from "@/lib/alpen/ticket-access";
 
@@ -17,113 +17,79 @@ export type LiveReview = { name: string; rating: number; text: string; ts: numbe
 
 export type Shot = { name: string; caption: string; imageUrl: string; ts: number };
 
-export async function fetchStatus(): Promise<ServerStatus> {
-  const res = await fetch(`https://api.mcsrvstat.us/3/${SITE.ip}`);
-  if (!res.ok) throw new Error("Status nicht erreichbar");
-  const data = (await res.json()) as {
-    online?: boolean;
-    players?: { online?: number; max?: number };
-    version?: string;
-    software?: string;
-    motd?: { clean?: string[] };
-  };
-  return {
-    online: Boolean(data.online),
-    players: data.players?.online ?? 0,
-    max: data.players?.max ?? 0,
-    version: data.version || SITE.version,
-    software: data.software || "Paper",
-    motd: data.motd?.clean?.filter(Boolean) ?? [],
-  };
+const fetchStatusServer = createServerFn({ method: "POST" }).handler(async () => {
+  const server = await import("./live.remote.server.ts");
+  server.assertLiveRequest();
+  return server.fetchStatus();
+});
+
+export function fetchStatus(): Promise<ServerStatus> {
+  return fetchStatusServer();
 }
 
-export async function fetchDiscordCount(): Promise<number | null> {
-  const res = await fetch(`https://discord.com/api/v9/invites/${SITE.discordCode}?with_counts=true`);
-  if (!res.ok) return null;
-  const data = (await res.json()) as { approximate_member_count?: number };
-  return typeof data.approximate_member_count === "number" ? data.approximate_member_count : null;
+const fetchDiscordCountServer = createServerFn({ method: "POST" }).handler(async () => {
+  const server = await import("./live.remote.server.ts");
+  server.assertLiveRequest();
+  return server.fetchDiscordCount();
+});
+
+export function fetchDiscordCount(): Promise<number | null> {
+  return fetchDiscordCountServer();
 }
 
-export async function fetchSiteStats(): Promise<{ total: number | null; listed: number | null }> {
-  const res = await fetch(`${SITE.fb}/site_stats.json`);
-  if (!res.ok) return { total: null, listed: null };
-  const data = (await res.json()) as { total_players_ever?: number; current_players?: number } | null;
-  return {
-    total: typeof data?.total_players_ever === "number" ? data.total_players_ever : null,
-    listed: typeof data?.current_players === "number" ? data.current_players : null,
-  };
+const fetchSiteStatsServer = createServerFn({ method: "POST" }).handler(async () => {
+  const server = await import("./live.remote.server.ts");
+  server.assertLiveRequest();
+  return server.fetchSiteStats();
+});
+
+export function fetchSiteStats(): Promise<{ total: number | null; listed: number | null }> {
+  return fetchSiteStatsServer();
 }
 
-type HistoryRow = { t?: number; n?: number; by?: string; total_players_ever?: number };
-
-function isPlayerSample(row: HistoryRow | null | undefined): row is HistoryRow {
-  return Boolean(row) && !row?.by && typeof row?.total_players_ever !== "number" && Number(row?.t) > 0;
-}
-
-export async function fetchHistory(limit = 120): Promise<HistoryPoint[]> {
-  const cap = Math.max(20, Math.min(700, limit));
-  const res = await fetch(`${SITE.fb}/site_stats_history.json?orderBy="$key"&limitToLast=${cap}`);
-  if (!res.ok) return [];
-  const data = (await res.json()) as Record<string, HistoryRow> | null;
-  if (!data) return [];
-  return Object.values(data)
-    .filter(isPlayerSample)
-    .map((row) => ({ t: Number(row.t) || 0, n: Number(row.n) || 0 }))
-    .sort((a, b) => a.t - b.t);
-}
-
-const SAMPLE_GAP = 15 * 60 * 1000;
-const WEEK = 7 * 24 * 60 * 60 * 1000;
-
-export async function recordPlayerSample(players: number) {
-  if (!Number.isFinite(players) || players < 0 || players > 1000) return;
-  const key = "alpensmp_sample_at";
-  const last = Number(localStorage.getItem(key) || 0);
-  if (Date.now() - last < SAMPLE_GAP) return;
-  const peek = await fetch(`${SITE.fb}/site_stats_history.json?orderBy="$key"&limitToLast=30`);
-  if (peek.ok) {
-    const latest = (await peek.json()) as Record<string, HistoryRow> | null;
-    const row = latest
-      ? Object.values(latest)
-          .filter(isPlayerSample)
-          .sort((a, b) => Number(a.t) - Number(b.t))
-          .at(-1)
-      : null;
-    if (row?.t && Date.now() - row.t < SAMPLE_GAP) {
-      localStorage.setItem(key, String(row.t));
-      return;
-    }
-  }
-  const res = await fetch(`${SITE.fb}/site_stats_history.json`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ t: Date.now(), n: players, online_count: players }),
+const fetchHistoryServer = createServerFn({ method: "POST" })
+  .validator((limit: unknown) =>
+    typeof limit === "number" && Number.isFinite(limit)
+      ? Math.max(20, Math.min(700, limit))
+      : 120,
+  )
+  .handler(async ({ data }) => {
+    const server = await import("./live.remote.server.ts");
+    server.assertLiveRequest();
+    return server.fetchHistory(data);
   });
-  if (res.ok) localStorage.setItem(key, String(Date.now()));
-  else localStorage.setItem(key, String(Date.now() - 3 * 60 * 1000));
+
+export function fetchHistory(limit = 120): Promise<HistoryPoint[]> {
+  return fetchHistoryServer({ data: limit });
 }
 
-export async function pruneOldHistory() {
+const recordPlayerSampleServer = createServerFn({ method: "POST" }).handler(async () => {
+  const server = await import("./live.remote.server.ts");
+  server.assertLiveRequest();
+  return server.recordPlayerSample();
+});
+
+export async function recordPlayerSample(): Promise<void> {
+  if (typeof window === "undefined") return;
+  const key = "alpensmp_sample_at";
+  const last = Number(window.localStorage.getItem(key) || 0);
+  if (Date.now() - last < 15 * 60 * 1000) return;
+  const sampledAt = await recordPlayerSampleServer();
+  window.localStorage.setItem(key, String(sampledAt || Date.now() - 3 * 60 * 1000));
+}
+
+const pruneOldHistoryServer = createServerFn({ method: "POST" }).handler(async () => {
+  const server = await import("./live.remote.server.ts");
+  server.assertLiveRequest();
+  return server.pruneOldHistory();
+});
+
+export async function pruneOldHistory(): Promise<void> {
+  if (typeof window === "undefined") return;
   const key = "alpensmp_prune_at";
-  if (Date.now() - Number(localStorage.getItem(key) || 0) < 12 * 60 * 60 * 1000) return;
-  localStorage.setItem(key, String(Date.now()));
-  const cutoff = Date.now() - WEEK;
-  for (let batch = 0; batch < 2; batch += 1) {
-    const res = await fetch(`${SITE.fb}/site_stats_history.json?orderBy="$key"&limitToFirst=40`);
-    if (!res.ok) return;
-    const data = (await res.json()) as Record<string, { t?: number }> | null;
-    if (!data) return;
-    const old = Object.entries(data).filter(([, row]) => Number(row?.t) > 0 && Number(row.t) < cutoff);
-    if (!old.length) return;
-    const removed = await Promise.all(
-      old.map(async ([id]) => {
-        const gone = await fetch(`${SITE.fb}/site_stats_history/${id}.json`, { method: "DELETE" });
-        return gone.ok;
-      }),
-    );
-    if (!removed.some(Boolean)) return;
-    if (old.length < 40) return;
-  }
+  if (Date.now() - Number(window.localStorage.getItem(key) || 0) < 12 * 60 * 60 * 1000) return;
+  window.localStorage.setItem(key, String(Date.now()));
+  await pruneOldHistoryServer();
 }
 
 export async function fetchReviews(): Promise<LiveReview[]> {

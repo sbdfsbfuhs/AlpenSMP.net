@@ -6,8 +6,8 @@
  * in ../migrations to DATABASE_URL. Each file is applied in one transaction and
  * recorded in a `_migrations` table, so it runs once and is safe to re-run.
  *
- * The read is non-recursive, so the opt-in auth schema under migrations/auth/
- * is not applied to an app that never asked for sign-in.
+ * The opt-in auth schema under migrations/auth/ is included only when auth is
+ * enabled.
  *
  * No DATABASE_URL (local / preview builds) -> skip; the PGLite fallback applies
  * the same files at startup instead (see src/lib/db.ts).
@@ -16,7 +16,11 @@ import { readdir, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import pg from "pg";
-import { pendingMigrations } from "./migration-plan.mjs";
+import {
+  authMigrationsEnabled,
+  isMigrationFile,
+  pendingMigrations,
+} from "./migration-plan.mjs";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
@@ -28,13 +32,22 @@ if (!databaseUrl) {
 
 const migrationsDir = join(dirname(fileURLToPath(import.meta.url)), "..", "migrations");
 
-async function main() {
-  let entries;
+async function readDirectoryOrEmpty(path) {
   try {
-    entries = await readdir(migrationsDir);
-  } catch {
-    console.log("[migrate] no migrations/ directory — nothing to do.");
-    return;
+    return await readdir(path);
+  } catch (err) {
+    if (err?.code === "ENOENT") return [];
+    throw err;
+  }
+}
+
+async function main() {
+  const entries = (await readDirectoryOrEmpty(migrationsDir)).filter(isMigrationFile);
+  if (authMigrationsEnabled()) {
+    const authEntries = (await readDirectoryOrEmpty(join(migrationsDir, "auth")))
+      .filter(isMigrationFile)
+      .map((name) => join("auth", name));
+    entries.push(...authEntries);
   }
   // An app with no schema of its own must not pay for a database connection.
   if (pendingMigrations(entries, []).length === 0) {
@@ -53,8 +66,8 @@ async function main() {
     );
 
     let count = 0;
-    for (const { name } of pendingMigrations(entries, applied)) {
-      const text = await readFile(join(migrationsDir, name), "utf8");
+    for (const { name, path } of pendingMigrations(entries, applied)) {
+      const text = await readFile(join(migrationsDir, path), "utf8");
       try {
         await client.query("BEGIN");
         // pg's simple-query protocol runs a whole multi-statement file at once.

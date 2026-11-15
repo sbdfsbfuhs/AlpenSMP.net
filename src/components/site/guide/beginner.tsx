@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Play } from "lucide-react";
 
 type Lesson = {
   id: string;
@@ -163,15 +164,17 @@ export function BeginnerGuide() {
                     className="grid overflow-hidden rounded-md border border-line no-underline sm:grid-cols-[220px_1fr]"
                     href={watchUrl(lesson)}
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
+                    aria-label={`${lesson.videoTitle} auf YouTube ansehen`}
                   >
-                    <img
-                      src={`https://img.youtube.com/vi/${lesson.videoId}/hqdefault.jpg`}
-                      alt=""
-                      className="h-36 w-full object-cover sm:h-full"
-                      loading="lazy"
-                      decoding="async"
-                    />
+                    <span
+                      aria-hidden="true"
+                      className="flex h-36 items-center justify-center bg-surface sm:h-full"
+                    >
+                      <span className="grid h-12 w-12 place-items-center rounded-full border border-line text-brand">
+                        <Play className="h-5 w-5 fill-current" />
+                      </span>
+                    </span>
                     <span className="flex flex-col justify-center gap-1 p-4">
                       <span className="text-xs text-faint">{lesson.channel}</span>
                       <span className="font-semibold text-fg">{lesson.videoTitle}</span>

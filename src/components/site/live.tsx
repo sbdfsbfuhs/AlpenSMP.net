@@ -17,7 +17,7 @@ export function useServerStatus() {
           if (!stop) {
             setStatus(data);
             setError(false);
-            if (data.online) void recordPlayerSample(data.players).catch(() => {});
+            if (data.online) void recordPlayerSample().catch(() => {});
           }
         })
         .catch(() => {

@@ -11,6 +11,7 @@ import {
   parseAppEnv,
   projectRoot,
   readAppEnv,
+  resolveCommand,
 } from "./with-app-env.mjs";
 
 const execFileAsync = promisify(execFile);
@@ -57,6 +58,15 @@ test("an explicit process-env override wins over the file", () => {
   );
   assert.equal(merged.VITE_AUTH_ENABLED, "true");
   assert.equal(merged.PATH, "/usr/bin");
+});
+
+test("the wrapped Vite command uses Node to resolve its entrypoint", () => {
+  const resolved = resolveCommand("vite", ["build"], "C:\\workspace");
+  assert.equal(resolved.command, process.execPath);
+  assert.deepEqual(resolved.args, [
+    join("C:\\workspace", "node_modules", "vite", "bin", "vite.js"),
+    "build",
+  ]);
 });
 
 test("the template ships auth off", () => {
