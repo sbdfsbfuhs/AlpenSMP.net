@@ -26,26 +26,34 @@ function MapPage() {
         title={SITE.mapOpen ? "Die Hauptworld, von oben." : "Die Karte macht gerade Pause."}
         lede={
           SITE.mapOpen
-            ? "BlueMap der gemeinsamen Overworld. Die Karte öffnet sich in einem eigenen Tab, damit sie flüssig bleibt."
+            ? "Erkunde die BlueMap der gemeinsamen Overworld direkt hier – zoome hinein und navigiere durch die Welt."
             : "Der Speicher auf dem Kartenserver ist voll. Die Welt selbst läuft weiter – nur die BlueMap ist bis auf Weiteres zu."
         }
       />
       <div className="shell py-12">
-        <div className="map-hold relative overflow-hidden rounded-lg border border-line">
-          <img src="/media/ridge.jpg" alt="" aria-hidden="true" className="hero-drift tone-red absolute inset-0 h-full w-full object-cover opacity-60" />
-          <div className="red-wash absolute inset-0" />
-          <div className="map-grid absolute inset-0" aria-hidden="true" />
-          <div className="relative flex min-h-[28rem] items-center justify-center px-6 py-16">
-            {SITE.mapOpen ? (
-              <div className="card max-w-lg p-8 text-center">
-                <p className="kicker">Neu</p>
-                <h2 className="display mt-3 text-4xl">AlpenSMP Live-Karte</h2>
-                <p className="mt-3 text-muted">BlueMap – Hauptworld (Overworld).</p>
-                <a className="btn-brand mt-6" href={SITE.map} target="_blank" rel="noreferrer">
-                  Live-Karte öffnen
-                </a>
-              </div>
-            ) : (
+        {SITE.mapOpen ? (
+          <div className="space-y-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-muted">BlueMap – Hauptworld (Overworld).</p>
+              <a className="btn-brand" href={SITE.map} target="_blank" rel="noopener noreferrer">
+                Karte in neuem Tab öffnen
+              </a>
+            </div>
+            <iframe
+              className="block h-[84svh] min-h-[30rem] w-full rounded-lg border border-line bg-surface"
+              src={SITE.map}
+              title="BlueMap-Live-Karte der AlpenSMP-Hauptworld"
+              loading="lazy"
+              referrerPolicy="no-referrer"
+              allowFullScreen
+            />
+          </div>
+        ) : (
+          <div className="map-hold relative overflow-hidden rounded-lg border border-line">
+            <img src="/media/ridge.jpg" alt="" aria-hidden="true" className="hero-drift tone-red absolute inset-0 h-full w-full object-cover opacity-60" />
+            <div className="red-wash absolute inset-0" />
+            <div className="map-grid absolute inset-0" aria-hidden="true" />
+            <div className="relative flex min-h-[28rem] items-center justify-center px-6 py-16">
               <div className="card max-w-lg p-8 text-center">
                 <p className="inline-flex items-center gap-2 text-sm font-semibold text-ember">
                   <span className="pulse-dot off" aria-hidden="true" />
@@ -59,9 +67,9 @@ function MapPage() {
                   Spielen geht trotzdem
                 </Link>
               </div>
-            )}
+            </div>
           </div>
-        </div>
+        )}
         <SiteMascot
           home="karte"
           bias="look"
