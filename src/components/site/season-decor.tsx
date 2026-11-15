@@ -1,4 +1,5 @@
-import { useSeason } from "@/lib/alpen/seasons";
+import { useEffect, useState } from "react";
+import { fireworksOpen, useSeason } from "@/lib/alpen/seasons";
 
 export function SeasonalDecorations() {
   const season = useSeason();
@@ -21,7 +22,18 @@ function Snow({ count }: { count: number }) {
   return (
     <>
       {Array.from({ length: count }, (_, index) => (
-        <span key={index} className={`snowflake snow-${index % 5}`} />
+        <span
+          key={index}
+          className="snowflake"
+          style={{
+            ["--left" as string]: `${5 + ((index * 37) % 90)}%`,
+            ["--size" as string]: `${3 + (index % 3)}px`,
+            ["--duration" as string]: `${24 + (index % 5) * 3}s`,
+            ["--delay" as string]: `${-index * 2}s`,
+            ["--opacity" as string]: String(0.3 + (index % 4) * 0.1),
+            ["--drift" as string]: `${index % 2 === 0 ? 16 : -16}px`,
+          }}
+        />
       ))}
     </>
   );
@@ -42,7 +54,7 @@ function Christmas() {
         <polygon points="60,64 4,124 116,124" fill="#122812" />
         <rect x="50" y="124" width="20" height="16" fill="#3a241c" />
       </svg>
-      <Snow count={12} />
+      <Snow count={16} />
     </>
   );
 }
@@ -159,21 +171,66 @@ function Summer() {
 
 function Easter() {
   return (
-    <svg className="easter-eggs" viewBox="0 0 220 70">
-      <ellipse cx="30" cy="46" rx="14" ry="18" fill="#f6c6ea" />
-      <ellipse cx="78" cy="50" rx="14" ry="18" fill="#a8d5a2" />
-      <ellipse cx="126" cy="46" rx="14" ry="18" fill="#fde68a" />
-      <ellipse cx="174" cy="50" rx="14" ry="18" fill="#c4b5fd" />
+    <>
+      <svg className="easter-eggs" viewBox="0 0 250 100">
+        <path className="egg-grass" d="M4 91 Q42 78 80 91 T156 91 T246 91" />
+        <g className="easter-egg egg-one">
+          <ellipse cx="33" cy="62" rx="15" ry="22" fill="#d6b7f4" />
+          <path d="M20 59 Q33 65 46 59 M22 69 Q33 74 44 69" fill="none" stroke="#fff" strokeWidth="3" />
+          <circle cx="33" cy="51" r="3" fill="#fff" />
+        </g>
+        <g className="easter-egg egg-two">
+          <ellipse cx="91" cy="67" rx="15" ry="22" fill="#f0bd83" />
+          <path d="M78 61 Q91 55 104 61 M78 72 Q91 78 104 72" fill="none" stroke="#fff4dd" strokeWidth="3" />
+          <circle cx="91" cy="67" r="3" fill="#fff4dd" />
+        </g>
+        <g className="easter-egg egg-three">
+          <ellipse cx="151" cy="61" rx="15" ry="22" fill="#9fcaa1" />
+          <path d="M138 57 Q151 63 164 57 M140 69 Q151 74 162 69" fill="none" stroke="#f4fff0" strokeWidth="3" />
+          <circle cx="151" cy="51" r="3" fill="#f4fff0" />
+        </g>
+        <g className="easter-egg egg-four">
+          <ellipse cx="211" cy="66" rx="15" ry="22" fill="#e69dad" />
+          <path d="M198 60 Q211 54 224 60 M198 72 Q211 78 224 72" fill="none" stroke="#fff1f4" strokeWidth="3" />
+          <circle cx="211" cy="66" r="3" fill="#fff1f4" />
+        </g>
+      </svg>
+      <Butterfly className="butterfly butterfly-one" />
+      <Butterfly className="butterfly butterfly-two" />
+    </>
+  );
+}
+
+function Butterfly({ className }: { className: string }) {
+  return (
+    <svg className={className} viewBox="0 0 32 24">
+      <path className="butterfly-wing wing-left" d="M16 12C9 1 1 2 4 11c2 5 7 6 12 3Z" />
+      <path className="butterfly-wing wing-right" d="M16 12c7-11 15-10 12-1-2 5-7 6-12 3Z" />
+      <path d="M16 9v9m0-7-4-5m4 5 4-5" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.5" />
     </svg>
   );
 }
 
 function NewYear() {
+  const [fireworksActive, setFireworksActive] = useState(false);
+  useEffect(() => {
+    const update = () => setFireworksActive(fireworksOpen());
+    update();
+    const interval = window.setInterval(update, 60_000);
+    return () => window.clearInterval(interval);
+  }, []);
+
   return (
     <>
-      <span className="burst b1" />
-      <span className="burst b2" />
-      <span className="burst b3" />
+      <span className="newyear-star star-a" />
+      <span className="newyear-star star-b" />
+      {fireworksActive ? (
+        <>
+          <span className="firework firework-one" />
+          <span className="firework firework-two" />
+          <span className="firework firework-three" />
+        </>
+      ) : null}
     </>
   );
 }

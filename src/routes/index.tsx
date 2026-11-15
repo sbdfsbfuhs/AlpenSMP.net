@@ -5,6 +5,7 @@ import { DiscordLink, Shell, TikTokLink } from "@/components/site/shell";
 import { ModrinthLink } from "@/components/site/guide/mods";
 import { SiteMascot } from "@/components/site/assistant";
 import { CopyIp, MotdNotice, PlayerChart, StatStrip, StatusCard } from "@/components/site/live";
+import { SeasonalDecorations } from "@/components/site/season-decor";
 import { FEATURES, PILLARS } from "@/lib/alpen/content";
 import { SITE } from "@/lib/alpen/site";
 
@@ -61,14 +62,49 @@ function useSky() {
 
 function SeasonBadge() {
   const [label, setLabel] = useState("");
+  const [season, setSeason] = useState("");
+  const [eggFound, setEggFound] = useState(false);
   useEffect(() => {
-    const read = () => setLabel(document.documentElement.dataset.seasonLabel || "");
+    const read = () => {
+      const root = document.documentElement;
+      const nextSeason = root.dataset.season || "";
+      setLabel(root.dataset.seasonLabel || "");
+      setSeason(nextSeason);
+      if (nextSeason !== "easter") setEggFound(false);
+    };
     read();
     window.addEventListener("alpen-season", read);
     return () => window.removeEventListener("alpen-season", read);
   }, []);
   if (!label) return null;
-  return <p className="season-badge">{label}</p>;
+  return (
+    <div className="season-badge-wrap">
+      <div className="season-badge">
+        <span>{label}</span>
+        {season === "easter" ? (
+          <button
+            type="button"
+            className="season-egg-secret"
+            aria-label={
+              eggFound ? "Goldenes Osterei gefunden" : "Verstecktes goldenes Osterei entdecken"
+            }
+            aria-pressed={eggFound}
+            onClick={() => setEggFound(true)}
+          >
+            <svg viewBox="0 0 20 24" aria-hidden="true">
+              <ellipse cx="10" cy="13" rx="7" ry="9" />
+              <path d="M4 12h12M6 17h8" />
+            </svg>
+          </button>
+        ) : null}
+      </div>
+      {eggFound ? (
+        <span className="season-egg-found" role="status">
+          Das goldene Alpen-Ei ist gefunden — frohe Ostern!
+        </span>
+      ) : null}
+    </div>
+  );
 }
 
 function Home() {
@@ -101,6 +137,7 @@ function Home() {
           ) : null}
         </div>
         <div className="hero-read" />
+        <SeasonalDecorations />
         <div className="shell relative z-[3] hero-layout home-hero-layout">
           <div className="home-hero-copy">
             <p className="kicker">Deutschsprachiger Minecraft Survival Server</p>
