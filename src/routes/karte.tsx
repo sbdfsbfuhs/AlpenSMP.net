@@ -32,15 +32,18 @@ function MapPage() {
       />
       <div className="shell py-12">
         {SITE.mapOpen ? (
-          <div className="space-y-3">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-muted">BlueMap – Hauptworld (Overworld).</p>
+          <div className="mx-auto w-full max-w-[70svh] space-y-3">
+            <div className="flex flex-col items-start gap-2">
+              <p className="text-sm font-semibold text-fg">BlueMap – Hauptworld (Overworld)</p>
+              <p className="text-xs text-muted">
+                Ziehe die Karte zum Verschieben und nutze Mausrad oder zwei Finger zum Zoomen.
+              </p>
               <a className="btn-brand" href={SITE.map} target="_blank" rel="noopener noreferrer">
                 Karte in neuem Tab öffnen
               </a>
             </div>
             <iframe
-              className="block h-[84svh] min-h-[30rem] w-full rounded-lg border border-line bg-surface"
+              className="block h-[84svh] min-h-[30rem] max-h-[60rem] w-full rounded-lg border border-line bg-surface shadow-xl"
               src={SITE.map}
               title="BlueMap-Live-Karte der AlpenSMP-Hauptworld"
               loading="lazy"
