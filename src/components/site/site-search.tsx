@@ -162,7 +162,6 @@ export function SiteSearch() {
       >
         <Search className="size-4" aria-hidden="true" />
         <span>Suchen</span>
-        <kbd>Ctrl K</kbd>
       </button>
       <dialog
         ref={dialog}

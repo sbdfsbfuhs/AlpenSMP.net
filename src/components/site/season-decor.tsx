@@ -40,14 +40,48 @@ function Snow({ count }: { count: number }) {
 }
 
 function Christmas() {
+  const width = 1200;
+  const curveY = (x: number) => 16 + (42 * (1 - Math.cos(((x % 150) / 150) * Math.PI * 2))) / 2;
+  const wirePath = Array.from({ length: 601 }, (_, index) => {
+    const x = index * 2;
+    return `${index === 0 ? "M" : "L"}${x} ${curveY(x).toFixed(2)}`;
+  }).join(" ");
+  const bulbs = Array.from({ length: 25 }, (_, index) => {
+    const x = 24 + index * 48;
+    return {
+      x,
+      y: curveY(x),
+      color: index % 4,
+      delay: `${-((index * 0.19) % 2.6).toFixed(2)}s`,
+    };
+  });
+
   return (
     <>
-      <svg className="season-lights-svg" viewBox="0 0 800 90" preserveAspectRatio="none">
-        <path d="M0 18 Q200 62 400 28 T800 18" fill="none" stroke="#243028" strokeWidth="3" />
-        {[80, 200, 320, 440, 560, 680].map((x, index) => (
-          <circle key={x} className={`bulb bulb-${index % 4}`} cx={x} cy={index % 2 === 0 ? 42 : 28} r="6" />
+      <div className="season-lights" aria-hidden="true">
+        <svg className="season-lights-svg" viewBox={`0 0 ${width} 104`} preserveAspectRatio="none">
+          <path className="season-lights-wire" d={wirePath} />
+          <path className="season-lights-wire-highlight" d={wirePath} />
+        </svg>
+        {bulbs.map(({ x, y, color, delay }) => (
+          <span
+            key={x}
+            className={`season-bulb season-bulb-${color}`}
+            style={{
+              left: `${(x / width) * 100}%`,
+              top: `${y}px`,
+              animationDelay: delay,
+            }}
+          >
+            <span className="season-bulb-stem" />
+            <span className="season-bulb-halo" />
+            <span className="season-bulb-cap" />
+            <span className="season-bulb-glass">
+              <span className="season-bulb-highlight" />
+            </span>
+          </span>
         ))}
-      </svg>
+      </div>
       <svg className="season-tree" viewBox="0 0 120 140">
         <polygon points="60,8 18,58 102,58" fill="#1a3a1a" />
         <polygon points="60,36 10,92 110,92" fill="#163216" />

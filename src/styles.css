@@ -3468,18 +3468,9 @@ html[data-season="halloween"] {
 
 .season-lights {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 12px;
-  background:
-    radial-gradient(circle at 8% 50%, #ffe08a 0 4px, transparent 5px),
-    radial-gradient(circle at 24% 50%, #fff 0 4px, transparent 5px),
-    radial-gradient(circle at 40% 50%, #ffb020 0 4px, transparent 5px),
-    radial-gradient(circle at 56% 50%, #ffe08a 0 4px, transparent 5px),
-    radial-gradient(circle at 72% 50%, #fff 0 4px, transparent 5px),
-    radial-gradient(circle at 88% 50%, #ffb020 0 4px, transparent 5px);
-  animation: season-blink 1.6s steps(2, end) infinite;
+  inset: 0 0 auto;
+  height: 104px;
+  pointer-events: none;
 }
 
 .season-branch {
@@ -3587,12 +3578,89 @@ html[data-season="halloween"] {
 .season-scene-easter { background: radial-gradient(circle at 18% 80%, rgb(196 181 253 / 0.16), transparent 30%); }
 .season-scene-newyear { background: radial-gradient(circle at 50% 20%, rgb(40 48 80 / 0.2), transparent 36%); }
 
-.season-lights-svg { position: absolute; top: 0; left: 0; width: 100%; height: 90px; }
-.bulb { transform-box: fill-box; transform-origin: center; animation: bulb-glow 2.4s ease-in-out infinite alternate; }
-.bulb-0 { fill: #c10522; animation-delay: 0s; }
-.bulb-1 { fill: #d6b25e; animation-delay: 0.4s; }
-.bulb-2 { fill: #2f6b45; animation-delay: 0.8s; }
-.bulb-3 { fill: #7ea0c4; animation-delay: 1.2s; }
+.season-lights-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 104px;
+  overflow: visible;
+}
+.season-lights-wire {
+  fill: none;
+  stroke: #1d2b22;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.season-lights-wire-highlight {
+  fill: none;
+  stroke: rgb(255 255 255 / 0.22);
+  stroke-width: 0.9;
+  stroke-linecap: round;
+}
+.season-bulb {
+  position: absolute;
+  z-index: 1;
+  width: 14px;
+  height: 24px;
+  margin-left: -7px;
+  transform-origin: center top;
+  animation: season-bulb-twinkle 2.6s ease-in-out infinite;
+}
+.season-bulb-0 { --bulb-color: #ff6572; }
+.season-bulb-1 { --bulb-color: #ffd166; }
+.season-bulb-2 { --bulb-color: #74d49b; }
+.season-bulb-3 { --bulb-color: #8bc7ff; }
+.season-bulb-stem {
+  position: absolute;
+  top: 0;
+  left: 6px;
+  width: 2px;
+  height: 9px;
+  border-radius: 2px;
+  background: #24352a;
+}
+.season-bulb-halo {
+  position: absolute;
+  top: 8px;
+  left: 1px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--bulb-color);
+  opacity: 0.4;
+  filter: blur(4px);
+}
+.season-bulb-cap {
+  position: absolute;
+  top: 7px;
+  left: 4px;
+  width: 6px;
+  height: 4px;
+  border-radius: 2px 2px 1px 1px;
+  background: #d9d2b7;
+}
+.season-bulb-glass {
+  position: absolute;
+  top: 10px;
+  left: 3px;
+  width: 8px;
+  height: 12px;
+  border: 1px solid rgb(255 255 255 / 0.55);
+  border-radius: 50% 50% 48% 48%;
+  background: linear-gradient(135deg, rgb(255 255 255 / 0.75), var(--bulb-color) 48%);
+  box-shadow: 0 0 5px var(--bulb-color);
+}
+.season-bulb-highlight {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 2px;
+  height: 4px;
+  border-radius: 50%;
+  background: #fff;
+  opacity: 0.85;
+}
 .season-tree { position: absolute; left: 0; bottom: 0; width: 120px; height: 140px; opacity: 0.85; }
 .snowflake {
   position: absolute;
@@ -3742,6 +3810,18 @@ html[data-season="halloween"] {
 @keyframes spirit-drift {
   from { transform: translate3d(-6vw, 0, 0); }
   to { transform: translate3d(108vw, -4vh, 0); }
+}
+@keyframes season-bulb-twinkle {
+  0%, 100% {
+    opacity: 0.6;
+    filter: drop-shadow(0 0 2px var(--bulb-color));
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 8px var(--bulb-color));
+    transform: scale(1.1);
+  }
 }
 @keyframes bulb-glow { from { opacity: 0.35; } to { opacity: 1; } }
 @keyframes snow-calm { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(var(--drift), 110vh, 0); } }
