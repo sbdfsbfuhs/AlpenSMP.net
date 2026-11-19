@@ -44,16 +44,43 @@ describe("staff account email recovery", () => {
       assert.equal(ticketAccessIsValid("later", now), false);
     });
 
-    it("requires ticket reads to be authenticated or time-limited in Firebase rules", async () => {
+    it("keeps ticket and support records staff-only in Firebase rules", async () => {
       const rulesUrl = new URL("../../../firebase/database.rules.json", import.meta.url);
       const rules = JSON.parse(await readFile(rulesUrl, "utf8")) as {
-        rules: { tickets: { $code: { ".read": string; ".write": string } } };
+        rules: {
+          helpRequests: { $id: { ".write": string } };
+          tickets: { $code: { ".read": string; ".write": string } };
+        };
       };
-      assert.match(rules.rules.tickets.$code[".read"], /expiresAt/);
-      assert.match(rules.rules.tickets.$code[".read"], /\.val\(\)\s*>\s*now/);
-      assert.match(rules.rules.tickets.$code[".write"], /ALP-\[0-9A-F\]\{32\}/);
-      assert.match(rules.rules.tickets.$code[".write"], /expiresAt/);
-      assert.match(rules.rules.tickets.$code[".write"], /2592000000/);
+      for (const expression of [
+        rules.rules.helpRequests.$id[".write"],
+        rules.rules.tickets.$code[".read"],
+        rules.rules.tickets.$code[".write"],
+      ]) {
+        assert.match(expression, /auth\s*!=\s*null/);
+        assert.match(expression, /disabled.*!=\s*true/);
+      }
+      assert.doesNotMatch(rules.rules.helpRequests.$id[".write"], /!data\.exists\(\)/);
+      assert.doesNotMatch(rules.rules.tickets.$code[".read"], /expiresAt/);
+      assert.doesNotMatch(rules.rules.tickets.$code[".write"], /!data\.exists\(\)/);
+    });
+
+    it("does not grant owner access through a hard-coded email address", async () => {
+      const rulesUrl = new URL("../../../firebase/database.rules.json", import.meta.url);
+      const rulesText = await readFile(rulesUrl, "utf8");
+      assert.doesNotMatch(rulesText, /auth\.token\.email\s*==\s*["'][^"']+@[^"']+["']/);
+    });
+
+    it("requires staff authentication for Firebase statistics history writes", async () => {
+      const rulesUrl = new URL("../../../firebase/database.rules.json", import.meta.url);
+      const rules = JSON.parse(await readFile(rulesUrl, "utf8")) as {
+        rules: { site_stats_history: { $id: { ".write": string } } };
+      };
+      const writeRule = rules.rules.site_stats_history.$id[".write"];
+      assert.match(writeRule, /auth\s*!=\s*null/);
+      assert.match(writeRule, /staffByUid/);
+      assert.doesNotMatch(writeRule, /!data\.exists\(\)/);
+      assert.doesNotMatch(writeRule, /!newData\.exists\(\)/);
     });
   });
 

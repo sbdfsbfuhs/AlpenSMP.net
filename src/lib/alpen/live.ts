@@ -63,35 +63,6 @@ export function fetchHistory(limit = 120): Promise<HistoryPoint[]> {
   return fetchHistoryServer({ data: limit });
 }
 
-const recordPlayerSampleServer = createServerFn({ method: "POST" }).handler(async () => {
-  const server = await import("./live.remote.server.ts");
-  server.assertLiveRequest();
-  return server.recordPlayerSample();
-});
-
-export async function recordPlayerSample(): Promise<void> {
-  if (typeof window === "undefined") return;
-  const key = "alpensmp_sample_at";
-  const last = Number(window.localStorage.getItem(key) || 0);
-  if (Date.now() - last < 15 * 60 * 1000) return;
-  const sampledAt = await recordPlayerSampleServer();
-  window.localStorage.setItem(key, String(sampledAt || Date.now() - 3 * 60 * 1000));
-}
-
-const pruneOldHistoryServer = createServerFn({ method: "POST" }).handler(async () => {
-  const server = await import("./live.remote.server.ts");
-  server.assertLiveRequest();
-  return server.pruneOldHistory();
-});
-
-export async function pruneOldHistory(): Promise<void> {
-  if (typeof window === "undefined") return;
-  const key = "alpensmp_prune_at";
-  if (Date.now() - Number(window.localStorage.getItem(key) || 0) < 12 * 60 * 60 * 1000) return;
-  window.localStorage.setItem(key, String(Date.now()));
-  await pruneOldHistoryServer();
-}
-
 export async function fetchReviews(): Promise<LiveReview[]> {
   try {
     const data = (await loadPath("community_reviews")) as Record<
@@ -175,7 +146,8 @@ export async function submitCommunity(body: {
 }
 
 function readableRelayError(raw: string, fallback: string) {
-  if (raw.includes("payload_too_large")) return "Der Server nimmt das Bild nicht an. In der Sicherheits-App ist die Grenze 32 KB. Für gute Fotos muss sie auf 1 MB steigen.";
+  if (raw.includes("rate_limited")) return "Zu viele Anfragen. Bitte versuche es später erneut.";
+  if (raw.includes("payload_too_large")) return "Die übermittelte Nachricht oder Datei ist zu gross. Bitte kürze den Text oder wähle ein kleineres Bild.";
   try {
     const parsed = JSON.parse(raw) as { error?: string };
     if (parsed.error && parsed.error !== "payload_too_large") return parsed.error;

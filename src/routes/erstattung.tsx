@@ -16,12 +16,12 @@ function RefundPage() {
     <LegalArticle
       kicker="Recht"
       title="Erstattung"
-      lede="Auf AlpenSMP gibt es nichts zu kaufen. Deshalb gibt es nichts zu erstatten."
+      lede="Auf dieser Website werden derzeit keine kostenpflichtigen Leistungen angeboten."
     >
       <section className="space-y-3">
         <h2 className="text-xl font-semibold text-fg">Keine Verkäufe</h2>
-        <p>Keine Ränge, keine Kits, keine Schlüssel, keine Spendenabwicklung und kein Warenkorb auf dieser Website. Der Serverzugang ist gratis.</p>
-        <p>Wenn dir irgendwo Geld für AlpenSMP abgebucht wurde, kam das nicht von dieser Seite. Schreib ein <Link to="/kontakt" className="text-brand underline">Ticket</Link>, damit das Team es einordnen kann. Eine Rückzahlung durch die Website ist nicht möglich, weil keine Zahlung entgegengenommen wird.</p>
+        <p>Es gibt keine kostenpflichtigen Ränge, Abonnements, Produkte oder Zahlungsfunktion. Der Serverzugang ist kostenlos; über diese Website wird kein Geld entgegengenommen.</p>
+        <p>Wenn du eine Zahlung vermutest, die mit AlpenSMP zusammenhängt, melde dich über ein <Link to="/kontakt" className="text-brand underline">Ticket</Link> oder per E-Mail an <a className="text-brand underline" href="mailto:alpensmp.net@gmail.com">alpensmp.net@gmail.com</a>. Die Website kann keine Zahlung zurückerstatten, die sie nicht entgegengenommen hat. Zwingende gesetzliche Ansprüche bleiben unberührt.</p>
       </section>
       <LegalLinks />
     </LegalArticle>

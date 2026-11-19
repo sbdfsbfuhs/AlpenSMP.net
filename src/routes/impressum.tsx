@@ -2,11 +2,13 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { LegalArticle, LegalLinks } from "@/components/site/legal";
 import { SITE } from "@/lib/alpen/site";
 
+const CONTACT_EMAIL = "alpensmp.net@gmail.com";
+
 export const Route = createFileRoute("/impressum")({
   head: () => ({
     meta: [
       { title: "Impressum · AlpenSMP" },
-      { name: "description", content: "Anbieter von AlpenSMP: privater, nicht-kommerzieller Minecraft-Server. Kontakt über Ticket oder Discord." },
+      { name: "description", content: "Informationen zum privaten AlpenSMP-Angebot und Kontakt per E-Mail." },
     ],
   }),
   component: ImprintPage,
@@ -17,25 +19,29 @@ function ImprintPage() {
     <LegalArticle
       kicker="Recht"
       title="Impressum"
-      lede="Privater, nicht-kommerzieller Minecraft-Server. Kein Shop, keine Ränge zum Kaufen."
+      lede="Privat betrieben und kostenlos. Es gibt keine Verkäufe oder kostenpflichtigen Ränge."
     >
       <section className="space-y-3">
-        <h2 className="text-xl font-semibold text-fg">Angebot</h2>
-        <p>AlpenSMP, Website {SITE.ip}. Java über {SITE.ip}. Bedrock über {SITE.play}, Port {SITE.bedrockPort}.</p>
-        <p>Betreiber ist eine private Person, im Spiel und auf dieser Website als SwissRed erreichbar. Es ist kein Unternehmen und keine Mehrwertsteuer ausgewiesen, weil nichts verkauft wird.</p>
+        <h2 className="text-xl font-semibold text-fg">Angebot und Betreiber</h2>
+        <p>AlpenSMP ist ein privater, nicht-kommerzieller Minecraft-Server mit Website {SITE.ip}. Java: {SITE.ip}. Bedrock: {SITE.play}, Port {SITE.bedrockPort}.</p>
+        <p>Der Betreiber ist eine private Person und online unter dem Namen SwissRed erreichbar. AlpenSMP ist kein Unternehmen. Eine private Wohnanschrift wird aus Schutzgründen nicht auf der Website veröffentlicht.</p>
       </section>
       <section className="space-y-3">
         <h2 className="text-xl font-semibold text-fg">Kontakt</h2>
         <p>
-          Schriftlich über das <Link to="/kontakt" className="text-brand underline">Ticket</Link>. Für kurze Fragen der{" "}
-          <a className="text-brand underline" href={SITE.discord}>Discord</a>. Eine postalische Anschrift ist hier nicht eingetragen. Sie wird nicht erfunden. Wenn eine Behörde oder eine betroffene Person eine Zustelladresse braucht, läuft das über das Ticket.
+          Für Fragen, Beschwerden und Datenschutzanliegen:{" "}
+          <a className="text-brand underline" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
+          Alternativ kannst du ein <Link to="/kontakt" className="text-brand underline">Website-Ticket</Link> senden oder den{" "}
+          <a className="text-brand underline" href={SITE.discord}>Discord</a> nutzen.
         </p>
       </section>
       <section className="space-y-3">
         <h2 className="text-xl font-semibold text-fg">Hinweis zu Minecraft</h2>
         <p>
-          Minecraft und die damit verbundenen Marken gehören Mojang / Microsoft. AlpenSMP ist kein offizieller Server und steht in keiner Verbindung zu Mojang.
-          Screenshots auf der Seite stammen von Spielern und werden erst nach Freigabe gezeigt.
+          Minecraft und die dazugehörigen Marken und Inhalte gehören ihren jeweiligen Rechteinhabern, darunter Mojang AB und Microsoft. AlpenSMP ist kein offizieller Minecraft-Server und steht in keiner Verbindung zu Mojang oder Microsoft.
+          Spielerbilder werden nur nach Prüfung und mit Freigabe veröffentlicht. Weitere Informationen zu den Marken stellt{" "}
+          <a className="text-brand underline" href="https://www.minecraft.net/en-us/usage-guidelines" target="_blank" rel="noopener noreferrer">Minecraft</a>{" "}
+          bereit.
         </p>
       </section>
       <LegalLinks />

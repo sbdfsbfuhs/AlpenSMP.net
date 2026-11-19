@@ -25,6 +25,7 @@ const MOVED = new Set([
   "community_images",
   "season",
   "site_settings",
+  "site_stats_history",
   "site_rules",
   "staffActivity",
   "staffAlerts",

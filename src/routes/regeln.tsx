@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { DiscordLink, PageHero, Shell } from "@/components/site/shell";
 import { SiteMascot } from "@/components/site/assistant";
@@ -20,16 +20,20 @@ export const Route = createFileRoute("/regeln")({
 
 function RulesPage() {
   const [extra, setExtra] = useState<{ title?: string; body?: string }[]>([]);
+  const [extraUnavailable, setExtraUnavailable] = useState(false);
   useEffect(() => {
     let stop = false;
     const load = () => {
       if (document.hidden) return;
       fbGet<Record<string, { title?: string; body?: string }>>("rulesPublic")
         .then((value) => {
-          if (!stop) setExtra(entries(value).map(([, item]) => item));
+          if (!stop) {
+            setExtra(entries(value).map(([, item]) => item));
+            setExtraUnavailable(false);
+          }
         })
         .catch(() => {
-          if (!stop) setExtra([]);
+          if (!stop) setExtraUnavailable(true);
         });
     };
     load();
@@ -76,6 +80,14 @@ function RulesPage() {
         </section>
       </div>
       <SiteMascot home="regeln" bias="sit" align="end" line="Unsicher bei einem Mod? Frag mich, bevor du joinest." />
+      {extraUnavailable ? (
+        <div className="shell mb-6" role="alert">
+          <p className="rounded-md border border-ember/40 bg-ember/10 p-4 text-sm text-fg">
+            Zusätzliche Regeln konnten gerade nicht geladen werden. Die unten sichtbaren 14 Grundregeln sind verfügbar; frage vor dem Spielen bei Unsicherheit das{" "}
+            <Link to="/kontakt" className="underline">Team</Link>.
+          </p>
+        </div>
+      ) : null}
       {extra.length ? (
         <div className="shell mb-8 space-y-2">
           {extra.map((rule) => (

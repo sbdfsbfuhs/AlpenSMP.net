@@ -5,11 +5,14 @@ import type { HistoryPoint, ServerStatus } from "./live";
 type HistoryRow = { t?: number; n?: number; by?: string; total_players_ever?: number };
 
 function isPlayerSample(row: HistoryRow | null | undefined): row is HistoryRow {
-  return Boolean(row) && !row?.by && typeof row?.total_players_ever !== "number" && Number(row?.t) > 0;
+  return Boolean(row)
+    && !row?.by
+    && typeof row?.total_players_ever !== "number"
+    && typeof row?.t === "number" && Number.isSafeInteger(row.t)
+    && row.t <= Date.now()
+    && typeof row?.n === "number" && Number.isSafeInteger(row.n)
+    && row.n >= 0 && row.n <= 1000;
 }
-
-const SAMPLE_GAP = 15 * 60 * 1000;
-const WEEK = 7 * 24 * 60 * 60 * 1000;
 
 export function assertLiveRequest(): void {
   assertSameSiteRequest();
@@ -54,58 +57,14 @@ export async function fetchSiteStats(): Promise<{ total: number | null; listed: 
 
 export async function fetchHistory(limit: number): Promise<HistoryPoint[]> {
   const cap = Math.max(20, Math.min(700, limit));
-  const res = await fetch(`${SITE.fb}/site_stats_history.json?orderBy="$key"&limitToLast=${cap}`);
-  if (!res.ok) return [];
-  const data = (await res.json()) as Record<string, HistoryRow> | null;
-  if (!data) return [];
-  return Object.values(data)
+  const url = new URL(`${SITE.securityApi}/api/stats/history`);
+  url.searchParams.set("limit", String(cap));
+  const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+  if (!res.ok) throw new Error("Verlauf nicht erreichbar");
+  const data = (await res.json()) as HistoryRow[];
+  if (!Array.isArray(data)) throw new Error("Ungültige Verlaufsdaten");
+  return data
     .filter(isPlayerSample)
     .map((row) => ({ t: Number(row.t) || 0, n: Number(row.n) || 0 }))
     .sort((a, b) => a.t - b.t);
-}
-
-export async function recordPlayerSample(): Promise<number | null> {
-  const status = await fetchStatus();
-  if (!status.online || !Number.isFinite(status.players) || status.players < 0 || status.players > 1000) {
-    return null;
-  }
-
-  const peek = await fetch(`${SITE.fb}/site_stats_history.json?orderBy="$key"&limitToLast=30`);
-  if (peek.ok) {
-    const latest = (await peek.json()) as Record<string, HistoryRow> | null;
-    const row = latest
-      ? Object.values(latest)
-          .filter(isPlayerSample)
-          .sort((a, b) => Number(a.t) - Number(b.t))
-          .at(-1)
-      : null;
-    if (row?.t && Date.now() - row.t < SAMPLE_GAP) return row.t;
-  }
-
-  const res = await fetch(`${SITE.fb}/site_stats_history.json`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ t: Date.now(), n: status.players, online_count: status.players }),
-  });
-  return res.ok ? Date.now() : null;
-}
-
-export async function pruneOldHistory(): Promise<void> {
-  const cutoff = Date.now() - WEEK;
-  for (let batch = 0; batch < 2; batch += 1) {
-    const res = await fetch(`${SITE.fb}/site_stats_history.json?orderBy="$key"&limitToFirst=40`);
-    if (!res.ok) return;
-    const data = (await res.json()) as Record<string, { t?: number }> | null;
-    if (!data) return;
-    const old = Object.entries(data).filter(([, row]) => Number(row?.t) > 0 && Number(row.t) < cutoff);
-    if (!old.length) return;
-    const removed = await Promise.all(
-      old.map(async ([id]) => {
-        const gone = await fetch(`${SITE.fb}/site_stats_history/${id}.json`, { method: "DELETE" });
-        return gone.ok;
-      }),
-    );
-    if (!removed.some(Boolean)) return;
-    if (old.length < 40) return;
-  }
 }

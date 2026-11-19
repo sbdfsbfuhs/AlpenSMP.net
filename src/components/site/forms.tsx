@@ -19,7 +19,7 @@ export function reviewGaps(input: {
   if (input.name.trim().length < 2) gaps.push("Name");
   if (input.kind !== "image" && input.text.trim().length < 4) gaps.push("Text");
   if (input.kind !== "review" && !input.hasFile) gaps.push("Bild");
-  if (!input.consent) gaps.push("Datenschutz");
+  if (!input.consent) gaps.push("Freigabe zur Veröffentlichung");
   if (input.kind !== "review" && !input.rights) gaps.push("Bildrechte");
   return gaps;
 }
@@ -90,7 +90,7 @@ export function ReviewForm() {
     }
     const last = Number(localStorage.getItem("alpensmp_last_submit") || 0);
     if (Date.now() - last < COOLDOWN) {
-      setNote("Maximal 1 Beitrag pro Minute.");
+      setNote("Bitte warte eine Minute zwischen Beiträgen.");
       return;
     }
     setBusy(true);
@@ -199,7 +199,7 @@ export function ReviewForm() {
             <button type="button" className="btn-ghost" onClick={() => fileRef.current?.click()}>
               Bild wählen
             </button>
-            <p className="text-xs text-faint">Oder hierher ziehen. PNG, JPG oder WebP.</p>
+            <p className="text-xs text-faint">Oder hierher ziehen. PNG, JPG oder WebP. Keine privaten Daten oder fremden Personen ohne Zustimmung zeigen.</p>
           </div>
           {preview && file ? (
             <div className="review-picked">
@@ -238,28 +238,28 @@ export function ReviewForm() {
         <Check ok label={`Sterne: ${rating} · ${STAR_LINE[rating]}`} />
         <Check ok={Boolean(file)} optional={!imageNeeded && !file} label={imageNeeded ? "Bild ausgewählt" : "Bild"} />
         <Check ok={text.trim().length >= 4} optional={!textNeeded && text.trim().length < 4} label={textNeeded ? "Text ergänzt" : "Text"} />
-        <Check ok={consent} label="Datenschutz" />
+        <Check ok={consent} label="Freigabe zur Veröffentlichung" />
         {imageNeeded ? <Check ok={rights} label="Bildrechte" /> : null}
       </ul>
       {gaps.length ? <p className="text-sm text-brand">Vor dem Absenden noch: {gaps.join(", ")}.</p> : <p className="text-sm text-muted">Alles Nötige ist da.</p>}
       <label className="review-check text-sm" htmlFor="review-consent">
         <input id="review-consent" className="review-check-input" type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
         <span>
-          Ich willige ein, dass Name, Text und Sterne
-          {kind === "review" ? "" : " sowie das Bild"} gespeichert und nach Freigabe öffentlich gezeigt werden. Dazu die{" "}
+          Ich willige ein, dass mein Ingame-Name, mein Text und die Sterne
+          {kind === "review" ? "" : " sowie mein Screenshot"} nach Freigabe öffentlich gezeigt werden. Für die Prüfung wird der Beitrag vorher gespeichert. Ich kann die Veröffentlichung für die Zukunft widerrufen oder die Entfernung verlangen. Dazu die{" "}
           <Link to="/datenschutz" className="text-brand underline">Datenschutzerklärung</Link>.
         </span>
       </label>
       {imageNeeded ? (
         <label className="review-check text-sm" htmlFor="review-rights">
           <input id="review-rights" className="review-check-input" type="checkbox" checked={rights} onChange={(e) => setRights(e.target.checked)} />
-          <span>Das Bild gehört mir oder ich darf es hier zeigen. Kein fremdes Foto.</span>
+          <span>Ich darf dieses Bild einreichen und zur Veröffentlichung freigeben. Es zeigt keine privaten Angaben und keine fremden Personen ohne deren Zustimmung.</span>
         </label>
       ) : null}
       <button className={sent ? "btn-brand review-send is-sent" : "btn-brand review-send"} type="submit" disabled={busy}>
         {busy ? "Wird gesendet…" : sent ? "Angekommen" : "Absenden zur Freigabe"}
       </button>
-      <p className={sent ? "review-ok text-sm" : "text-sm text-muted"} role="status">{note || "Wird nicht sofort öffentlich. Maximal 1 Beitrag pro Minute."}</p>
+      <p className={sent ? "review-ok text-sm" : "text-sm text-muted"} role="status">{note || "Wird nicht sofort öffentlich. Schnelle Wiederholungen werden in diesem Browser gebremst."}</p>
     </form>
   );
 }
@@ -297,7 +297,6 @@ export function TicketForm() {
   const [company, setCompany] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
-  const [consent, setConsent] = useState(false);
   const [code, setCode] = useState("");
   const [sent, setSent] = useState("");
   const [found, setFound] = useState<TicketView | null>(null);
@@ -305,10 +304,6 @@ export function TicketForm() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (company) return;
-    if (!consent) {
-      setNote("Bitte die Datenschutz-Einwilligung anhaken.");
-      return;
-    }
     setBusy(true);
     try {
       const next = await submitTicket({
@@ -340,7 +335,10 @@ export function TicketForm() {
         </div>
       ) : null}
       <form className="space-y-3" onSubmit={onSubmit}>
-        <p className="text-sm text-muted">Beschreibe das Problem. Du bekommst eine Ticket-Nummer und kannst den Status später nachlesen.</p>
+        <p className="text-sm text-muted">
+          Beschreibe das Problem. Das Team verarbeitet deine Angaben, um dir zu antworten. Du bekommst einen Ticketcode und kannst den Status später nachlesen.{" "}
+          <Link to="/datenschutz" className="text-brand underline">So werden deine Daten bearbeitet</Link>.
+        </p>
         <label className="block text-sm" htmlFor="ticket-name">
           Minecraft-Name
           <input id="ticket-name" className="field mt-1" name="name" autoComplete="nickname" placeholder="Dein Ingame-Name" value={name} maxLength={32} required onChange={(e) => setName(e.target.value)} />
@@ -360,13 +358,6 @@ export function TicketForm() {
           <textarea id="ticket-msg" className="field mt-1 min-h-32" name="message" placeholder="Was ist passiert?" value={msg} maxLength={800} required onChange={(e) => setMsg(e.target.value)} />
         </label>
         <input className="hidden" tabIndex={-1} autoComplete="off" value={company} onChange={(e) => setCompany(e.target.value)} aria-hidden="true" />
-        <label className="flex items-start gap-3 text-sm" htmlFor="ticket-consent">
-          <input id="ticket-consent" className="mt-1" type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} required />
-          <span>
-            Ich willige ein, dass Name, Thema und Nachricht für die Antwort gespeichert werden.{" "}
-            <Link to="/datenschutz" className="text-brand underline">Datenschutzerklärung</Link>
-          </span>
-        </label>
         <button className="btn-brand" disabled={busy} type="submit">
           Ticket senden
         </button>

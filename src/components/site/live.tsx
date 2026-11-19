@@ -2,7 +2,7 @@ import { Copy } from "lucide-react";
 import { CopyTick, useCopyBurst } from "@/components/site/copy-burst";
 import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { fetchDiscordCount, fetchHistory, fetchSiteStats, fetchStatus, pruneOldHistory, recordPlayerSample, type HistoryPoint, type ServerStatus } from "@/lib/alpen/live";
+import { fetchDiscordCount, fetchHistory, fetchSiteStats, fetchStatus, type HistoryPoint, type ServerStatus } from "@/lib/alpen/live";
 import { SITE } from "@/lib/alpen/site";
 
 export function useServerStatus() {
@@ -17,7 +17,6 @@ export function useServerStatus() {
           if (!stop) {
             setStatus(data);
             setError(false);
-            if (data.online) void recordPlayerSample().catch(() => {});
           }
         })
         .catch(() => {
@@ -357,7 +356,6 @@ export function PlayerChart() {
         .catch(() => {});
     };
     load();
-    void pruneOldHistory().catch(() => {});
     const id = window.setInterval(load, 15 * 60 * 1000);
     document.addEventListener("visibilitychange", load);
     return () => {

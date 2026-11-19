@@ -33,6 +33,10 @@ export function LegalLinks() {
       <Link to="/erstattung" className="text-brand underline">Erstattung</Link>
       {" · "}
       <Link to="/regeln" className="text-brand underline">Spielregeln</Link>
+      {" · "}
+      <Link to="/kontakt" className="text-brand underline">Kontakt</Link>
+      {" · "}
+      <Link to="/ki-transparenz" className="text-brand underline">KI-Transparenz</Link>
     </p>
   );
 }

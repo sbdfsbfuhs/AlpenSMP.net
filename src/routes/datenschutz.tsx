@@ -2,6 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { LegalArticle, LegalLinks } from "@/components/site/legal";
 import { SITE } from "@/lib/alpen/site";
 
+const CONTACT_EMAIL = "alpensmp.net@gmail.com";
+const PANEL_API_HOST = new URL(SITE.securityApi).host;
+
 export const Route = createFileRoute("/datenschutz")({
   head: () => ({
     meta: [
@@ -20,31 +23,34 @@ function PrivacyPage() {
       lede="Hier steht, welche Daten beim Besuch der Website, beim Spielen und im Support anfallen. Es gibt keine Werbung, keine Analyseprofile und keinen Verkauf von Daten."
     >
       <section className="space-y-3">
-        <h2 className="text-xl font-semibold text-fg">Verantwortlicher und Rechtsrahmen</h2>
+        <h2 className="text-xl font-semibold text-fg">Verantwortlicher und Kontakt</h2>
         <p>
-          Verantwortlich ist der private Betreiber von AlpenSMP, im Spiel SwissRed. Kontakt läuft über das{" "}
-          <Link to="/kontakt" className="text-brand underline">Ticket</Link> oder den{" "}
-          <a className="text-brand underline" href={SITE.discord}>Discord</a>. Eine Postanschrift wird hier nicht veröffentlicht.
+          Verantwortlich ist der private Betreiber von AlpenSMP, online unter dem Namen SwissRed. Für Datenschutzanfragen und die Ausübung deiner Rechte erreichst du ihn unter{" "}
+          <a className="text-brand underline" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>. Du kannst auch ein{" "}
+          <Link to="/kontakt" className="text-brand underline">Website-Ticket</Link> senden. Eine private Wohnanschrift wird nicht veröffentlicht.
         </p>
         <p>
-          Es gilt das schweizerische Datenschutzgesetz (DSG). Soweit die Datenschutz-Grundverordnung (DSGVO) anwendbar ist, insbesondere für Personen aus dem EWR, beachten wir auch deren Vorgaben und die jeweils geltenden nationalen Ergänzungen.
-        </p>
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-xl font-semibold text-fg">Rechtsgrundlagen</h2>
-        <p>
-          Nach Schweizer DSG erfolgt die Bearbeitung im Rahmen der gesetzlichen Voraussetzungen, insbesondere soweit sie für überwiegende private Interessen an einem sicheren und regelkonformen Betrieb erforderlich ist. Soweit die DSGVO gilt, stützen wir die Verarbeitung von Website-Zugriffs- und Serverdaten für Betrieb, Sicherheit und Moderation auf berechtigte Interessen (Art. 6 Abs. 1 lit. f DSGVO). Für Website-Tickets sowie die Speicherung und Veröffentlichung von Rezensionen oder Bildern holen wir beim Absenden eine Einwilligung ein (Art. 6 Abs. 1 lit. a DSGVO). Eine Einwilligung kann für die Zukunft widerrufen werden.
+          Für die Bearbeitung gelten das schweizerische Datenschutzgesetz (DSG) und – soweit dessen räumlicher Anwendungsbereich erfüllt ist – die Datenschutz-Grundverordnung (DSGVO). Ob die DSGVO im Einzelfall gilt, hängt unter anderem davon ab, ob das Angebot gezielt Personen in der EU anspricht oder deren Verhalten beobachtet.
         </p>
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-xl font-semibold text-fg">Besuch der Website und technische Logs</h2>
+        <h2 className="text-xl font-semibold text-fg">Rechtsgrundlagen und Grundsätze</h2>
         <p>
-          Die Website wird über den US-Anbieter Vercel und dessen globales Edge-Netzwerk ausgeliefert. Für Auslieferung, Stabilität und Sicherheit können dabei technische Zugriffsdaten verarbeitet werden, etwa IP-Adresse, Zeitpunkt, angeforderte Seite, Browser-/Geräteinformationen und Referrer. Die Website verwendet kein Analytics- oder Werbetracking.
+          Daten werden für den Betrieb des kostenlosen Angebots, die Beantwortung angefragter Unterstützung, die Sicherheit und die Moderation bearbeitet. Soweit die DSGVO gilt, stützen wir notwendige Betriebs-, Sicherheits- und Supportbearbeitungen grundsätzlich auf berechtigte Interessen (Art. 6 Abs. 1 lit. f DSGVO). Für die öffentliche Anzeige einer Rezension oder eines Spielerbilds fragen wir eine separate Einwilligung ab; sie kann für die Zukunft widerrufen werden.
         </p>
         <p>
-          Vercel betreibt ein globales Edge-Netzwerk. Die konkrete Verarbeitung und Aufbewahrung technischer Logs richtet sich nach Vercels Dienst und Einstellungen; eine eigene feste Löschfrist ist hier nicht konfiguriert.{" "}
+          Das Absenden eines Supporttickets ist nicht von einer Datenschutz-Einwilligung abhängig. Bitte übermittle nur Angaben, die für dein Anliegen nötig sind, und keine Passwörter oder Zugangsdaten.
+        </p>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-xl font-semibold text-fg">Website-Aufruf und technische Logs</h2>
+        <p>
+          Die Website wird über Vercel und dessen globales Netzwerk ausgeliefert. Dabei können technische Zugriffsdaten wie IP-Adresse, Zeitpunkt, angeforderte Seite, Browser-/Geräteinformationen, Referrer und Fehlerstatus verarbeitet werden, um die Seite auszuliefern, Störungen zu beheben und Missbrauch abzuwehren. Es wird kein Analytics- oder Werbetracking eingesetzt.
+        </p>
+        <p>
+          Die konkrete Aufbewahrungsdauer und die betroffenen Verarbeitungsorte der Vercel-Logs sind aus dem Website-Repository nicht ersichtlich. Massgeblich sind die tatsächlich verwendeten Vercel-Einstellungen und Vertragsbedingungen.{" "}
           <a className="text-brand underline" href="https://vercel.com/legal/privacy-notice" target="_blank" rel="noopener noreferrer">Datenschutzhinweise von Vercel</a>.
         </p>
       </section>
@@ -52,111 +58,133 @@ function PrivacyPage() {
       <section className="space-y-3">
         <h2 className="text-xl font-semibold text-fg">Minecraft-Spielbetrieb</h2>
         <p>
-          Der Minecraft-Server läuft auf Oracle Cloud Infrastructure in der Schweiz. Zur Verbindung und zum Spielbetrieb werden Minecraft-Name und UUID verarbeitet. Die Serverkonfiguration protokolliert außerdem Verbindungs-IP-Adressen. Verbindungs- und Serverlogs können Zeitpunkte, öffentliche Chat-/Befehlstexte und technische Ereignisse enthalten.
+          Der Minecraft-Server wird nach der derzeitigen Betreiberangabe auf Oracle Cloud Infrastructure in der Schweiz betrieben. Beim Verbinden fallen Minecraft-Name, UUID, Verbindungs-IP sowie Login- und Logout-Zeitpunkte an. Serverlogs können ausserdem öffentliche Chat- und Befehlstexte sowie technische Ereignisse enthalten.
         </p>
         <p>
-          Spielstände speichern je nach Welt unter anderem Position, Inventar und Fortschritt. Plugins speichern für ihre Funktionen zusätzliche Daten, zum Beispiel Claims, Teams, Spielzeit, Moderationsvorgänge und Anti-Cheat-Ereignisse. Anti-Cheat-Hinweise können an den privaten Team-Discord gesendet werden. Das Team prüft mögliche Sanktionen; das geprüfte Anti-Cheat-Setup verhängt nicht selbstständig Bans.
+          Für Spielstände und Plugins werden je nach Funktion Positionen, Inventar, Fortschritt, Claims, Teams, Spielzeit, Moderations- und Banninformationen sowie Anti-Cheat-Hinweise gespeichert. Sie dienen dem Spielbetrieb, der Zuordnung von Spielständen, der Sicherheit und der Durchsetzung der Regeln. Hinweise aus Anti-Cheat-Systemen werden vom Team beurteilt; über Sanktionen entscheidet nicht allein ein automatisches System.
         </p>
         <p>
-          Diese Daten dienen dem Betrieb des Servers, der Zuordnung von Spielständen, dem Schutz vor Missbrauch und Cheats sowie der Moderation und Durchsetzung der Regeln. Soweit die DSGVO gilt, ist die Verarbeitung für Sicherheit und Moderation durch berechtigte Interessen am stabilen, fairen Serverbetrieb begründet.
+          Eine verlässliche automatische Löschfrist für Minecraft-Logs, Spielstände, Moderationsdaten oder Serverbackups ist im verfügbaren Website-Code nicht dokumentiert. Die konkrete Serverkonfiguration und Backup-Rotation müssen vom Betreiber bestätigt werden.
         </p>
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-xl font-semibold text-fg">Website-Formulare und Firebase</h2>
-        <p>Die Formulare fragen kein Konto, keine E-Mail-Adresse, keine Telefonnummer und kein Alter ab.</p>
-        <ul className="list-disc space-y-1 pl-5">
-          <li>Rezension oder Community-Bild: Ingame-Name, Text oder Bildunterschrift, Sternezahl, optionales Bild, Zeitpunkt, Freigabestatus und Einwilligung.</li>
-          <li>Website-Ticket: Minecraft-Name, Kategorie, Betreff, Nachricht, Zeitpunkt, Status, Antworten und ein geheimer Ticketcode.</li>
-          <li>Öffentliche Serverstatistik: Zeitstempel und aggregierte Spielerzahlen, keine Spielernamen oder UUIDs.</li>
-        </ul>
+        <h2 className="text-xl font-semibold text-fg">Website-Tickets, Rezensionen und Spielerbilder</h2>
         <p>
-          Rezensionen und Bilder werden erst nach Prüfung veröffentlicht. Für ihre Speicherung und Veröffentlichung ist eine Einwilligung erforderlich; du kannst sie für die Zukunft widerrufen und die Entfernung eines öffentlichen Beitrags verlangen. Bei Tickets wird die Einwilligung vor dem Absenden abgefragt.
+          Die öffentlichen Formulare fragen keine E-Mail-Adresse, Telefonnummer oder Altersangabe ab. Ein Website-Ticket enthält Minecraft-Name, Kategorie, Betreff, Nachricht, Zeitpunkt, Bearbeitungsstatus und Antworten. Der Ticketcode dient als geheimer Zugangslink. Rezensionen und Spielerbilder enthalten den eingereichten Ingame-Namen, Text beziehungsweise Bildunterschrift, Sternezahl, Bild und Zeitpunkt.
         </p>
         <p>
-          Die Einreichungen liegen in der Firebase Realtime Database von Google in der Region europe-west1 (Belgien). Google verarbeitet die Daten als Dienstleister; die Serverstatus-Notiz, aggregierte Spielerzahlen und Statistikverläufe liegen ebenfalls dort. Statistikverläufe älter als sieben Tage werden beim nächsten aktiven Statistikabruf aufgeräumt.{" "}
+          Zur Missbrauchsabwehr verarbeitet die Sicherheits-API die Verbindungs-IP vorübergehend in einem flüchtigen Rate-Limit-Speicher. Die Einträge laufen nach höchstens 15 Minuten für Supportanfragen/Tickets beziehungsweise einer Stunde für Rezensionen/Bilder ab; sie werden dafür nicht in der SQLite-Datenbank gespeichert.
+        </p>
+        <p>
+          Diese Formulardaten werden vom Browser an die AlpenSMP-Sicherheits-API unter{" "}
+          <span className="font-mono text-fg">{PANEL_API_HOST}</span> gesendet und dort in einer SQLite-Datenbank auf einem Ubuntu-Server gespeichert. Sie werden nicht über den Website-Code in die Firebase Realtime Database geschrieben. Supportanfragen, Tickets, Rezensionen und Spielerbilder werden ab einem Alter von 365 Tagen beim nächsten täglichen Bereinigungslauf aus der aktiven Datenbank gelöscht. Die Bereinigung läuft beim Start der API und danach täglich. Für öffentliche Formulare gelten zusätzlich serverseitige Anfragelimits.
+        </p>
+        <p>
+          Ein Ticketcode ist nach 30 Tagen für öffentliche Abfragen ungültig; der gespeicherte Ticketinhalt wird dadurch nicht sofort gelöscht, sondern nach der genannten Jahresfrist. Zeitgestempelte SQLite-Datenbank-Backups werden ab einem Alter von 365 Tagen beim nächsten täglichen Bereinigungslauf entfernt. Ein bereits gelöschter Datensatz kann dadurch noch bis zu einem weiteren Jahr in einem Backup enthalten sein. Ob zusätzliche Infrastruktur- oder Cloud-Snapshots bestehen und wie lange sie aufbewahrt werden, ist nicht bestätigt. Rezensionen und Bilder werden vor einer Veröffentlichung vom Team geprüft. Eine Veröffentlichung erfolgt nur mit separater Einwilligung; du kannst sie widerrufen und die Entfernung eines öffentlichen Beitrags verlangen.
+        </p>
+        <p>
+          Hochgeladene PNG-, JPG- und WebP-Bilder werden im Browser vor dem Versand in ein JPEG mit höchstens 1600 Pixeln Kantenlänge umgerechnet und komprimiert. Die Datei wird nicht unverändert übertragen. Lade keine privaten Angaben und keine Bilder anderer Personen ohne deren Zustimmung hoch.
+        </p>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-xl font-semibold text-fg">Firebase und öffentliche Serverstatistik</h2>
+        <p>
+          Firebase Realtime Database in der aus der Projekt-URL ersichtlichen Region europe-west1 (Belgien) enthält den öffentlichen Serverstatus und aggregierte Gesamtzahlen. Der zeitliche Verlauf der gleichzeitig online befindlichen Spieler wird durch die Sicherheits-API aus der öffentlichen Serverstatus-Abfrage erstellt und in ihrer SQLite-Datenbank gespeichert. Dafür werden ungefähr alle 15 Minuten nur Zeitstempel und Spielerzahl gespeichert, keine Minecraft-Namen oder UUIDs. Verlaufseinträge älter als sieben Tage werden beim API-Start und danach täglich bereinigt.{" "}
           <a className="text-brand underline" href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener noreferrer">Firebase-Datenschutz</a>{" "}
           · <a className="text-brand underline" href="https://cloud.google.com/terms/data-processing-addendum" target="_blank" rel="noopener noreferrer">Google Cloud-Datenverarbeitungsbedingungen</a>.
+        </p>
+        <p>
+          Für den geschützten Team-Bereich wird Firebase Authentication verwendet. Dabei werden Teamkonto-Kennung, E-Mail-Adresse und Authentifizierungsdaten bearbeitet. Im Browser werden erforderliche Anmeldedaten im Sitzungsspeicher gehalten. Der separate Login über einen Grok-Auth-Broker ist laut Betreiberangabe in der Live-Umgebung nicht aktiv.
+        </p>
+        <p>
+          Der Quellcode enthält zusätzlich Unterstützung für PostgreSQL (Neon) für diesen nicht aktiven Login-Pfad. Diese Datenbank wird laut Betreiberangabe in der Live-Umgebung nicht verwendet.
         </p>
       </section>
 
       <section className="space-y-3">
         <h2 className="text-xl font-semibold text-fg">Discord-Support und KI-Antworten</h2>
         <p>
-          Wenn du den Discord-Support nutzt, verarbeitet Discord deine Accountdaten und Nachrichten nach{" "}
-          <a className="text-brand underline" href="https://discord.com/privacy" target="_blank" rel="noopener noreferrer">Discords Datenschutzhinweisen</a>. Der Support-Bot verarbeitet in Support-Tickets Discord-ID und Anzeigename, Nachrichtenverlauf, Kategorie, Antworten und Zeitpunkte. Ticket-Metadaten liegen zusätzlich in einer lokalen Bot-Datenbank auf dem Server.
+          Bei Discord-Support verarbeitet Discord deine Accountdaten und Nachrichten nach{" "}
+          <a className="text-brand underline" href="https://discord.com/privacy" target="_blank" rel="noopener noreferrer">Discords Datenschutzhinweisen</a>. Der Bot verarbeitet für Supporttickets Discord-ID und Anzeigename, Nachrichtenverlauf, Kategorie, Antworten und Zeitpunkte. Die Bot-Software speichert Ticketdaten lokal; geschlossene Ticketverläufe können zudem im Team-Discord protokolliert werden. Eine feste automatische Lösch- oder Backup-Frist ist im verfügbaren Bot-Code nicht belegt.
         </p>
         <p>
-          Für eine KI-gestützte Antwort kann der Bot den Verlauf eines Support-Tickets – einschließlich Anzeigenamen, Nachrichtentexten und gegebenenfalls Dateinamen von Anhängen – an die Groq-Cloud-API übermitteln. Die Anhänge selbst werden dabei nicht an Groq übertragen. Groq verarbeitet diese Eingaben nach den{" "}
-          <a className="text-brand underline" href="https://console.groq.com/docs/legal/customer-data-processing-addendum" target="_blank" rel="noopener noreferrer">Datenverarbeitungsbedingungen von Groq</a>. KI-Antworten entscheiden nicht über Sperren; Sanktionen legt das Team fest.
+          Für eine KI-Antwort übermittelt der Bot den Ticketverlauf mit Nachrichten und Anzeigenamen sowie gegebenenfalls Dateinamen von Anhängen an die Groq-Cloud-API. Der Bot lädt die angehängten Dateien nicht als Datei zu Groq hoch. Groq verarbeitet die Anfrage nach seinen{" "}
+          <a className="text-brand underline" href="https://console.groq.com/docs/legal/customer-data-processing-addendum" target="_blank" rel="noopener noreferrer">Datenverarbeitungsbedingungen</a>. Die Website-AlpenKI ist davon getrennt: Sie verwendet fest hinterlegte Antworten und sendet Chatfragen nicht an ein Sprachmodell. KI-Antworten können falsch sein; für eine Prüfung durch das Team kannst du eine Übergabe verlangen.
         </p>
-        <p>Es wurde keine allgemeine Übertragung des öffentlichen Minecraft-Chats in Discord eingerichtet. Discord-Nachrichten können durch Wortfilter automatisch entfernt werden.</p>
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-xl font-semibold text-fg">Weitere Dienste und Datenübermittlungen</h2>
+        <h2 className="text-xl font-semibold text-fg">Karte und weitere externe Dienste</h2>
         <p>
-          Die BlueMap wird auf der Seite /karte über map.alpensmp.net eingebettet. Beim Aufruf stellt dein Browser eine direkte HTTPS-Verbindung zum vom Betreiber betriebenen Kartenserver her; dabei werden technische Verbindungsdaten wie IP-Adresse, Zeitpunkt und angeforderte Karteninhalte verarbeitet. Die serverseitige Live-Statistik fragt mcsrvstat.us, die Discord-API und Firebase ab. Diese Dienste erhalten dabei die Serveradresse oder die für die Abfrage nötigen Statistikdaten, nicht deine Browser-IP. Discord, TikTok, Modrinth und YouTube öffnen sich erst, wenn du den jeweiligen Link anklickst. YouTube-Videos und Vorschaubilder werden nicht eingebettet.
+          Die BlueMap unter{" "}
+          <a className="text-brand underline" href={SITE.map} target="_blank" rel="noopener noreferrer">map.alpensmp.net</a>{" "}
+          wird direkt im Browser geladen. Beim Öffnen der Karte erhält der Kartenserver technische Verbindungsdaten wie deine IP-Adresse, Zeitpunkt und angeforderte Karteninhalte.
         </p>
         <p>
-          Vercel, Oracle Cloud, Google, Discord und Groq können Daten je nach Dienst außerhalb der Schweiz oder des EWR verarbeiten. Für Übermittlungen gelten die jeweils anwendbaren Angemessenheitsbeschlüsse und vertraglichen Schutzmaßnahmen der Anbieter. Die Anbieterinformationen sind oben verlinkt; Vercel stellt seine{" "}
-          <a className="text-brand underline" href="https://vercel.com/legal/privacy-notice" target="_blank" rel="noopener noreferrer">Datenschutzhinweise</a>{" "}
-          und Oracle seine{" "}
-          <a className="text-brand underline" href="https://www.oracle.com/legal/privacy/" target="_blank" rel="noopener noreferrer">Datenschutzhinweise</a>{" "}
-          bereit. Eine Weitergabe zu Werbezwecken findet nicht statt.
+          Serverstatus und Discord-Mitgliederzahlen werden serverseitig bei mcsrvstat.us beziehungsweise der Discord-API abgerufen. Dabei werden die Serveradresse oder die für die Abfrage erforderlichen Statistikdaten übermittelt; die Besucher-IP wird nicht an diese APIs weitergereicht. Links zu Discord, TikTok, Modrinth und YouTube öffnen externe Seiten erst nach dem Anklicken. YouTube-Videos werden nicht eingebettet.
+        </p>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-xl font-semibold text-fg">Speicherung im Browser und Cookies</h2>
+        <p>
+          Es gibt keine Werbe- oder Analyse-Cookies. Für Funktionen wie Formular-Wartezeiten, Statistikbereinigung und Anzeigeeinstellungen nutzt die Website einzelne Werte in localStorage oder sessionStorage. Der Team-Login benötigt Authentifizierungsdaten; je nach aktivierter Login-Funktion werden zusätzlich Sitzungscookies verwendet. Diese Speicherungen dienen den angeforderten Funktionen und nicht dem Tracking.
+        </p>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-xl font-semibold text-fg">Empfänger und mögliche Datenübermittlungen</h2>
+        <p>
+          Je nach Funktion erhalten Vercel, Google Firebase/Authentication, die Sicherheits-API unter {PANEL_API_HOST}, Oracle Cloud, Discord, Groq und mcsrvstat.us die oben beschriebenen Daten. Anbieter können Daten ausserhalb der Schweiz oder des EWR bearbeiten. Die konkreten Regionen, Unterauftragsbearbeiter und vertraglichen Garantien sind für die Sicherheits-API, den Bot-Host, die aktive Team-Login-Konfiguration und die Backups nicht aus diesem Website-Repository ersichtlich. Es wird deshalb keine bestimmte Angemessenheitsentscheidung oder Standardvertragsklausel für alle Anbieter behauptet. Die jeweiligen Anbieterinformationen sind verlinkt; bei Fragen kannst du den Betreiber kontaktieren.
+        </p>
+        <p>
+          Wenn du die Kontakt-E-Mail verwendest, werden deine Absenderadresse und der Nachrichteninhalt von deinem E-Mail-Anbieter sowie beim Empfang durch Gmail/Google bearbeitet.{" "}
+          <a className="text-brand underline" href="https://policies.google.com/privacy?hl=de" target="_blank" rel="noopener noreferrer">Datenschutzhinweise von Google</a>.
         </p>
         <p>Es gibt keinen Newsletter, keine Marketing-E-Mails und keine Zahlungsfunktion.</p>
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-xl font-semibold text-fg">Cookies und lokale Speicherung</h2>
+        <h2 className="text-xl font-semibold text-fg">Deine Rechte</h2>
         <p>
-          Die Website-Schriften liegen lokal; es werden keine Google Fonts nachgeladen. Es gibt keine Analyse- oder Werbe-Cookies.
+          Du kannst im Rahmen des jeweils anwendbaren Rechts Auskunft, Berichtigung und Löschung verlangen. Soweit vorgesehen, kannst du auch eine Einschränkung der Bearbeitung oder Datenübertragbarkeit verlangen, einer auf berechtigte Interessen gestützten Bearbeitung widersprechen und eine erteilte Einwilligung mit Wirkung für die Zukunft widerrufen. Du kannst dich ausserdem bei der zuständigen Datenschutzaufsicht beschweren.
         </p>
         <p>
-          Im Browser werden technisch nötige Zeitpunkte für Formular-Sperren, Statistikabfragen und das Aufräumen alter Messwerte lokal gespeichert. Das Team-Login setzt erst beim Anmelden im Personalbereich ein Token; öffentliche Seiten tun das nicht. Du kannst diese lokalen Werte in deinem Browser löschen.
+          Schreibe an{" "}
+          <a className="text-brand underline" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>{" "}
+          oder nutze das <Link to="/kontakt" className="text-brand underline">Website-Ticket</Link>. Nenne nur die Kennungen, die zur Zuordnung nötig sind, etwa Minecraft-Name/UUID, Discord-Name oder Ticketcode. Sende keine Passwörter. In der Schweiz ist der Eidgenössische Datenschutz- und Öffentlichkeitsbeauftragte (EDÖB) zuständig; soweit die DSGVO gilt, kannst du dich an eine zuständige Datenschutzaufsichtsbehörde wenden.
         </p>
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-xl font-semibold text-fg">Speicherdauer</h2>
+        <h2 className="text-xl font-semibold text-fg">Minderjährige, Automatisierung und Sicherheit</h2>
+        <p>
+          Es gibt keine feste Altersgrenze für den Server; das Alter wird nicht abgefragt. Für Minderjährige gelten je nach Wohnsitz und Verarbeitung unterschiedliche Regeln. Wo eine wirksame Einwilligung erforderlich ist, gelten die gesetzlichen Vorgaben zur Einwilligungsfähigkeit und gegebenenfalls zur Zustimmung einer erziehungsberechtigten Person.
+        </p>
+        <p>
+          Es werden keine automatisierten Einzelentscheidungen mit rechtlicher oder ähnlich erheblicher Wirkung getroffen. Wortfilter können Nachrichten entfernen und Anti-Cheat-Systeme Auffälligkeiten melden; das Team beurteilt Sanktionen. Zugriffe auf interne Bereiche sind an eine Anmeldung und Rollen gebunden. Die konkrete Live-Konfiguration der Sicherheits-API und Firebase-Regeln wurde nicht unabhängig geprüft. Datenübertragungen erfolgen, soweit der jeweilige Dienst dies unterstützt, verschlüsselt; absolute Sicherheit kann nicht garantiert werden.
+        </p>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-xl font-semibold text-fg">Offizielle Rechtsquellen</h2>
         <ul className="list-disc space-y-1 pl-5">
-          <li>Spielstände, Moderations- und Plugin-Daten sowie Serverlogs haben derzeit keine feste automatische Löschfrist. Sie bleiben grundsätzlich gespeichert, solange der Server betrieben wird; eine automatische Löschung wegen Inaktivität findet nicht statt.</li>
-          <li>Für Serverkonfiguration und Bot-Daten werden Backups erstellt. Für deren Löschung ist keine feste Frist eingerichtet; entfernte Daten können daher noch in vorhandenen Backups liegen.</li>
-          <li>Freigegebene Rezensionen und Bilder bleiben öffentlich, bis du ihre Entfernung verlangst oder der Beitrag nicht mehr benötigt wird. Nicht freigegebene Beiträge sieht nur das Team und löscht sie, wenn sie nicht mehr benötigt werden.</li>
-          <li>Der Zugriffscode eines Website-Tickets läuft nach 30 Tagen ab. Das macht den Ticketinhalt nicht automatisch unlesbar für das Team und löscht den Datensatz nicht automatisch; das Team löscht ihn, wenn er nicht mehr benötigt wird oder auf Anfrage.</li>
-          <li>Für technische Website-Logs bei Vercel gilt die Aufbewahrung des Anbieters; eine eigene Frist ist nicht bekannt.</li>
+          <li><a className="text-brand underline" href="https://www.fedlex.admin.ch/eli/cc/2022/491/de" target="_blank" rel="noopener noreferrer">Schweizer Datenschutzgesetz (Fedlex)</a></li>
+          <li><a className="text-brand underline" href="https://www.edoeb.admin.ch/de/datenschutzerklaerungen-im-internet" target="_blank" rel="noopener noreferrer">EDÖB: Datenschutzerklärungen im Internet</a></li>
+          <li><a className="text-brand underline" href="https://eur-lex.europa.eu/eli/reg/2016/679/oj" target="_blank" rel="noopener noreferrer">Datenschutz-Grundverordnung (EUR-Lex)</a></li>
+          <li><a className="text-brand underline" href="https://www.gesetze-im-internet.de/ttdsg/__25.html" target="_blank" rel="noopener noreferrer">TDDDG § 25 (Gesetze-im-Internet)</a></li>
         </ul>
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-xl font-semibold text-fg">Deine Rechte</h2>
+        <h2 className="text-xl font-semibold text-fg">Änderungen und noch zu bestätigende Angaben</h2>
         <p>
-          Du kannst Auskunft, Berichtigung und Löschung deiner Daten verlangen. Soweit anwendbar, kannst du außerdem eine Einschränkung der Verarbeitung und Datenübertragbarkeit verlangen, einer Verarbeitung auf Grundlage berechtigter Interessen widersprechen und eine erteilte Einwilligung mit Wirkung für die Zukunft widerrufen.
+          Diese Erklärung wird angepasst, wenn sich die tatsächliche Datenbearbeitung ändert. Eine verlässliche feste Löschfrist für Ticket- und Community-Daten, Minecraft-Logs und Backups sowie die aktiven Hosting- und Authentifizierungsregionen sind im verfügbaren Quellcode nicht vollständig belegt. Diese Angaben müssen vor einer abschliessenden rechtlichen Prüfung anhand der laufenden Dienste bestätigt werden.
         </p>
-        <p>
-          Stelle die Anfrage über das{" "}<Link to="/kontakt" className="text-brand underline">Website-Ticket</Link>{" "}oder den{" "}
-          <a className="text-brand underline" href={SITE.discord}>Discord</a>. Nenne die betroffenen Kennungen, die du kennst – zum Beispiel Minecraft-Name/UUID, Discord-Name oder Ticketcode – aber sende keine Passwörter oder Zugangsschlüssel. Beschwerden sind beim Eidgenössischen Datenschutz- und Öffentlichkeitsbeauftragten (EDÖB) oder, soweit die DSGVO gilt, bei der zuständigen Datenschutzaufsicht möglich.
-        </p>
+        <p className="text-xs text-faint">Stand: 19. November 2026</p>
       </section>
-
-      <section className="space-y-3">
-        <h2 className="text-xl font-semibold text-fg">Automatisierung, Minderjährige und Sicherheit</h2>
-        <p>
-          Es gibt keine festgelegte Altersgrenze für den Server; das Alter wird nicht abgefragt. Für Minderjährige gelten die Einwilligungsregeln ihres Wohnsitzlandes; wo erforderlich, muss eine erziehungsberechtigte Person zustimmen. Die Website trifft keine automatisierten Entscheidungen mit rechtlicher oder ähnlich erheblicher Wirkung. Wortfilter können einzelne Nachrichten entfernen, und Anti-Cheat-Systeme protokollieren Auffälligkeiten oder melden sie dem Team. Über Sanktionen entscheidet das Team.
-        </p>
-        <p>
-          Zugriffe auf interne Team- und Supportdaten sind beschränkt. Verbindungen zu den genannten Webdiensten erfolgen verschlüsselt, soweit der jeweilige Dienst dies unterstützt. Absolute Sicherheit kann bei einer Datenübertragung oder Speicherung im Internet nicht garantiert werden.
-        </p>
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-xl font-semibold text-fg">Änderungen</h2>
-        <p>
-          Diese Erklärung wird angepasst, wenn sich Datenverarbeitung oder Dienste ändern. Die aktuelle Fassung steht immer auf dieser Website. Über wesentliche Änderungen informieren wir nach Möglichkeit zusätzlich über Discord oder im Spiel.
-        </p>
-      </section>
-      <p className="text-xs text-faint">Stand: 15. November 2026</p>
       <LegalLinks />
     </LegalArticle>
   );
