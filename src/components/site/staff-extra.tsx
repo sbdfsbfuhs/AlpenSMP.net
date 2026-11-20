@@ -145,7 +145,7 @@ function taskState(item: TaskItem) {
 
 export function TasksBoard({ real, view, note, username }: { real: string; view: string; note: Note; username: string }) {
   const rows = useLive<TaskItem>("tasks");
-  const people = useLive<{ role?: string }>("staffUsers");
+  const people = useLive<{ role?: string }>("staffDirectory");
   const edit = can(view, "tasks");
   const lead = real === "owner" || real === "admin";
   const [title, setTitle] = useState("");
@@ -306,7 +306,7 @@ function TaskReply({ id, note }: { id: string; note: Note }) {
 
 export function AbsenceBoard({ real, view, note, username }: { real: string; view: string; note: Note; username: string }) {
   const rows = useLive<{ by?: string; from?: string; until?: string; reason?: string; ts?: number; updatedAt?: number }>("absences");
-  const people = useLive<{ role?: string }>("staffUsers");
+  const people = useLive<{ role?: string }>("staffDirectory");
   const edit = can(view, "absence");
   const owner = real === "owner";
   const [who, setWho] = useState(username);

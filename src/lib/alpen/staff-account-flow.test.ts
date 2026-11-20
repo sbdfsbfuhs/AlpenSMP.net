@@ -14,15 +14,17 @@ describe("staff account email recovery", () => {
     assert.notEqual(rules.rules.staffGate.$name[".read"], true);
   });
 
-  it("allows a staff member to update only their own account without changing role or uid", async () => {
+  it("keeps self-service account updates active, own-record, and role-stable", async () => {
     const rulesUrl = new URL("../../../firebase/database.rules.json", import.meta.url);
     const rules = JSON.parse(await readFile(rulesUrl, "utf8")) as {
       rules: { staffUsers: { $name: { ".write": string } } };
     };
     const ownAccountWrite = rules.rules.staffUsers.$name[".write"];
-    assert.match(ownAccountWrite, /data\.child\('uid'\)\.val\(\)\s*==\s*auth\.uid/);
+    assert.match(ownAccountWrite, /staffUsers'\)\.child\(\$name\)\.child\('uid'\)\.val\(\)\s*==\s*auth\.uid/);
     assert.match(ownAccountWrite, /newData\.child\('role'\)\.val\(\)\s*==\s*data\.child\('role'\)\.val\(\)/);
     assert.match(ownAccountWrite, /newData\.child\('uid'\)\.val\(\)\s*==\s*data\.child\('uid'\)\.val\(\)/);
+    assert.match(ownAccountWrite, /newData\.child\('disabled'\)\.val\(\)\s*==\s*data\.child\('disabled'\)\.val\(\)/);
+    assert.doesNotMatch(ownAccountWrite, /staffOpen/);
   });
 
   describe("public ticket access", () => {

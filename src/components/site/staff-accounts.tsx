@@ -10,6 +10,7 @@ import {
   setStaffEmail,
   setStaffPaused,
   setStaffRole,
+  syncStaffDirectory,
   type ModItem,
   type StaffSession,
 } from "@/lib/alpen/staff";
@@ -25,6 +26,7 @@ export function Accounts({ note, actor }: { note: (text: string) => void; actor:
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("helper");
   const [formError, setFormError] = useState("");
+  const [syncingDirectory, setSyncingDirectory] = useState(false);
 
   return (
     <div className="space-y-4">
@@ -62,7 +64,23 @@ export function Accounts({ note, actor }: { note: (text: string) => void; actor:
       {actor.role === "owner" ? (
         <section className="card card-still p-5">
           <h2 className="text-lg font-semibold">Interne Daten</h2>
-          <p className="mt-2 text-sm text-muted">Migrierte Teamdaten werden über den Sicherheits-Server gelesen und gespeichert. Firebase bleibt für Konten sowie Status- und Notfalldaten; die ursprünglichen Firebase-Daten werden nicht automatisch gelöscht.</p>
+          <p className="mt-2 text-sm text-muted">Das Teamverzeichnis enthält nur Teamname, Rolle, Pausenstatus und Abwesenheitsschwelle. E-Mail-Adressen bleiben in den geschützten Kontendaten. Die Synchronisierung löscht keine vorhandenen Einträge.</p>
+          <button
+            type="button"
+            className="btn-ghost mt-3"
+            disabled={syncingDirectory}
+            onClick={() => {
+              setSyncingDirectory(true);
+              void syncStaffDirectory(actor)
+                .then((count) => note(`Teamverzeichnis aktualisiert (${count} Konten).`))
+                .catch((error) =>
+                  note(error instanceof Error ? error.message : "Teamverzeichnis konnte nicht synchronisiert werden."),
+                )
+                .finally(() => setSyncingDirectory(false));
+            }}
+          >
+            {syncingDirectory ? "Synchronisiere …" : "Teamverzeichnis synchronisieren"}
+          </button>
         </section>
       ) : null}
       <StreamerAccount note={note} actor={actor} />

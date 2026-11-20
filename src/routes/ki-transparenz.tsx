@@ -7,7 +7,8 @@ export const Route = createFileRoute("/ki-transparenz")({
       { title: "KI-Transparenz · AlpenSMP" },
       {
         name: "description",
-        content: "Was der Website-Assistent und der Discord-Supportbot automatisieren und welche KI-Dienste dabei eingesetzt werden.",
+        content:
+          "Was der Website-Assistent und der Discord-Supportbot automatisieren und welche KI-Dienste dabei eingesetzt werden.",
       },
     ],
   }),
@@ -26,18 +27,26 @@ function AiTransparencyPage() {
         <section className="card p-5 text-fg">
           <h2 className="text-lg font-semibold">Kurz erklärt</h2>
           <p className="mt-3">
-            Die Website-AlpenKI ist ein automatischer Assistent mit fest hinterlegten Antworten. Der Discord-Supportbot nutzt für bestimmte Antworten ein Sprachmodell über die Groq-API. KI-Antworten können unvollständig oder falsch sein. Bei einer Beschwerde, einem Bann oder einem anderen wichtigen Anliegen kannst du eine Prüfung durch das Team verlangen.
+            Die Website-AlpenKI ist ein automatischer Assistent mit fest hinterlegten Antworten. Der
+            Discord-Supportbot nutzt für bestimmte Antworten ein Sprachmodell über die Groq-API.
+            KI-Antworten können unvollständig oder falsch sein. Bei einer Beschwerde, einem Bann
+            oder einem anderen wichtigen Anliegen kannst du eine Prüfung durch das Team verlangen.
           </p>
         </section>
 
         <section>
           <h2 className="text-lg font-semibold text-fg">AlpenKI auf der Website</h2>
           <p className="mt-3">
-            Der Chat am Maskottchen sucht lokal im Website-Code nach passenden, vorformulierten Antworten zu Server, Regeln und Befehlen. Er ruft dafür kein externes Sprachmodell auf. Die Eingaben werden durch diese Funktion nicht an Groq gesendet.
+            Der Chat am Maskottchen sucht lokal im Website-Code nach passenden, vorformulierten
+            Antworten zu Server, Regeln und Befehlen. Er ruft dafür kein externes Sprachmodell auf.
+            Die Eingaben werden durch diese Funktion nicht an Groq gesendet.
           </p>
           <p className="mt-3">
-            Der Assistent ist kein Teammitglied. Wenn er deine Frage nicht beantworten kann, wende dich über{" "}
-            <Link to="/kontakt" className="text-fg underline">Kontakt</Link>{" "}
+            Der Assistent ist kein Teammitglied. Wenn er deine Frage nicht beantworten kann, wende
+            dich über{" "}
+            <Link to="/kontakt" className="text-fg underline">
+              Kontakt
+            </Link>{" "}
             oder Discord an das Team.
           </p>
         </section>
@@ -45,34 +54,87 @@ function AiTransparencyPage() {
         <section>
           <h2 className="text-lg font-semibold text-fg">KI-Unterstützung auf Discord</h2>
           <p className="mt-3">
-            Der Discord-Supportbot kann mit Groq ein Sprachmodell aufrufen, um Antworten auf Supportfragen vorzubereiten. Dafür werden der relevante Nachrichtenverlauf, Anzeigenamen und gegebenenfalls Dateinamen von Anhängen an Groq übermittelt. Die Bot-Software lädt die Anhänge nicht als Dateien zum Modell hoch. Ticketverläufe können zusätzlich für das Supportteam gespeichert werden. Einzelheiten zu Daten und Speicherfristen stehen in der{" "}
-            <Link to="/datenschutz" className="text-fg underline">Datenschutzerklärung</Link>.
+            Beim Eröffnen eines Tickets weist der Bot darauf hin, dass automatische Antworten
+            vorkommen und für bestimmte Fragen Groq verwendet wird. Dafür verarbeitet er den
+            Nachrichtenverlauf des Tickets mit Nachrichten der betroffenen Person und des Teams,
+            Bot-Antworten, Anzeigenamen und gegebenenfalls Dateinamen von Anhängen. Die Dateien
+            selbst werden nicht als Dateien an Groq hochgeladen. Auf Anfrage des Teams kann eine
+            Zusammenfassung erstellt werden; dafür werden bis zu 50 Nachrichten mit Namen und Text
+            an Groq gesendet. Einzelheiten zu Daten, Speicherfristen und Empfängern stehen in der{" "}
+            <Link to="/datenschutz" className="text-fg underline">
+              Datenschutzerklärung
+            </Link>
+            .
           </p>
           <p className="mt-3">
-            Der Bot kann eine Übergabe an das Team anstossen. Über Sanktionen entscheidet das Team, nicht die KI. Teile dem Bot keine Passwörter oder unnötigen privaten Angaben mit.
+            Der Bot kann eine Übergabe an das Team anstossen. Du kannst mit <code>/ping-team</code>{" "}
+            ein Teammitglied anfordern; nach der Übernahme pausiert die automatische
+            Antwortfunktion. Über Sanktionen entscheidet das Team, nicht die KI. Teile dem Bot keine
+            Passwörter oder unnötigen privaten Angaben mit.
           </p>
         </section>
 
         <section>
           <h2 className="text-lg font-semibold text-fg">Texte und Bilder</h2>
           <p className="mt-3">
-            Beim Erstellen und Überarbeiten einzelner Website-Texte wurden teilweise KI-Werkzeuge als Schreibhilfe verwendet. Die Inhalte werden redaktionell geprüft und vom Betreiber verantwortet. Im Projekt ist nicht verlässlich dokumentiert, welche einzelnen Bilddateien mit KI erzeugt oder bearbeitet wurden; deshalb wird keine pauschale Herkunftsbehauptung zu allen Bildern gemacht.
+            Beim Erstellen und Überarbeiten einzelner Website-Texte wurden teilweise KI-Werkzeuge
+            als Schreibhilfe verwendet. Die Inhalte werden redaktionell geprüft und vom Betreiber
+            verantwortet. Im Projekt ist nicht verlässlich dokumentiert, welche einzelnen
+            Bilddateien mit KI erzeugt oder bearbeitet wurden; deshalb wird keine pauschale
+            Herkunftsbehauptung zu allen Bildern gemacht.
           </p>
         </section>
 
         <section>
           <h2 className="text-lg font-semibold text-fg">Rechtlicher Hinweis</h2>
           <p className="mt-3">
-            Diese Seite beschreibt die nach aktuellem Projektstand bekannten Funktionen. Sie ist keine Rechtsberatung, Zertifizierung oder Bestätigung vollständiger Konformität. Die Verordnung (EU) 2024/1689 gilt grundsätzlich ab dem 2. August 2026; ob einzelne Pflichten auf eine bestimmte Funktion anwendbar sind, hängt unter anderem von ihrer technischen Ausgestaltung und dem jeweiligen Anwendungsbereich ab.
+            Diese Seite beschreibt die nach aktuellem Projektstand bekannten Funktionen. Sie ist
+            keine Rechtsberatung, Zertifizierung oder Bestätigung vollständiger Konformität. Art. 50
+            Abs. 1 der Verordnung (EU) 2024/1689 sieht für bestimmte KI-Systeme, die direkt mit
+            Menschen interagieren, einen Hinweis auf die Interaktion mit KI vor, sofern dies nicht
+            offensichtlich ist. Die meisten Vorschriften des AI Act gelten ab dem 2. August 2026
+            (Art. 113). Ob und in welcher Rolle AlpenSMP darunter fällt, muss anhand des konkreten
+            Einsatzes rechtlich geprüft werden; der Hinweis beim Ticketstart ist eine
+            Transparenzmassnahme und keine Konformitätsbestätigung.
           </p>
           <ul className="mt-3 list-disc space-y-2 pl-5">
             <li>
-              <a className="text-fg underline" href="https://eur-lex.europa.eu/eli/reg/2024/1689/oj" target="_blank" rel="noopener noreferrer">
+              <a
+                className="text-fg underline"
+                href="https://eur-lex.europa.eu/eli/reg/2024/1689/art_50/oj"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                AI Act, Art. 50 – Transparenzpflichten auf EUR-Lex
+              </a>
+            </li>
+            <li>
+              <a
+                className="text-fg underline"
+                href="https://eur-lex.europa.eu/eli/reg/2024/1689/art_113/oj"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                AI Act, Art. 113 – Anwendungsbeginn auf EUR-Lex
+              </a>
+            </li>
+            <li>
+              <a
+                className="text-fg underline"
+                href="https://eur-lex.europa.eu/eli/reg/2024/1689/oj"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 Verordnung (EU) 2024/1689 auf EUR-Lex
               </a>
             </li>
             <li>
-              <a className="text-fg underline" href="https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai" target="_blank" rel="noopener noreferrer">
+              <a
+                className="text-fg underline"
+                href="https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 Europäische Kommission: Überblick zum AI Act
               </a>
             </li>

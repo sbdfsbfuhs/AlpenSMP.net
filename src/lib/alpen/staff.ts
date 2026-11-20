@@ -1,5 +1,14 @@
 import { SITE } from "@/lib/alpen/site";
-import { changeOwnPassword, clearFirebaseLogin, createFirebaseUser, deleteFirebaseUser, ensureIdToken, sendPasswordResetEmail, signInEmail } from "@/lib/alpen/fb-auth";
+import { asRole } from "@/lib/alpen/roles";
+import {
+  changeOwnPassword,
+  clearFirebaseLogin,
+  createFirebaseUser,
+  deleteFirebaseUser,
+  ensureIdToken,
+  sendPasswordResetEmail,
+  signInEmail,
+} from "@/lib/alpen/fb-auth";
 import { isMoved, loadPath, relayDetail, SecurityDenied, SecurityDown } from "@/lib/alpen/security";
 import {
   isMinecraftPlayersResponse,
@@ -82,6 +91,10 @@ export type CommunityItem = {
   ts?: number;
   updatedAt?: number;
   imageUrl?: string;
+  submissionAcknowledged?: boolean;
+  publicationConsent?: boolean;
+  publicationConsentAt?: number | null;
+  imageRightsConfirmed?: boolean;
 };
 
 type MapOf<T> = Record<string, T>;
@@ -91,8 +104,10 @@ async function request(path: string, method: string, body?: unknown) {
   if (method !== "GET" && isMoved(path)) {
     const moved = await relayDetail(path, method, body);
     if (moved.ok) return moved.data;
-    if (moved.status === 401 || moved.status === 403) throw new SecurityDenied("keine Berechtigung");
-    if (moved.status === 0 || moved.status >= 500) throw new SecurityDown(moved.error || "nicht erreichbar");
+    if (moved.status === 401 || moved.status === 403)
+      throw new SecurityDenied("keine Berechtigung");
+    if (moved.status === 0 || moved.status >= 500)
+      throw new SecurityDown(moved.error || "nicht erreichbar");
     throw new Error(moved.error || "Speichern abgelehnt");
   }
   return firebaseRaw(path, method, body);
@@ -108,8 +123,12 @@ async function firebaseRaw(path: string, method: string, body?: unknown) {
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   if (!res.ok) {
-    if (!token || res.status === 401) throw new Error("Bitte neu anmelden. Die Sitzung ist abgelaufen.");
-    if (res.status === 403) throw new Error(`Firebase blockt ${method} ${path}. Regeln sind noch nicht die neuen, oder dieser Login ist nicht als Owner-UID gespeichert.`);
+    if (!token || res.status === 401)
+      throw new Error("Bitte neu anmelden. Die Sitzung ist abgelaufen.");
+    if (res.status === 403)
+      throw new Error(
+        `Firebase blockt ${method} ${path}. Regeln sind noch nicht die neuen, oder dieser Login ist nicht als Owner-UID gespeichert.`,
+      );
     throw new Error("Speichern fehlgeschlagen");
   }
   if (res.status === 204) return null;
@@ -129,9 +148,22 @@ export async function fbUpdate(path: string, body: unknown) {
     return await request(path, "PATCH", body);
   } catch (patchError) {
     const current = await fbGet<Record<string, unknown>>(path).catch(() => null);
-    const keys = current && typeof current === "object" && !Array.isArray(current) ? Object.keys(current) : [];
-    const nested = keys.filter((key) => current && typeof current[key] === "object" && current[key]).length;
-    const oneRecord = current && !Array.isArray(current) && nested < 4 && ("name" in current || "text" in current || "msg" in current || "reason" in current || "status" in current || "archived" in current || "cmd" in current);
+    const keys =
+      current && typeof current === "object" && !Array.isArray(current) ? Object.keys(current) : [];
+    const nested = keys.filter(
+      (key) => current && typeof current[key] === "object" && current[key],
+    ).length;
+    const oneRecord =
+      current &&
+      !Array.isArray(current) &&
+      nested < 4 &&
+      ("name" in current ||
+        "text" in current ||
+        "msg" in current ||
+        "reason" in current ||
+        "status" in current ||
+        "archived" in current ||
+        "cmd" in current);
     if (!oneRecord || !current) throw patchError;
     return request(path, "PUT", { ...current, ...patch });
   }
@@ -161,7 +193,8 @@ export async function fetchMinecraftPlayersSnapshot(): Promise<MinecraftPlayersS
   } catch {
     throw new Error("Bannliste nicht erreichbar.");
   }
-  if (res.status === 401 || res.status === 403) throw new Error("Keine Berechtigung für die Minecraft-Bannliste.");
+  if (res.status === 401 || res.status === 403)
+    throw new Error("Keine Berechtigung für die Minecraft-Bannliste.");
   if (!res.ok) throw new Error("Bannliste nicht erreichbar.");
   let data: unknown;
   try {
@@ -179,7 +212,11 @@ export async function fetchMinecraftBans() {
   return (await fetchMinecraftPlayersSnapshot()).bans;
 }
 
-export async function executeMinecraftBan(input: { name: string; duration: string; reason: string }) {
+export async function executeMinecraftBan(input: {
+  name: string;
+  duration: string;
+  reason: string;
+}) {
   const token = await ensureIdToken();
   if (!token) throw new Error("Bitte melde dich erneut im Staff-Center an.");
 
@@ -192,24 +229,34 @@ export async function executeMinecraftBan(input: { name: string; duration: strin
       cache: "no-store",
     });
   } catch {
-    throw new Error("Das Control Center ist momentan nicht erreichbar. Es wurde kein Bann ausgeführt.");
+    throw new Error(
+      "Das Control Center ist momentan nicht erreichbar. Es wurde kein Bann ausgeführt.",
+    );
   }
 
   let data: unknown;
   try {
     data = await response.json();
   } catch {
-    throw new Error("Das Control Center lieferte eine ungültige Antwort. Bitte prüfe den Bann im Spiel.");
+    throw new Error(
+      "Das Control Center lieferte eine ungültige Antwort. Bitte prüfe den Bann im Spiel.",
+    );
   }
   if (!data || typeof data !== "object" || Array.isArray(data)) {
-    throw new Error("Das Control Center lieferte eine ungültige Antwort. Bitte prüfe den Bann im Spiel.");
+    throw new Error(
+      "Das Control Center lieferte eine ungültige Antwort. Bitte prüfe den Bann im Spiel.",
+    );
   }
   const row = data as Record<string, unknown>;
   if (!response.ok || row.ok !== true) {
-    throw new Error(typeof row.error === "string" ? row.error : "Der Minecraft-Bann ist fehlgeschlagen.");
+    throw new Error(
+      typeof row.error === "string" ? row.error : "Der Minecraft-Bann ist fehlgeschlagen.",
+    );
   }
   if (typeof row.command !== "string" || (row.action !== "ban" && row.action !== "tempban")) {
-    throw new Error("Das Control Center bestätigte den Bann nicht eindeutig. Bitte prüfe den Bann im Spiel.");
+    throw new Error(
+      "Das Control Center bestätigte den Bann nicht eindeutig. Bitte prüfe den Bann im Spiel.",
+    );
   }
   return { action: row.action, command: row.command };
 }
@@ -227,24 +274,34 @@ export async function executeMinecraftUnban(input: { name: string }) {
       cache: "no-store",
     });
   } catch {
-    throw new Error("Das Control Center ist momentan nicht erreichbar. Bitte prüfe den Bannstatus in Minecraft, bevor du es erneut versuchst.");
+    throw new Error(
+      "Das Control Center ist momentan nicht erreichbar. Bitte prüfe den Bannstatus in Minecraft, bevor du es erneut versuchst.",
+    );
   }
 
   let data: unknown;
   try {
     data = await response.json();
   } catch {
-    throw new Error("Das Control Center lieferte eine ungültige Antwort. Bitte prüfe den Bann im Spiel.");
+    throw new Error(
+      "Das Control Center lieferte eine ungültige Antwort. Bitte prüfe den Bann im Spiel.",
+    );
   }
   if (!data || typeof data !== "object" || Array.isArray(data)) {
-    throw new Error("Das Control Center lieferte eine ungültige Antwort. Bitte prüfe den Bann im Spiel.");
+    throw new Error(
+      "Das Control Center lieferte eine ungültige Antwort. Bitte prüfe den Bann im Spiel.",
+    );
   }
   const row = data as Record<string, unknown>;
   if (!response.ok || row.ok !== true) {
-    throw new Error(typeof row.error === "string" ? row.error : "Der Minecraft-Entbann ist fehlgeschlagen.");
+    throw new Error(
+      typeof row.error === "string" ? row.error : "Der Minecraft-Entbann ist fehlgeschlagen.",
+    );
   }
   if (typeof row.command !== "string" || row.action !== "pardon") {
-    throw new Error("Das Control Center bestätigte den Entbann nicht eindeutig. Bitte prüfe den Bann im Spiel.");
+    throw new Error(
+      "Das Control Center bestätigte den Entbann nicht eindeutig. Bitte prüfe den Bann im Spiel.",
+    );
   }
   return { action: row.action, command: row.command };
 }
@@ -328,7 +385,10 @@ export function staffName(value: string) {
 export function freshStamp(ts?: number, updatedAt?: number) {
   const day = 86_400_000;
   const now = Date.now();
-  return (typeof ts === "number" && now - ts < day) || (typeof updatedAt === "number" && now - updatedAt < day);
+  return (
+    (typeof ts === "number" && now - ts < day) ||
+    (typeof updatedAt === "number" && now - updatedAt < day)
+  );
 }
 
 export function lateDays(value: unknown) {
@@ -351,28 +411,64 @@ export async function savePassword(username: string, password: string) {
   await fbUpdate(`staffUsers/${name}`, { mustChangePw: false });
 }
 
-export async function createStaffAccount(input: { username: string; email: string; role: string; createdBy: string }) {
+export async function syncStaffDirectory(actor: Pick<StaffSession, "role">) {
+  if (actor.role !== "owner") throw new Error("Nur der Owner darf das Teamverzeichnis synchronisieren.");
+  const users = await fbGet<Record<string, { role?: string; disabled?: boolean; lateDays?: number }>>(
+    "staffUsers",
+  );
+  const rows = entries(users);
+  await Promise.all(
+    rows.map(([username, item]) =>
+      fbSet(`staffDirectory/${staffName(username)}`, {
+        role: asRole(item.role),
+        disabled: item.disabled === true,
+        lateDays: lateDays(item.lateDays),
+      }),
+    ),
+  );
+  return rows.length;
+}
+
+export async function createStaffAccount(input: {
+  username: string;
+  email: string;
+  role: string;
+  createdBy: string;
+}) {
   const name = staffName(input.username);
   const email = normalizeStaffEmail(input.email);
+  const role = asRole(input.role);
   const token = await ensureIdToken();
   if (!token) throw new Error("Bitte neu anmelden. Die Sitzung ist abgelaufen.");
   const keep = window.sessionStorage.getItem("alpen-fb-token");
   let created: Awaited<ReturnType<typeof createFirebaseUser>> | null = null;
   let accountLinked = false;
+  let directoryWriteAttempted = false;
   try {
     const existing = await fbGet<{ uid?: string }>(`staffUsers/${name}`);
     if (existing) throw new Error("Existiert schon");
     created = await createFirebaseUser(email, temporaryStaffPassword());
     if (keep) window.sessionStorage.setItem("alpen-fb-token", keep);
-    await fbSet(`staffByUid/${created.uid}`, { username: name, email, role: input.role, disabled: false });
+    await fbSet(`staffByUid/${created.uid}`, {
+      username: name,
+      email,
+      role,
+      disabled: false,
+    });
     await fbSet(`staffUsers/${name}`, {
-      role: input.role,
+      role,
       email,
       uid: created.uid,
       mustChangePw: false,
       disabled: false,
       createdAt: Date.now(),
       createdBy: input.createdBy,
+    });
+    directoryWriteAttempted = true;
+    await fbSet(`staffDirectory/${name}`, {
+      role,
+      disabled: false,
+      lateDays: 3,
     });
     await fbRemove(`staffGate/${name}`);
     accountLinked = true;
@@ -387,38 +483,62 @@ export async function createStaffAccount(input: { username: string; email: strin
       } catch (cleanupError) {
         cleanupErrors.push(cleanupError instanceof Error ? cleanupError.message : "Teamkonto");
       }
+      if (directoryWriteAttempted) {
+        try {
+          await fbSet(`staffDirectory/${name}`, { role, disabled: true, lateDays: 3 });
+        } catch (cleanupError) {
+          cleanupErrors.push(cleanupError instanceof Error ? cleanupError.message : "Teamverzeichnis");
+        }
+      }
       try {
         await fbRemove(`staffByUid/${created.uid}`);
       } catch (cleanupError) {
-        cleanupErrors.push(cleanupError instanceof Error ? cleanupError.message : "UID-Verknüpfung");
+        cleanupErrors.push(
+          cleanupError instanceof Error ? cleanupError.message : "UID-Verknüpfung",
+        );
       }
       try {
         await deleteFirebaseUser(created.idToken);
       } catch (cleanupError) {
-        cleanupErrors.push(cleanupError instanceof Error ? cleanupError.message : "Firebase-Account");
+        cleanupErrors.push(
+          cleanupError instanceof Error ? cleanupError.message : "Firebase-Account",
+        );
       }
     }
     if (cleanupErrors.length) {
-      throw new Error(`${message}. Bereinigung fehlgeschlagen (${cleanupErrors.join(", ")}); bitte vor einem erneuten Versuch den unvollständigen Account prüfen.`);
+      throw new Error(
+        `${message}. Bereinigung fehlgeschlagen (${cleanupErrors.join(", ")}); bitte vor einem erneuten Versuch den unvollständigen Account prüfen.`,
+      );
     }
     throw new Error(message);
   }
-  if (!accountLinked || !created) throw new Error("Account konnte nicht vollständig verknüpft werden.");
+  if (!accountLinked || !created)
+    throw new Error("Account konnte nicht vollständig verknüpft werden.");
   try {
     await sendPasswordResetEmail(email);
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Unbekannter Fehler";
-    throw new Error(`Account ist angelegt, aber der Passwort-Link konnte nicht gesendet werden: ${detail}`);
+    throw new Error(
+      `Account ist angelegt, aber der Passwort-Link konnte nicht gesendet werden: ${detail}`,
+    );
   }
-  await logStaff(input.createdBy, "Account angelegt", `${name} · ${input.role}`);
+  await logStaff(input.createdBy, "Account angelegt", `${name} · ${role}`);
 }
 
 async function describeLogin(token: string) {
   try {
-    const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))) as { user_id?: string; sub?: string; email?: string };
+    const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))) as {
+      user_id?: string;
+      sub?: string;
+      email?: string;
+    };
     const uid = payload.user_id || payload.sub || "";
-    const link = uid ? await fbGet<{ role?: string; username?: string }>(`staffByUid/${uid}`).catch(() => null) : null;
-    const owner = await fbGet<{ uid?: string; role?: string }>("staffUsers/owner").catch(() => null);
+    const link = uid
+      ? await fbGet<{ role?: string; username?: string }>(`staffByUid/${uid}`).catch(() => null)
+      : null;
+    const owner = await fbGet<{ uid?: string; role?: string }>("staffUsers/owner").catch(
+      () => null,
+    );
     const same = owner?.uid && uid && owner.uid === uid ? "UID ist Owner" : "UID ist nicht Owner";
     return `(${payload.email || "ohne E-Mail"}, Rang ${link?.role || "leer"}, Name ${link?.username || "leer"}, ${same}.)`;
   } catch {
@@ -426,27 +546,45 @@ async function describeLogin(token: string) {
   }
 }
 
-export async function logStaff(by: string, action: string, detail = "") {
-  try {
-    await fbPush("staffLog", { by, action, detail: detail.slice(0, 180), ts: Date.now() });
-  } catch {
-    /* Aktivitätslog ist optional, bis die Regel veröffentlicht ist. */
-  }
+export async function logStaff(_by: string, action: string, detail = "") {
+  await fbPush("staffLog", { action, detail: detail.slice(0, 180) });
 }
 
 export async function setStaffRole(username: string, role: string, actor: string) {
   const name = staffName(username);
-  const row = await fbGet<{ uid?: string }>(`staffUsers/${name}`);
-  await fbUpdate(`staffUsers/${name}`, { role });
-  if (row?.uid) await fbUpdate(`staffByUid/${row.uid}`, { role });
+  const safeRole = asRole(role);
+  const row = await fbGet<{ uid?: string; disabled?: boolean; lateDays?: number }>(
+    `staffUsers/${name}`,
+  );
+  if (!row?.uid) throw new Error("Account fehlt oder ist nicht verknüpft.");
+  await fbUpdate(`staffUsers/${name}`, { role: safeRole });
+  await fbUpdate(`staffByUid/${row.uid}`, { role: safeRole });
+  await fbSet(`staffDirectory/${name}`, {
+    role: safeRole,
+    disabled: row.disabled === true,
+    lateDays: lateDays(row.lateDays),
+  });
   await logStaff(actor, "Rolle geändert", `${name} · ${role}`);
 }
 
 export async function setStaffPaused(username: string, paused: boolean, actor: string) {
   const name = staffName(username);
-  const row = await fbGet<{ uid?: string }>(`staffUsers/${name}`);
-  await fbUpdate(`staffUsers/${name}`, { disabled: paused });
-  if (row?.uid) await fbUpdate(`staffByUid/${row.uid}`, { disabled: paused });
+  const row = await fbGet<{ uid?: string; role?: string; lateDays?: number }>(
+    `staffUsers/${name}`,
+  );
+  if (!row?.uid) throw new Error("Account fehlt oder ist nicht verknüpft.");
+  if (paused) {
+    await fbUpdate(`staffByUid/${row.uid}`, { disabled: true });
+    await fbUpdate(`staffUsers/${name}`, { disabled: true });
+  } else {
+    await fbUpdate(`staffUsers/${name}`, { disabled: false });
+    await fbUpdate(`staffByUid/${row.uid}`, { disabled: false });
+  }
+  await fbSet(`staffDirectory/${name}`, {
+    role: asRole(row.role),
+    disabled: paused,
+    lateDays: lateDays(row.lateDays),
+  });
   await logStaff(actor, paused ? "Account pausiert" : "Account freigegeben", name);
 }
 
@@ -455,7 +593,10 @@ export async function resetStaffPassword(username: string, actor: string) {
   const row = await fbGet<{ uid?: string; email?: string }>(`staffUsers/${name}`);
   if (!row?.uid) throw new Error("Account fehlt");
   const email = row.email?.trim();
-  if (!email || email.endsWith(STAFF_MAIL)) throw new Error("Für diesen Account muss zuerst die persönliche E-Mail-Adresse hinterlegt werden.");
+  if (!email || email.endsWith(STAFF_MAIL))
+    throw new Error(
+      "Für diesen Account muss zuerst die persönliche E-Mail-Adresse hinterlegt werden.",
+    );
   await fbRemove(`staffGate/${name}`);
   await sendPasswordResetEmail(email);
   await logStaff(actor, "Passwort zurückgesetzt", name);
@@ -464,7 +605,13 @@ export async function resetStaffPassword(username: string, actor: string) {
 export async function setStaffEmail(username: string, value: string, actor: string) {
   const name = staffName(username);
   const email = normalizeStaffEmail(value);
-  const row = await fbGet<{ uid?: string; email?: string; role?: string; disabled?: boolean; mustChangePw?: boolean }>(`staffUsers/${name}`);
+  const row = await fbGet<{
+    uid?: string;
+    email?: string;
+    role?: string;
+    disabled?: boolean;
+    mustChangePw?: boolean;
+  }>(`staffUsers/${name}`);
   if (!row) throw new Error("Account fehlt");
   if (row.email?.trim().toLowerCase() === email && row.uid) {
     await fbRemove(`staffGate/${name}`);
@@ -477,7 +624,9 @@ export async function setStaffEmail(username: string, value: string, actor: stri
   if (!token) throw new Error("Bitte neu anmelden. Die Sitzung ist abgelaufen.");
   const oldLink = row.uid ? await fbGet<Record<string, unknown>>(`staffByUid/${row.uid}`) : null;
   if (row.uid && !oldLink) {
-    throw new Error("Die bestehende UID-Verknüpfung fehlt. Bitte den Account prüfen, bevor die E-Mail geändert wird.");
+    throw new Error(
+      "Die bestehende UID-Verknüpfung fehlt. Bitte den Account prüfen, bevor die E-Mail geändert wird.",
+    );
   }
   const keep = window.sessionStorage.getItem("alpen-fb-token");
   const created = await createFirebaseUser(email, temporaryStaffPassword());
@@ -510,38 +659,57 @@ export async function setStaffEmail(username: string, value: string, actor: stri
       try {
         await fbSet(`staffByUid/${row.uid}`, oldLink);
       } catch (rollbackError) {
-        rollbackErrors.push(rollbackError instanceof Error ? rollbackError.message : "Bisherige UID-Verknüpfung");
+        rollbackErrors.push(
+          rollbackError instanceof Error ? rollbackError.message : "Bisherige UID-Verknüpfung",
+        );
       }
     }
     if (linkWriteAttempted) {
       try {
         await fbRemove(`staffByUid/${created.uid}`);
       } catch (rollbackError) {
-        rollbackErrors.push(rollbackError instanceof Error ? rollbackError.message : "Neue UID-Verknüpfung");
+        rollbackErrors.push(
+          rollbackError instanceof Error ? rollbackError.message : "Neue UID-Verknüpfung",
+        );
       }
     }
     try {
       await deleteFirebaseUser(created.idToken);
     } catch (rollbackError) {
-      rollbackErrors.push(rollbackError instanceof Error ? rollbackError.message : "Neuer Firebase-Account");
+      rollbackErrors.push(
+        rollbackError instanceof Error ? rollbackError.message : "Neuer Firebase-Account",
+      );
     }
     const detail = error instanceof Error ? error.message : "Unbekannter Fehler";
     if (rollbackErrors.length) {
-      throw new Error(`E-Mail konnte nicht vollständig gespeichert werden: ${detail}. Wiederherstellung unvollständig (${rollbackErrors.join(", ")}); bitte die Kontoverknüpfung prüfen.`);
+      throw new Error(
+        `E-Mail konnte nicht vollständig gespeichert werden: ${detail}. Wiederherstellung unvollständig (${rollbackErrors.join(", ")}); bitte die Kontoverknüpfung prüfen.`,
+      );
     }
     throw new Error(`E-Mail konnte nicht vollständig gespeichert werden: ${detail}`);
   }
   try {
     await sendPasswordResetEmail(email);
   } catch (error) {
-    throw new Error(error instanceof Error ? `E-Mail ist gespeichert, aber der Passwort-Link konnte nicht gesendet werden: ${error.message}` : "E-Mail ist gespeichert, aber der Passwort-Link konnte nicht gesendet werden.");
+    throw new Error(
+      error instanceof Error
+        ? `E-Mail ist gespeichert, aber der Passwort-Link konnte nicht gesendet werden: ${error.message}`
+        : "E-Mail ist gespeichert, aber der Passwort-Link konnte nicht gesendet werden.",
+    );
   }
   await logStaff(actor, "E-Mail-Adresse aktualisiert", name);
 }
 
 export async function removeStaffAccount(username: string, actor: string) {
   const name = staffName(username);
-  const row = await fbGet<{ uid?: string }>(`staffUsers/${name}`);
+  const row = await fbGet<{ uid?: string; role?: string; lateDays?: number }>(
+    `staffUsers/${name}`,
+  );
+  await fbSet(`staffDirectory/${name}`, {
+    role: asRole(row?.role),
+    disabled: true,
+    lateDays: lateDays(row?.lateDays),
+  });
   await fbRemove(`staffUsers/${name}`);
   if (row?.uid) await fbUpdate(`staffByUid/${row.uid}`, { disabled: true, removed: true });
   await fbRemove(`staffGate/${name}`);
@@ -574,16 +742,22 @@ export async function loginStaff(nameOrEmail: string, password: string): Promise
     if (lastError && !/ungültig/i.test(lastError.message)) throw lastError;
     throw new Error("Name oder Passwort stimmt nicht.");
   }
-  let link = await fbGet<{ username?: string; role?: string; disabled?: boolean }>(`staffByUid/${signed.uid}`);
+  let link = await fbGet<{ username?: string; role?: string; disabled?: boolean }>(
+    `staffByUid/${signed.uid}`,
+  );
   if (!link?.username) {
     try {
-      await fbSet(`staffByUid/${signed.uid}`, { username: "owner", email: signed.email, role: "owner" });
-      await fbSet(`staffUsers/owner`, {
-        role: "owner",
+      const owner = await fbGet<{ uid?: string; role?: string; disabled?: boolean }>(
+        "staffUsers/owner",
+      );
+      if (owner?.uid !== signed.uid || owner.role !== "owner" || owner.disabled === true) {
+        throw new Error("Owner ist nicht vorab zugeordnet.");
+      }
+      await fbSet(`staffByUid/${signed.uid}`, {
+        username: "owner",
         email: signed.email,
-        uid: signed.uid,
-        mustChangePw: false,
-        createdAt: Date.now(),
+        role: "owner",
+        disabled: false,
       });
     } catch {
       clearFirebaseLogin();
@@ -592,20 +766,38 @@ export async function loginStaff(nameOrEmail: string, password: string): Promise
     link = { username: "owner", role: "owner" };
   }
   const username = staffName(link.username || "owner");
-  const row = await fbGet<{ uid?: string; role?: string; mustChangePw?: boolean; disabled?: boolean; ownerUntil?: number | null }>(
-    `staffUsers/${username}`,
-  );
+  const row = await fbGet<{
+    uid?: string;
+    role?: string;
+    mustChangePw?: boolean;
+    disabled?: boolean;
+    ownerUntil?: number | null;
+  }>(`staffUsers/${username}`);
   if (!row || row.disabled || link?.disabled || (row.uid && row.uid !== signed.uid)) {
     clearFirebaseLogin();
-    throw new Error(row?.disabled || link?.disabled ? "Account ist pausiert" : "Der Account ist nicht vollständig angelegt. Im Staff-Center neu anlegen oder das Passwort zurücksetzen.");
+    throw new Error(
+      row?.disabled || link?.disabled
+        ? "Account ist pausiert"
+        : "Der Account ist nicht vollständig angelegt. Im Staff-Center neu anlegen oder das Passwort zurücksetzen.",
+    );
   }
   if (row.ownerUntil && row.ownerUntil <= Date.now() && row.role === "owner") {
     clearFirebaseLogin();
     throw new Error("Owner-Zeit abgelaufen");
   }
-  await fbUpdate(`staffUsers/${username}`, { lastLogin: Date.now(), email: signed.email, uid: signed.uid }).catch(() => undefined);
-  void logStaff(username, "Login");
-  return { username, role: row.role || link.role || "helper", mustChangePw: Boolean(row.mustChangePw), email: signed.email, uid: signed.uid };
+  await fbUpdate(`staffUsers/${username}`, {
+    lastLogin: Date.now(),
+    email: signed.email,
+    uid: signed.uid,
+  }).catch(() => undefined);
+  await logStaff(username, "Login");
+  return {
+    username,
+    role: row.role || link.role || "helper",
+    mustChangePw: Boolean(row.mustChangePw),
+    email: signed.email,
+    uid: signed.uid,
+  };
 }
 
 export async function loadCommands(): Promise<[string, CommandItem][]> {

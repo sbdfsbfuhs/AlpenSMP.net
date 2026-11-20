@@ -1,28 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "@tanstack/react-router";
 import { lookupTicket, submitCommunity, submitTicket, type TicketView } from "@/lib/alpen/live";
+import { communitySubmissionGaps } from "@/lib/alpen/community-consent";
 import { DiscordLink } from "@/components/site/shell";
 
 const COOLDOWN = 60_000;
 const STAR_LINE = ["", "Autsch 😬", "Na ja...", "Solide", "Stark!", "Legendär! 🏔️"];
 const IMAGE_OK = /image\/(png|jpeg|webp)/;
-
-export function reviewGaps(input: {
-  name: string;
-  text: string;
-  kind: "both" | "image" | "review";
-  hasFile: boolean;
-  consent: boolean;
-  rights: boolean;
-}) {
-  const gaps: string[] = [];
-  if (input.name.trim().length < 2) gaps.push("Name");
-  if (input.kind !== "image" && input.text.trim().length < 4) gaps.push("Text");
-  if (input.kind !== "review" && !input.hasFile) gaps.push("Bild");
-  if (!input.consent) gaps.push("Freigabe zur Veröffentlichung");
-  if (input.kind !== "review" && !input.rights) gaps.push("Bildrechte");
-  return gaps;
-}
 
 function imageFile(file: File) {
   return IMAGE_OK.test(file.type) || /\.(png|jpe?g|webp)$/i.test(file.name);
@@ -38,7 +22,9 @@ export function ReviewForm() {
   const [preview, setPreview] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
-  const [consent, setConsent] = useState(false);
+  const [submissionAcknowledged, setSubmissionAcknowledged] = useState(false);
+  const [reviewPublicationConsent, setReviewPublicationConsent] = useState(false);
+  const [imagePublicationConsent, setImagePublicationConsent] = useState(false);
   const [rights, setRights] = useState(false);
   const [over, setOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -46,7 +32,13 @@ export function ReviewForm() {
   const sent = note.startsWith("Danke.");
   const textNeeded = kind !== "image";
   const imageNeeded = kind !== "review";
-  const gaps = reviewGaps({ name, text, kind, hasFile: Boolean(file), consent, rights });
+  const gaps = communitySubmissionGaps({
+    name,
+    text,
+    kind,
+    hasFile: Boolean(file),
+    submissionAcknowledged,
+  });
 
   useEffect(() => {
     if (!file) {
@@ -83,7 +75,13 @@ export function ReviewForm() {
     if (busy) return;
     const cleanName = name.trim().slice(0, 32);
     const cleanText = text.trim().slice(0, 800);
-    const missing = reviewGaps({ name: cleanName, text: cleanText, kind, hasFile: Boolean(file), consent, rights });
+    const missing = communitySubmissionGaps({
+      name: cleanName,
+      text: cleanText,
+      kind,
+      hasFile: Boolean(file),
+      submissionAcknowledged,
+    });
     if (missing.length) {
       setNote(`Noch fehlt: ${missing.join(", ")}.`);
       return;
@@ -98,16 +96,32 @@ export function ReviewForm() {
     try {
       let imageUrl = "";
       if (file && imageNeeded) imageUrl = await compressImage(file);
-      await submitCommunity({ name: cleanName, text: cleanText, rating, kind, imageUrl });
+      await submitCommunity({
+        name: cleanName,
+        text: cleanText,
+        rating,
+        kind,
+        imageUrl,
+        submissionAcknowledged,
+        reviewPublicationConsent: textNeeded && reviewPublicationConsent,
+        imagePublicationConsent: imageNeeded && imagePublicationConsent,
+        imageRightsConfirmed: imageNeeded && rights,
+      });
       localStorage.setItem("alpensmp_last_submit", String(Date.now()));
       setName("");
       setText("");
       pickFile(null);
-      setConsent(false);
+      setSubmissionAcknowledged(false);
+      setReviewPublicationConsent(false);
+      setImagePublicationConsent(false);
       setRights(false);
-      setNote("Danke. Dein Beitrag ist raus. Das Team prüft ihn, danach erscheint er. Nicht sofort.");
+      setNote(
+        "Danke. Dein Beitrag ist zur internen Prüfung eingegangen. Veröffentlicht wird nur, wofür du separat zugestimmt hast.",
+      );
     } catch (err) {
-      setNote(err instanceof Error ? err.message : "Senden fehlgeschlagen. Alternativ über Discord.");
+      setNote(
+        err instanceof Error ? err.message : "Senden fehlgeschlagen. Alternativ über Discord.",
+      );
     } finally {
       setBusy(false);
     }
@@ -116,7 +130,7 @@ export function ReviewForm() {
   return (
     <form className="card card-still review-form space-y-5 p-5" onSubmit={onSubmit}>
       <div>
-        <h3 className="text-lg font-semibold">Reiche jetzt deine Rezension ein</h3>
+        <h3 className="text-lg font-semibold">Reiche deinen Community-Beitrag ein</h3>
         <p className="mt-1 text-sm text-muted">
           {kind === "image"
             ? "Ein Bild reicht. Text ist freiwillig."
@@ -127,7 +141,15 @@ export function ReviewForm() {
       </div>
       <label className="block text-sm" htmlFor="review-name">
         Name (Ingame-Name)
-        <input id="review-name" className="field mt-1" name="name" autoComplete="nickname" value={name} maxLength={32} onChange={(e) => setName(e.target.value)} />
+        <input
+          id="review-name"
+          className="field mt-1"
+          name="name"
+          autoComplete="nickname"
+          value={name}
+          maxLength={32}
+          onChange={(e) => setName(e.target.value)}
+        />
       </label>
       <fieldset className="review-block">
         <legend className="text-sm">Sterne</legend>
@@ -148,28 +170,32 @@ export function ReviewForm() {
             </button>
           ))}
         </div>
-        <p className="review-line" aria-live="polite">{rating} von 5 · {STAR_LINE[rating]}</p>
+        <p className="review-line" aria-live="polite">
+          {rating} von 5 · {STAR_LINE[rating]}
+        </p>
       </fieldset>
       <fieldset className="review-block">
         <legend className="text-sm">Was du einreichst</legend>
         <div className="mt-2 flex flex-wrap gap-2">
-        {(
-          [
-            ["both", "Beides"],
-            ["image", "Nur Screenshot"],
-            ["review", "Nur Rezension"],
-          ] as const
-        ).map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            className={kind === value ? "btn-brand review-kind is-on px-3" : "btn-ghost review-kind px-3"}
-            onClick={() => setKind(value)}
-            aria-pressed={kind === value}
-          >
-            {label}
-          </button>
-        ))}
+          {(
+            [
+              ["both", "Beides"],
+              ["image", "Nur Screenshot"],
+              ["review", "Nur Rezension"],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              className={
+                kind === value ? "btn-brand review-kind is-on px-3" : "btn-ghost review-kind px-3"
+              }
+              onClick={() => setKind(value)}
+              aria-pressed={kind === value}
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </fieldset>
       {imageNeeded ? (
@@ -199,7 +225,10 @@ export function ReviewForm() {
             <button type="button" className="btn-ghost" onClick={() => fileRef.current?.click()}>
               Bild wählen
             </button>
-            <p className="text-xs text-faint">Oder hierher ziehen. PNG, JPG oder WebP. Keine privaten Daten oder fremden Personen ohne Zustimmung zeigen.</p>
+            <p className="text-xs text-faint">
+              Oder hierher ziehen. PNG, JPG oder WebP. Keine privaten Daten oder fremden Personen
+              ohne Zustimmung zeigen.
+            </p>
           </div>
           {preview && file ? (
             <div className="review-picked">
@@ -207,7 +236,11 @@ export function ReviewForm() {
               <div className="min-w-0">
                 <p className="truncate font-semibold">{file.name}</p>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  <button type="button" className="btn-ghost px-3" onClick={() => fileRef.current?.click()}>
+                  <button
+                    type="button"
+                    className="btn-ghost px-3"
+                    onClick={() => fileRef.current?.click()}
+                  >
                     Austauschen
                   </button>
                   <button type="button" className="btn-ghost px-3" onClick={() => pickFile(null)}>
@@ -229,42 +262,132 @@ export function ReviewForm() {
           name="text"
           value={text}
           maxLength={800}
-          placeholder={textNeeded ? "Was hat dich begeistert? Was könnte besser sein?" : "Optional. Ein Bild allein reicht."}
+          placeholder={
+            textNeeded
+              ? "Was hat dich begeistert? Was könnte besser sein?"
+              : "Optional. Ein Bild allein reicht."
+          }
           onChange={(e) => setText(e.target.value)}
         />
       </label>
       <ul className="review-list text-sm">
         <Check ok={name.trim().length >= 2} label="Name eingetragen" />
         <Check ok label={`Sterne: ${rating} · ${STAR_LINE[rating]}`} />
-        <Check ok={Boolean(file)} optional={!imageNeeded && !file} label={imageNeeded ? "Bild ausgewählt" : "Bild"} />
-        <Check ok={text.trim().length >= 4} optional={!textNeeded && text.trim().length < 4} label={textNeeded ? "Text ergänzt" : "Text"} />
-        <Check ok={consent} label="Freigabe zur Veröffentlichung" />
-        {imageNeeded ? <Check ok={rights} label="Bildrechte" /> : null}
+        <Check
+          ok={Boolean(file)}
+          optional={!imageNeeded && !file}
+          label={imageNeeded ? "Bild ausgewählt" : "Bild"}
+        />
+        <Check
+          ok={text.trim().length >= 4}
+          optional={!textNeeded && text.trim().length < 4}
+          label={textNeeded ? "Text ergänzt" : "Text"}
+        />
+        <Check ok={submissionAcknowledged} label="Interne Prüfung bestätigt" />
+        {textNeeded ? (
+          <Check ok={reviewPublicationConsent} optional label="Rezension öffentlich freigegeben" />
+        ) : null}
+        {imageNeeded ? (
+          <Check ok={imagePublicationConsent} optional label="Bild öffentlich freigegeben" />
+        ) : null}
+        {imageNeeded ? <Check ok={rights} optional label="Bildrechte bestätigt" /> : null}
       </ul>
-      {gaps.length ? <p className="text-sm text-brand">Vor dem Absenden noch: {gaps.join(", ")}.</p> : <p className="text-sm text-muted">Alles Nötige ist da.</p>}
-      <label className="review-check text-sm" htmlFor="review-consent">
-        <input id="review-consent" className="review-check-input" type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
+      {gaps.length ? (
+        <p className="text-sm text-brand">Vor dem Absenden noch: {gaps.join(", ")}.</p>
+      ) : (
+        <p className="text-sm text-muted">
+          Die Prüfung ist bestätigt. Öffentliche Freigaben bleiben freiwillig.
+        </p>
+      )}
+      <label className="review-check text-sm" htmlFor="review-submission">
+        <input
+          id="review-submission"
+          className="review-check-input"
+          type="checkbox"
+          checked={submissionAcknowledged}
+          onChange={(e) => setSubmissionAcknowledged(e.target.checked)}
+        />
         <span>
-          Ich willige ein, dass mein Ingame-Name, mein Text und die Sterne
-          {kind === "review" ? "" : " sowie mein Screenshot"} nach Freigabe öffentlich gezeigt werden. Für die Prüfung wird der Beitrag vorher gespeichert. Ich kann die Veröffentlichung für die Zukunft widerrufen oder die Entfernung verlangen. Dazu die{" "}
-          <Link to="/datenschutz" className="text-brand underline">Datenschutzerklärung</Link>.
+          Ich reiche den Beitrag zur internen Prüfung ein. Dafür wird er gespeichert und ist
+          zunächst nur für das Team sichtbar. Eine öffentliche Veröffentlichung ist nicht Teil
+          dieser Bestätigung. Details stehen in der{" "}
+          <Link to="/datenschutz" className="text-brand underline">
+            Datenschutzerklärung
+          </Link>
+          .
         </span>
       </label>
-      {imageNeeded ? (
-        <label className="review-check text-sm" htmlFor="review-rights">
-          <input id="review-rights" className="review-check-input" type="checkbox" checked={rights} onChange={(e) => setRights(e.target.checked)} />
-          <span>Ich darf dieses Bild einreichen und zur Veröffentlichung freigeben. Es zeigt keine privaten Angaben und keine fremden Personen ohne deren Zustimmung.</span>
+      {textNeeded ? (
+        <label className="review-check text-sm" htmlFor="review-publication">
+          <input
+            id="review-publication"
+            className="review-check-input"
+            type="checkbox"
+            checked={reviewPublicationConsent}
+            onChange={(e) => setReviewPublicationConsent(e.target.checked)}
+          />
+          <span>
+            Ich willige freiwillig ein, dass mein Ingame-Name, Rezensionstext und Sterne nach
+            Freigabe öffentlich gezeigt werden. Ich kann diese Einwilligung für die Zukunft
+            widerrufen oder die Entfernung verlangen.
+          </span>
         </label>
       ) : null}
-      <button className={sent ? "btn-brand review-send is-sent" : "btn-brand review-send"} type="submit" disabled={busy}>
-        {busy ? "Wird gesendet…" : sent ? "Angekommen" : "Absenden zur Freigabe"}
+      {imageNeeded ? (
+        <>
+          <label className="review-check text-sm" htmlFor="image-publication">
+            <input
+              id="image-publication"
+              className="review-check-input"
+              type="checkbox"
+              checked={imagePublicationConsent}
+              onChange={(e) => setImagePublicationConsent(e.target.checked)}
+            />
+            <span>
+              Ich willige freiwillig ein, dass mein Ingame-Name, die Bildunterschrift und der
+              Screenshot nach Freigabe öffentlich gezeigt werden. Ich kann diese Einwilligung für
+              die Zukunft widerrufen oder die Entfernung verlangen.
+            </span>
+          </label>
+          <label className="review-check text-sm" htmlFor="review-rights">
+            <input
+              id="review-rights"
+              className="review-check-input"
+              type="checkbox"
+              checked={rights}
+              onChange={(e) => setRights(e.target.checked)}
+            />
+            <span>
+              Ich darf dieses Bild zur Veröffentlichung freigeben. Es zeigt keine privaten Angaben
+              und keine fremden Personen ohne deren Zustimmung.
+            </span>
+          </label>
+        </>
+      ) : null}
+      <button
+        className={sent ? "btn-brand review-send is-sent" : "btn-brand review-send"}
+        type="submit"
+        disabled={busy}
+      >
+        {busy ? "Wird gesendet…" : sent ? "Angekommen" : "Zur Prüfung absenden"}
       </button>
-      <p className={sent ? "review-ok text-sm" : "text-sm text-muted"} role="status">{note || "Wird nicht sofort öffentlich. Schnelle Wiederholungen werden in diesem Browser gebremst."}</p>
+      <p className={sent ? "review-ok text-sm" : "text-sm text-muted"} role="status">
+        {note ||
+          "Das Team prüft deinen Beitrag intern. Öffentlich erscheint nur, was du separat freigibst."}
+      </p>
     </form>
   );
 }
 
-function Check({ ok, label, optional = false }: { ok: boolean; label: string; optional?: boolean }) {
+function Check({
+  ok,
+  label,
+  optional = false,
+}: {
+  ok: boolean;
+  label: string;
+  optional?: boolean;
+}) {
   return (
     <li className={ok ? "is-ok" : ""}>
       <span aria-hidden="true">{ok ? "✓" : optional ? "–" : "○"}</span>
@@ -285,7 +408,8 @@ async function compressImage(file: File) {
   if (!ctx) throw new Error("Bild konnte nicht vorbereitet werden.");
   ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
   const url = canvas.toDataURL("image/jpeg", 0.82);
-  if (url.length > 700_000) throw new Error("Bild ist selbst verkleinert noch zu gross. Bitte ein kleineres Foto wählen.");
+  if (url.length > 700_000)
+    throw new Error("Bild ist selbst verkleinert noch zu gross. Bitte ein kleineres Foto wählen.");
   return url;
 }
 
@@ -330,34 +454,83 @@ export function TicketForm() {
       {sent ? (
         <div className="mb-6 rounded-md border border-brand/40 bg-brand/10 p-4">
           <p className="font-semibold">Ticket gesendet</p>
-          <p className="mt-1 text-sm text-muted">Der Ticketcode ist ein geheimer Zugangslink. Teile ihn nur mit Personen, denen du Zugriff geben möchtest. Er läuft nach 30 Tagen ab.</p>
+          <p className="mt-1 text-sm text-muted">
+            Der Ticketcode ist ein geheimer Zugangslink. Teile ihn nur mit Personen, denen du
+            Zugriff geben möchtest. Er läuft nach 30 Tagen ab.
+          </p>
           <p className="mt-2 font-mono text-lg">{sent}</p>
         </div>
       ) : null}
       <form className="space-y-3" onSubmit={onSubmit}>
         <p className="text-sm text-muted">
-          Beschreibe das Problem. Das Team verarbeitet deine Angaben, um dir zu antworten. Du bekommst einen Ticketcode und kannst den Status später nachlesen.{" "}
-          <Link to="/datenschutz" className="text-brand underline">So werden deine Daten bearbeitet</Link>.
+          Beschreibe das Problem. Das Team verarbeitet deine Angaben, um dir zu antworten. Du
+          bekommst einen Ticketcode und kannst den Status später nachlesen.{" "}
+          <Link to="/datenschutz" className="text-brand underline">
+            So werden deine Daten bearbeitet
+          </Link>
+          .
         </p>
         <label className="block text-sm" htmlFor="ticket-name">
           Minecraft-Name
-          <input id="ticket-name" className="field mt-1" name="name" autoComplete="nickname" placeholder="Dein Ingame-Name" value={name} maxLength={32} required onChange={(e) => setName(e.target.value)} />
+          <input
+            id="ticket-name"
+            className="field mt-1"
+            name="name"
+            autoComplete="nickname"
+            placeholder="Dein Ingame-Name"
+            value={name}
+            maxLength={32}
+            required
+            onChange={(e) => setName(e.target.value)}
+          />
         </label>
         <label className="block text-sm" htmlFor="ticket-category">
           Kategorie
-          <select id="ticket-category" className="field mt-1" value={category} onChange={(e) => setCategory(e.target.value)}>
-            {["Bug", "Frage", "Beschwerde", "Sonstiges"].map((item) => <option key={item}>{item}</option>)}
+          <select
+            id="ticket-category"
+            className="field mt-1"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
+            {["Bug", "Frage", "Beschwerde", "Sonstiges"].map((item) => (
+              <option key={item}>{item}</option>
+            ))}
           </select>
         </label>
         <label className="block text-sm" htmlFor="ticket-topic">
           Betreff
-          <input id="ticket-topic" className="field mt-1" name="topic" placeholder="Worum geht es?" value={topic} maxLength={80} required onChange={(e) => setTopic(e.target.value)} />
+          <input
+            id="ticket-topic"
+            className="field mt-1"
+            name="topic"
+            placeholder="Worum geht es?"
+            value={topic}
+            maxLength={80}
+            required
+            onChange={(e) => setTopic(e.target.value)}
+          />
         </label>
         <label className="block text-sm" htmlFor="ticket-msg">
           Beschreibung
-          <textarea id="ticket-msg" className="field mt-1 min-h-32" name="message" placeholder="Was ist passiert?" value={msg} maxLength={800} required onChange={(e) => setMsg(e.target.value)} />
+          <textarea
+            id="ticket-msg"
+            className="field mt-1 min-h-32"
+            name="message"
+            placeholder="Was ist passiert?"
+            value={msg}
+            maxLength={800}
+            required
+            onChange={(e) => setMsg(e.target.value)}
+          />
         </label>
-        <input className="hidden" tabIndex={-1} autoComplete="off" value={company} onChange={(e) => setCompany(e.target.value)} aria-hidden="true" />
+        <input
+          className="hidden"
+          tabIndex={-1}
+          autoComplete="off"
+          value={company}
+          onChange={(e) => setCompany(e.target.value)}
+          aria-hidden="true"
+        />
         <button className="btn-brand" disabled={busy} type="submit">
           Ticket senden
         </button>
@@ -365,10 +538,23 @@ export function TicketForm() {
       </form>
       <div className="mt-6 border-t border-line pt-5">
         <h3 className="font-semibold">Status prüfen</h3>
-        <p className="mt-1 text-sm text-muted">Ticketcode eingeben. Er funktioniert als geheimer Zugangslink, läuft nach 30 Tagen ab und sollte nicht öffentlich geteilt werden.</p>
+        <p className="mt-1 text-sm text-muted">
+          Ticketcode eingeben. Er funktioniert als geheimer Zugangslink, läuft nach 30 Tagen ab und
+          sollte nicht öffentlich geteilt werden.
+        </p>
         <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-          <label className="sr-only" htmlFor="ticket-code">Ticket-Nummer</label>
-          <input id="ticket-code" className="field" placeholder="ALP- und 32 Zeichen" value={code} maxLength={36} autoCapitalize="characters" onChange={(e) => setCode(e.target.value)} />
+          <label className="sr-only" htmlFor="ticket-code">
+            Ticket-Nummer
+          </label>
+          <input
+            id="ticket-code"
+            className="field"
+            placeholder="ALP- und 32 Zeichen"
+            value={code}
+            maxLength={36}
+            autoCapitalize="characters"
+            onChange={(e) => setCode(e.target.value)}
+          />
           <button
             type="button"
             className="btn-ghost"
