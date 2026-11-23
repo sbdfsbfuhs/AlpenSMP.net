@@ -1,5 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import {
+  canPublishCommunityItem,
+  canShowCommunityItem,
+  communitySubmissionGaps,
+} from "./community-consent.ts";
 import { shouldArchivePermanentBan, type PermanentBanState } from "./moderation.ts";
 import { can } from "./roles.ts";
 import { moveStaffLayoutTab, normalizeStaffLayout, reorderStaffLayoutTab } from "./staff-layout.ts";
@@ -40,13 +45,20 @@ describe("staff center personal layout", () => {
   });
 
   it("drops unknown and duplicate tabs from saved preferences", () => {
-    assert.deepEqual(normalizeStaffLayout({
-      quickTabs: ["help", "help", "unknown"],
-      moreTabs: ["moderation", "help"],
-    }, tabIds, defaults), {
-      quickTabs: ["help"],
-      moreTabs: ["moderation", "roster", "absence"],
-    });
+    assert.deepEqual(
+      normalizeStaffLayout(
+        {
+          quickTabs: ["help", "help", "unknown"],
+          moreTabs: ["moderation", "help"],
+        },
+        tabIds,
+        defaults,
+      ),
+      {
+        quickTabs: ["help"],
+        moreTabs: ["moderation", "roster", "absence"],
+      },
+    );
   });
 
   it("moves and reorders tabs without losing any area", () => {
@@ -74,5 +86,71 @@ describe("permanent-ban archiving", () => {
     assert.equal(shouldArchivePermanentBan({ duration: "Permanent", ts: now - 1 }, now), false);
     assert.equal(shouldArchivePermanentBan({ ...oldMinecraftBan, pending: true }, now), false);
     assert.equal(shouldArchivePermanentBan({ ...oldMinecraftBan, archived: true }, now), false);
+  });
+});
+
+describe("community publication consent", () => {
+  it("allows internal review without requiring public publication consent", () => {
+    assert.deepEqual(
+      communitySubmissionGaps({
+        name: "Spieler",
+        text: "Guter Server",
+        kind: "review",
+        hasFile: false,
+        submissionAcknowledged: true,
+      }),
+      [],
+    );
+  });
+
+  it("requires separate publication consent and image-rights confirmation", () => {
+    assert.equal(canPublishCommunityItem({ publicationConsent: true }, "review"), true);
+    assert.equal(canPublishCommunityItem({ publicationConsent: true }, "image"), false);
+    assert.equal(
+      canPublishCommunityItem(
+        {
+          publicationConsent: true,
+          imageRightsConfirmed: true,
+        },
+        "image",
+      ),
+      true,
+    );
+  });
+
+  it("keeps denied and legacy submissions private until explicit consent is recorded", () => {
+    assert.equal(
+      canShowCommunityItem(
+        {
+          status: "approved",
+          publicationConsent: false,
+        },
+        "review",
+      ),
+      false,
+    );
+    assert.equal(canShowCommunityItem({ status: "approved" }, "review"), false);
+    assert.equal(
+      canShowCommunityItem(
+        { status: "approved", publicationConsent: true },
+        "review",
+      ),
+      true,
+    );
+    assert.equal(
+      canShowCommunityItem(
+        { status: "approved", publicationConsent: true },
+        "image",
+      ),
+      false,
+    );
+    assert.equal(
+      canShowCommunityItem(
+        { status: "approved", publicationConsent: true, imageRightsConfirmed: true },
+        "image",
+      ),
+      true,
+    );
+    assert.equal(canPublishCommunityItem({ status: "pending" }, "review"), false);
   });
 });

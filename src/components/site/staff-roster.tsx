@@ -41,8 +41,8 @@ function weekStart() {
   return date.getTime();
 }
 
-export function Roster({ owner }: { owner: boolean }) {
-  const users = useLive<{ role?: string; disabled?: boolean; lateDays?: number }>("staffUsers");
+export function Roster({ owner, note }: { owner: boolean; note: (text: string) => void }) {
+  const users = useLive<{ role?: string; disabled?: boolean; lateDays?: number }>("staffDirectory");
   const presence = useLive<{ lastSeen?: number; writingAt?: number }>("presence");
   const tasks = useLive<{ title?: string; assignee?: string; by?: string; acceptedBy?: string; status?: string; done?: boolean; ts?: number; updatedAt?: number }>("tasks");
   const absences = useLive<{ by?: string; from?: string; until?: string }>("absences");
@@ -132,7 +132,12 @@ export function Roster({ owner }: { owner: boolean }) {
                       const next = lateDays(event.target.value);
                       event.target.value = String(next);
                       if (next === limit) return;
-                      void fbUpdate(`staffUsers/${name}`, { lateDays: next });
+                      void fbUpdate(`staffUsers/${name}`, { lateDays: next })
+                        .then(() => fbUpdate(`staffDirectory/${name}`, { lateDays: next }))
+                        .then(() => note("Abwesenheitsschwelle gespeichert"))
+                        .catch((error) =>
+                          note(error instanceof Error ? error.message : "Speichern fehlgeschlagen"),
+                        );
                     }}
                   />
                   Tagen

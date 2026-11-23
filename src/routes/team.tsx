@@ -781,7 +781,7 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
               <AbsenceBoard real={shown} view={shown} note={note} username={user.username} />
             ) : null}
             {safeTab === "guide" ? <GuideEditor real={shown} view={shown} note={note} /> : null}
-            {safeTab === "roster" ? <Roster owner={shown === "owner"} /> : null}
+            {safeTab === "roster" ? <Roster owner={shown === "owner"} note={note} /> : null}
             {safeTab === "settings" ? <Settings user={displayedUser} note={note} /> : null}
             {safeTab === "news" ? <NewsEditor user={displayedUser} note={note} /> : null}
             {safeTab === "status" ? <StatusDesk user={displayedUser} note={note} /> : null}

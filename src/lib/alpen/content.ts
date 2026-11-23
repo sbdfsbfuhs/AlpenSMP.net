@@ -86,7 +86,7 @@ export const RULES: Rule[] = [
     id: 7,
     title: "Team & Support",
     paragraphs: [
-      "Teammitglieder sind respektvoll zu behandeln. Der Support darf nicht für Spam oder unnötige Diskussionen missbraucht werden. Teamentscheidungen sind grundsätzlich zu akzeptieren. Strafdiskussionen gehören nicht in den öffentlichen Chat.",
+      "Teammitglieder sind respektvoll zu behandeln. Der Support darf nicht für Spam oder unnötige Diskussionen missbraucht werden. Fragen oder Einsprüche zu Strafen gehören in ein Ticket statt in den öffentlichen Chat. Entscheidungen können dort sachlich überprüft werden.",
     ],
   },
   {
@@ -115,9 +115,9 @@ export const RULES: Rule[] = [
     title: "Grundloses Töten",
     highlight: true,
     paragraphs: [
-      "Grundloses Töten aus Spass ist nicht erlaubt. (ausser es sind beide Einverstanden)",
+      "Grundloses Töten aus Spass ist nicht erlaubt, ausser beide stimmen vorher zu.",
       "Wer andere Spieler ohne nachvollziehbaren Grund wiederholt tötet oder absichtlich provoziert, kann dafür bestraft werden.",
-      "Wird ein Spieler nachweislich absichtlich und grundlos getötet, kann auch der Auslöser bzw. die Person, die den Konflikt bewusst begonnen hat, bestraft werden. Die Strafe fällt bei kleineren Fällen in der Regel entsprechend geringer aus.",
+      "Wer einen Konflikt nachweislich absichtlich beginnt oder eskaliert, kann dafür ebenfalls bestraft werden. Die Strafe richtet sich nach dem eigenen Verhalten und fällt bei einem geringeren Beitrag entsprechend milder aus.",
     ],
   },
   {
@@ -126,8 +126,8 @@ export const RULES: Rule[] = [
     highlight: true,
     paragraphs: [
       "Nicht jeder Vorfall lässt sich eindeutig aufklären. Das Team versucht grundsätzlich, Sachverhalte anhand von Logs, Beweisen, Aussagen und den vorhandenen Informationen fair zu beurteilen.",
-      "Wenn der tatsächliche Täter nicht eindeutig festgestellt werden kann, kann der Owner in schwierigen Fällen eine Einzelfallentscheidung treffen. Dabei können ausnahmsweise auch mehrere beteiligte Personen sanktioniert werden, wenn eine eindeutige Zuordnung nicht möglich ist.",
-      "Das bedeutet: Es ist möglich, dass jemand eine Strafe erhält, obwohl nicht zweifelsfrei bewiesen werden kann, dass diese Person allein der Täter war. Solche Entscheidungen werden nicht leichtfertig getroffen und sollen nur in Fällen angewendet werden, in denen eine faire Aufklärung nicht möglich ist.",
+      "Eine Sanktion setzt konkrete, individuelle Hinweise auf das eigene Verhalten der betroffenen Person voraus. Niemand wird allein wegen der Zugehörigkeit zu einer Gruppe oder nur deshalb bestraft, weil die verantwortliche Person nicht eindeutig festgestellt werden kann.",
+      "Wenn ein Vorfall noch andauert, kann das Team vorläufige, verhältnismässige Schutzmassnahmen treffen, um weiteren Schaden zu verhindern. Diese Massnahmen sind keine Strafe und werden überprüft, sobald neue Informationen vorliegen.",
     ],
   },
   {
@@ -135,9 +135,9 @@ export const RULES: Rule[] = [
     title: "Owner & Einzelfallentscheidungen",
     highlight: true,
     paragraphs: [
-      "Der Owner hat bei Streitfällen und unklaren Situationen das letzte Wort.",
-      "Dabei gilt: Regeln können nicht jede einzelne Situation vollständig abdecken. Jeder Mensch hat eine andere Moralvorstellung und empfindet bestimmte Situationen unterschiedlich. Deshalb kann nicht jede Entscheidung jedem Spieler gefallen.",
-      "Das Team versucht, fair, nachvollziehbar und nach bestem Wissen und Gewissen zu handeln. Die Regeln sollen Orientierung geben und nicht jede mögliche Situation bis ins kleinste Detail vorschreiben.",
+      "Der Owner trifft die letzte interne Entscheidung bei Streitfällen und Einsprüchen. Auch diese Entscheidung muss sich an den Regeln, der Beweislage und der Verhältnismässigkeit orientieren.",
+      "Regeln können nicht jede einzelne Situation vollständig abdecken. Einzelfallentscheidungen sollen nachvollziehbar begründet werden und dürfen die Anforderungen an individuelle Hinweise nicht umgehen.",
+      "Neue Belege oder eine neue Begründung können über ein Support-Ticket zur erneuten Prüfung eingereicht werden.",
     ],
   },
   {
@@ -150,9 +150,9 @@ export const RULES: Rule[] = [
       "Kick",
       "temporärer Bann",
       "permanenter Bann",
-      "weitere situationsabhängige Massnahmen",
+      "andere verhältnismässige Schutzmassnahmen",
     ],
-    note: "Die Strafe richtet sich nach dem jeweiligen Fall, der Vorgeschichte und den Umständen. (du wirst in unseres System aufgenommen) Nicht jeder Verstoss wird gleich bestraft. Das Team entscheidet situationsabhängig und kann bei besonderen Umständen von einer üblichen Strafe abweichen.",
+    note: "Bei der Wahl der Massnahme berücksichtigt das Team Schwere, Absicht, Folgen, Wiederholung, Vorgeschichte und Beweislage. Kleinere erstmalige Verstösse führen in der Regel zunächst zu einer Verwarnung; bei schweren oder andauernden Verstössen kann eine sofortige Massnahme nötig sein. Entscheidungen werden begründet und können über den Support angefochten werden.",
   },
 ];
 
