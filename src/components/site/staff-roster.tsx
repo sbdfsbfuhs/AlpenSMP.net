@@ -61,12 +61,23 @@ function activityWeekStart() {
 }
 
 type ActivityBuckets = { daily: Record<string, number>; weekly: Record<string, number> };
-type ActivityReport = { ok: true; trackingReady?: boolean; members: Record<string, { website?: ActivityBuckets; minecraft?: ActivityBuckets }> };
+type ActivityReport = {
+  ok: true;
+  trackingReady?: boolean;
+  minecraftNames?: Record<string, string>;
+  members: Record<string, { website?: ActivityBuckets; minecraft?: ActivityBuckets }>;
+};
 
 function isActivityReport(value: unknown): value is ActivityReport {
   if (!value || typeof value !== "object" || !("ok" in value) || value.ok !== true || !("members" in value)) return false;
   const members = value.members;
   if (!members || typeof members !== "object" || Array.isArray(members)) return false;
+  if ("minecraftNames" in value && (
+    !value.minecraftNames ||
+    typeof value.minecraftNames !== "object" ||
+    Array.isArray(value.minecraftNames) ||
+    !Object.values(value.minecraftNames).every((name) => typeof name === "string")
+  )) return false;
   return Object.values(members).every((member) => {
     if (!member || typeof member !== "object") return false;
     return ["website", "minecraft"].every((source) => {
@@ -207,7 +218,14 @@ function StaffActivityStats({
                 const complete = siteReady && gameReady;
                 return (
                   <tr key={username} className="border-t border-white/10">
-                    <th scope="row" className="py-2 pr-3 font-medium">{label}</th>
+                    <th scope="row" className="py-2 pr-3 font-medium">
+                      {label}
+                      {minecraft?.minecraftNames?.[username] ? (
+                        <span className="block text-xs font-normal text-muted">
+                          Minecraft: {minecraft.minecraftNames[username]}
+                        </span>
+                      ) : null}
+                    </th>
                     <td className="py-2 pr-3">{siteReady ? durationLabel(siteSeconds) : "Nicht erfasst"}</td>
                     <td className="py-2 pr-3">{gameReady ? durationLabel(gameSeconds) : minecraft?.trackingReady ? "Nicht erfasst" : "—"}</td>
                     <td className="py-2 pr-3">{complete ? durationLabel(siteSeconds + gameSeconds) : "Unvollständig"}</td>

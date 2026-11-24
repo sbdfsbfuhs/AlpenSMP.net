@@ -50,6 +50,7 @@ import {
   minecraftBanKey,
   readSession,
   savePassword,
+  verifyMinecraftNamePlayed,
   writeSession,
   type MinecraftBan,
   type MinecraftPlayersSnapshot,
@@ -291,6 +292,9 @@ function Login({
   const [consentRequired, setConsentRequired] = useState(false);
   const [consentAccepted, setConsentAccepted] = useState(false);
   const [minecraftName, setMinecraftName] = useState("");
+  const [verifiedMinecraftName, setVerifiedMinecraftName] = useState("");
+  const [minecraftNameCheckMessage, setMinecraftNameCheckMessage] = useState("");
+  const [checkingMinecraftName, setCheckingMinecraftName] = useState(false);
   const [mfaRequired, setMfaRequired] = useState(false);
   const [mfaCode, setMfaCode] = useState("");
 
@@ -302,6 +306,10 @@ function Login({
     }
     if (consentRequired && !isValidMinecraftUsername(minecraftName.trim())) {
       setError("Bitte gib einen gültigen Minecraft-Namen ein (3–16 Zeichen, Buchstaben, Zahlen oder _).");
+      return;
+    }
+    if (consentRequired && verifiedMinecraftName !== minecraftName.trim()) {
+      setError("Bitte prüfe zuerst, ob dieser Minecraft-Name in den Serverdaten nachgewiesen ist.");
       return;
     }
     setBusy(true);
@@ -329,6 +337,41 @@ function Login({
       }
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function checkMinecraftName() {
+    const candidate = minecraftName.trim();
+    setMinecraftNameCheckMessage("");
+    setVerifiedMinecraftName("");
+    if (!isValidMinecraftUsername(candidate)) {
+      setMinecraftNameCheckMessage("Bitte gib einen gültigen Minecraft-Namen ein.");
+      return;
+    }
+    setCheckingMinecraftName(true);
+    try {
+      const verified = await verifyMinecraftNamePlayed(candidate);
+      if (!verified) {
+        setMinecraftNameCheckMessage("Dieser Name wurde in den nachweisbaren Serverdaten nicht gefunden.");
+        return;
+      }
+      setMinecraftName(verified.canonicalName);
+      if (!verified.indexed) {
+        setMinecraftNameCheckMessage(
+          `Servernachweis für ${verified.canonicalName} gefunden. Bitte den Owner die Aktivitätsstatistik aktualisieren lassen.`,
+        );
+        return;
+      }
+      setVerifiedMinecraftName(verified.canonicalName);
+      setMinecraftNameCheckMessage(`Servernachweis bereit: ${verified.canonicalName}`);
+    } catch (verificationError) {
+      setMinecraftNameCheckMessage(
+        verificationError instanceof Error
+          ? verificationError.message
+          : "Der Minecraft-Name konnte nicht geprüft werden.",
+      );
+    } finally {
+      setCheckingMinecraftName(false);
     }
   }
 
@@ -385,12 +428,34 @@ function Login({
               <input
                 className="field mt-1"
                 value={minecraftName}
-                onChange={(event) => setMinecraftName(event.target.value)}
+                onChange={(event) => {
+                  setMinecraftName(event.target.value);
+                  setVerifiedMinecraftName("");
+                  setMinecraftNameCheckMessage("");
+                }}
                 autoComplete="off"
                 maxLength={16}
                 required
               />
             </label>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                className="btn-ghost"
+                type="button"
+                onClick={() => void checkMinecraftName()}
+                disabled={checkingMinecraftName || !isValidMinecraftUsername(minecraftName.trim())}
+              >
+                {checkingMinecraftName ? "Prüfe Serverdaten…" : "Minecraft-Name prüfen"}
+              </button>
+              {minecraftNameCheckMessage ? (
+                <span
+                  className={`text-xs ${verifiedMinecraftName ? "text-emerald-300" : "text-amber-200"}`}
+                  role="status"
+                >
+                  {minecraftNameCheckMessage}
+                </span>
+              ) : null}
+            </div>
             <label className="flex items-start gap-2 text-sm">
               <input
                 className="mt-1"

@@ -238,6 +238,16 @@ function PrivacyPage() {
           du an die Kontakt-E-Mail richten.
         </p>
         <p>
+          Vor der ersten Zuordnung prüft das Panel den eingegebenen Minecraft-Namen anhand der
+          aktuellen Server-Spielerliste oder gespeicherter Spielerdaten. Ein Eintrag im Minecraft-
+          Namenscache allein genügt nicht. Für die Firebase-Regelprüfung wird ein nicht öffentlicher
+          Index der so bestätigten Namen mit den vorhandenen Serverdaten abgeglichen, wenn der Owner
+          einen Namen prüft oder die Owner-Aktivitätsstatistik lädt. Der Index ist nur für den
+          aktiven Owner les- und änderbar und folgt dem Stand der verfügbaren Server-Spielerdaten.
+          Ist kein Servernachweis vorhanden oder nicht erreichbar, wird die Zuordnung abgelehnt.
+          Die Zuordnung zum Staff-Konto wird erst nach Bestätigung der Einwilligung gespeichert.
+        </p>
+        <p>
           Eine optionale TOTP-Zwei-Faktor-Anmeldung kann in Firebase Authentication eingerichtet
           werden, sofern die dafür nötige Identity-Platform-Konfiguration aktiviert ist. Der
           Authenticator-Schlüssel wird bei der Einrichtung angezeigt und muss in deiner

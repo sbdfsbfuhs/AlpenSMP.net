@@ -37,6 +37,8 @@ before(async () => {
         "paused-helper-uid": { username: "pausedhelper", role: "helper", disabled: true, email: "paused-helper@example.test" },
         "streamer-uid": { username: "streamer", role: "streamer", disabled: false, email: "streamer@example.test" },
         "pending-uid": { username: "pending", role: "helper", disabled: false, email: "pending@example.test" },
+        "first-owner-uid": { username: "firstowner", role: "owner", disabled: false, email: "first-owner@example.test" },
+        "expired-owner-uid": { username: "expiredowner", role: "owner", disabled: false, email: "expired-owner@example.test" },
       },
       staffUsers: {
         owner: { uid: "owner-uid", role: "owner", disabled: false, email: "owner@example.test", activityConsent },
@@ -47,7 +49,10 @@ before(async () => {
         pausedhelper: { uid: "paused-helper-uid", role: "helper", disabled: true, email: "paused-helper@example.test" },
         streamer: { uid: "streamer-uid", role: "streamer", disabled: false, email: "streamer@example.test", activityConsent },
         pending: { uid: "pending-uid", role: "helper", disabled: false, email: "pending@example.test" },
+        firstowner: { uid: "first-owner-uid", role: "owner", disabled: false, email: "first-owner@example.test" },
+        expiredowner: { uid: "expired-owner-uid", role: "owner", disabled: false, ownerUntil: 1, email: "expired-owner@example.test" },
       },
+      minecraftKnownPlayers: { TestPlayer: true },
       staffDirectory: {
         owner: { role: "owner", disabled: false, lateDays: 3 },
         helper: { role: "helper", disabled: false, lateDays: 3 },
@@ -131,6 +136,12 @@ test("paused accounts cannot read staff data or regain access through alternate 
 
 test("staff data stays blocked until the account records valid activity consent", async () => {
   const pending = db("pending-uid");
+  const owner = db("owner-uid");
+  const helper = db("helper-uid");
+  const firstOwner = db("first-owner-uid");
+  const expiredOwner = db("expired-owner-uid");
+  const pausedOwner = db("paused-owner-uid");
+  const unauthenticated = environment.unauthenticatedContext().database();
   await assertSucceeds(get(ref(pending, "staffUsers/pending")));
   await assertFails(get(ref(pending, "staffDirectory")));
   await assertFails(get(ref(pending, "presence")));
@@ -143,6 +154,27 @@ test("staff data stays blocked until the account records valid activity consent"
       minecraftName: "TestPlayer",
     }),
   );
+  await assertFails(
+    set(ref(pending, "staffUsers/pending/activityConsent"), {
+      ...activityConsent,
+      minecraftName: "NeverJoined",
+    }),
+  );
+  await assertFails(
+    set(ref(pending, "staffUsers/pending/activityConsent/minecraftName"), "NeverJoined"),
+  );
+  await assertFails(get(ref(helper, "minecraftKnownPlayers")));
+  await assertFails(get(ref(helper, "minecraftKnownPlayers/TestPlayer")));
+  await assertFails(get(ref(helper, "minecraftKnownPlayers/NeverJoined")));
+  await assertFails(set(ref(helper, "minecraftKnownPlayers/InjectedName"), true));
+  await assertFails(get(ref(unauthenticated, "minecraftKnownPlayers")));
+  await assertFails(set(ref(unauthenticated, "minecraftKnownPlayers/InjectedName"), true));
+  await assertSucceeds(get(ref(owner, "minecraftKnownPlayers")));
+  await assertSucceeds(set(ref(owner, "minecraftKnownPlayers/JustJoined"), true));
+  await assertSucceeds(set(ref(firstOwner, "minecraftKnownPlayers/FirstLoginPlayer"), true));
+  await assertFails(set(ref(expiredOwner, "minecraftKnownPlayers/ExpiredOwnerName"), true));
+  await assertFails(get(ref(pausedOwner, "minecraftKnownPlayers")));
+  await assertFails(set(ref(pausedOwner, "minecraftKnownPlayers/PausedOwnerName"), true));
   await assertSucceeds(
     set(ref(pending, "staffUsers/pending/activityConsent"), activityConsent),
   );

@@ -692,6 +692,36 @@ export async function syncMinecraftStaffActivity() {
   if (result.ok !== true) throw new Error("Minecraft-Staff-Zuordnungen konnten nicht bestätigt werden.");
 }
 
+export async function verifyMinecraftNamePlayed(name: string) {
+  if (!isValidMinecraftUsername(name)) throw new Error("Bitte gib einen gültigen Minecraft-Namen ein.");
+  const token = await ensureIdToken();
+  if (!token) throw new Error("Bitte melde dich erneut an.");
+  const endpoint = new URL("/api/minecraft/staff-player-name", SITE.panelControlApi);
+  endpoint.searchParams.set("name", name);
+  const response = await fetch(endpoint, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!response.ok) {
+    throw new Error(`Die Minecraft-Serverhistorie konnte nicht geprüft werden (${response.status}).`);
+  }
+  const result = await response.json() as {
+    ok?: boolean;
+    verified?: boolean;
+    indexed?: boolean;
+    canonicalName?: string;
+  };
+  if (result.ok !== true || typeof result.verified !== "boolean" || typeof result.indexed !== "boolean") {
+    throw new Error("Das Panel hat eine ungültige Prüfantwort geliefert.");
+  }
+  if (!result.verified) return null;
+  if (!isValidMinecraftUsername(result.canonicalName)) {
+    throw new Error("Das Panel hat keinen gültigen verifizierten Minecraft-Namen geliefert.");
+  }
+  return { canonicalName: result.canonicalName, indexed: result.indexed };
+}
+
 export async function resetStaffPassword(username: string, actor: string) {
   const name = staffName(username);
   const row = await fbGet<{ uid?: string; email?: string }>(`staffUsers/${name}`);
@@ -899,7 +929,6 @@ export async function loginStaff(
   const consentIsCurrent = hasCurrentStaffActivityConsent(row.activityConsent);
   if (!consentIsCurrent) {
     if (!consent?.accepted || !isValidMinecraftUsername(consent.minecraftName)) {
-      clearFirebaseLogin();
       throw new StaffActivityConsentRequired();
     }
     const acceptedAt = Date.now();
@@ -910,8 +939,10 @@ export async function loginStaff(
         minecraftName: consent.minecraftName,
       });
     } catch (error) {
-      clearFirebaseLogin();
-      throw error;
+      const detail = error instanceof Error ? ` (${error.message})` : "";
+      throw new Error(
+        `Minecraft-Name konnte nicht gespeichert werden. Bitte prüfe die Serverprüfung und die aktuellen Firebase-Regeln; der Owner kann den Nachweisindex über die Aktivitätsstatistik aktualisieren.${detail}`,
+      );
     }
   }
   const loginWarnings = [

@@ -82,13 +82,20 @@
         ".write": "auth != null && ((root.child('staffByUid').child(auth.uid).child('disabled').val() != true && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'Owner')) || (auth.uid == $uid && !data.exists() && root.child('staffUsers').child('owner').child('uid').val() == auth.uid && root.child('staffUsers').child('owner').child('role').val() == 'owner' && root.child('staffUsers').child('owner').child('disabled').val() != true && newData.child('username').val() == 'owner' && newData.child('role').val() == 'owner' && newData.child('disabled').val() != true && newData.child('email').val() == auth.token.email))"
       }
     },
+    "minecraftKnownPlayers": {
+      ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('uid').val() == auth.uid && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('role').val() == 'owner' && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('disabled').val() != true && (root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('ownerUntil').val() == null || root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('ownerUntil').val() > now)",
+      ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('uid').val() == auth.uid && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('role').val() == 'owner' && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('disabled').val() != true && (root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('ownerUntil').val() == null || root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('ownerUntil').val() > now)",
+      "$name": {
+        ".validate": "$name.matches(/^[A-Za-z0-9_]{3,16}$/) && newData.val() == true"
+      }
+    },
     "staffUsers": {
       ".read": "auth != null && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'Owner')",
       "$name": {
         ".read": "auth != null && ((root.child('staffByUid').child(auth.uid).child('disabled').val() != true && root.child('staffByUid').child(auth.uid).child('role').val() != null && (root.child('staffUsers').child($name).child('uid').val() == auth.uid || (root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'Owner')))) || ($name == 'owner' && root.child('staffUsers').child('owner').child('uid').val() == auth.uid && root.child('staffUsers').child('owner').child('role').val() == 'owner' && root.child('staffUsers').child('owner').child('disabled').val() != true && root.child('staffByUid').child(auth.uid).child('disabled').val() != true))",
         ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && (((root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'Owner')) || (root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffUsers').child($name).child('uid').val() == auth.uid && newData.child('role').val() == data.child('role').val() && newData.child('uid').val() == data.child('uid').val() && newData.child('disabled').val() == data.child('disabled').val())))",
         "activityConsent": {
-          ".validate": "newData.hasChildren(['version', 'acceptedAt', 'minecraftName']) && newData.child('version').val() == 'staff-activity-v2' && newData.child('acceptedAt').isNumber() && newData.child('acceptedAt').val() > 0 && newData.child('minecraftName').isString() && newData.child('minecraftName').val().length >= 3 && newData.child('minecraftName').val().length <= 16",
+          ".validate": "newData.hasChildren(['version', 'acceptedAt', 'minecraftName']) && newData.child('version').val() == 'staff-activity-v2' && newData.child('acceptedAt').isNumber() && newData.child('acceptedAt').val() > 0 && newData.child('minecraftName').isString() && newData.child('minecraftName').val().length >= 3 && newData.child('minecraftName').val().length <= 16 && root.child('minecraftKnownPlayers').child(newData.child('minecraftName').val()).val() == true",
           "version": {
             ".validate": "newData.val() == 'staff-activity-v2'"
           },
@@ -96,7 +103,7 @@
             ".validate": "newData.isNumber() && newData.val() > 0"
           },
           "minecraftName": {
-            ".validate": "newData.isString() && newData.val().length >= 3 && newData.val().length <= 16"
+            ".validate": "newData.isString() && newData.val().length >= 3 && newData.val().length <= 16 && root.child('minecraftKnownPlayers').child(newData.val()).val() == true"
           }
         }
       }
