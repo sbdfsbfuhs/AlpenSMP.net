@@ -6,8 +6,10 @@ import {
   createFirebaseUser,
   deleteFirebaseUser,
   ensureIdToken,
+  FirebaseMfaChallengeRequired,
   sendPasswordResetEmail,
   signInEmail,
+  type FirebaseLogin,
 } from "@/lib/alpen/fb-auth";
 import { isMoved, loadPath, relayDetail, SecurityDenied, SecurityDown } from "@/lib/alpen/security";
 import {
@@ -21,9 +23,22 @@ import {
 } from "@/lib/alpen/minecraft";
 import { isPermanentBan, shouldArchivePermanentBan } from "./moderation.ts";
 import { normalizeStaffEmail, temporaryStaffPassword } from "./staff-account-flow.ts";
+import { captureStaffLoginSideEffect } from "./staff-login-audit.ts";
+import {
+  hasCurrentStaffActivityConsent,
+  isValidMinecraftUsername,
+  StaffActivityConsentRequired,
+  STAFF_ACTIVITY_CONSENT_VERSION,
+} from "./staff-consent.ts";
 
 export { hasMinecraftBanReason, minecraftBanKey, minecraftBans, minecraftPlayersSnapshot };
 export { isPermanentBan, shouldArchivePermanentBan };
+export {
+  hasCurrentStaffActivityConsent,
+  isValidMinecraftUsername,
+  StaffActivityConsentRequired,
+  STAFF_ACTIVITY_CONSENT_VERSION,
+};
 export type { MinecraftBan, MinecraftPlayersSnapshot };
 
 const ROOT = SITE.fb;
@@ -34,7 +49,36 @@ export type StaffSession = {
   mustChangePw: boolean;
   email: string;
   uid: string;
+  mfaEnabled?: boolean;
+  displayName?: string;
+  profileColor?: StaffProfileColor;
+  loginWarning?: string;
 };
+
+export const STAFF_PROFILE_COLORS = [
+  { value: "#e1062c", label: "Rot" },
+  { value: "#f97316", label: "Orange" },
+  { value: "#eab308", label: "Gelb" },
+  { value: "#22c55e", label: "Grün" },
+  { value: "#06b6d4", label: "Türkis" },
+  { value: "#3b82f6", label: "Blau" },
+  { value: "#8b5cf6", label: "Violett" },
+  { value: "#ec4899", label: "Pink" },
+] as const;
+
+export type StaffProfileColor = (typeof STAFF_PROFILE_COLORS)[number]["value"];
+export type StaffProfile = {
+  displayName?: string;
+  profileColor?: StaffProfileColor;
+};
+
+export function isStaffProfileColor(value: unknown): value is StaffProfileColor {
+  return STAFF_PROFILE_COLORS.some((color) => color.value === value);
+}
+
+function validDisplayName(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length >= 2 && value.trim().length <= 32;
+}
 
 export type ModItem = {
   name?: string;
@@ -370,7 +414,11 @@ export function writeSession(user: StaffSession | null) {
   if (!user) {
     sessionStorage.removeItem(SESSION);
     clearFirebaseLogin();
-  } else sessionStorage.setItem(SESSION, JSON.stringify(user));
+  } else {
+    const saved = { ...user };
+    delete saved.loginWarning;
+    sessionStorage.setItem(SESSION, JSON.stringify(saved));
+  }
 }
 
 const NAME = /^[a-z0-9._-]{2,24}$/;
@@ -413,20 +461,45 @@ export async function savePassword(username: string, password: string) {
 
 export async function syncStaffDirectory(actor: Pick<StaffSession, "role">) {
   if (actor.role !== "owner") throw new Error("Nur der Owner darf das Teamverzeichnis synchronisieren.");
-  const users = await fbGet<Record<string, { role?: string; disabled?: boolean; lateDays?: number }>>(
-    "staffUsers",
-  );
+  const [users, directory] = await Promise.all([
+    fbGet<Record<string, { role?: string; disabled?: boolean; lateDays?: number }>>("staffUsers"),
+    fbGet<Record<string, StaffProfile>>("staffDirectory"),
+  ]);
   const rows = entries(users);
   await Promise.all(
     rows.map(([username, item]) =>
-      fbSet(`staffDirectory/${staffName(username)}`, {
-        role: asRole(item.role),
-        disabled: item.disabled === true,
-        lateDays: lateDays(item.lateDays),
-      }),
+      writeStaffDirectory(
+        username,
+        {
+          role: asRole(item.role),
+          disabled: item.disabled === true,
+          lateDays: lateDays(item.lateDays),
+        },
+        directory?.[staffName(username)] ?? null,
+      ),
     ),
   );
   return rows.length;
+}
+
+export async function saveStaffProfile(
+  username: string,
+  displayName: string,
+  profileColor: StaffProfileColor,
+) {
+  const name = staffName(username);
+  const cleanName = displayName.trim();
+  if (cleanName && !validDisplayName(cleanName))
+    throw new Error("Der Anzeigename muss leer sein oder 2 bis 32 Zeichen haben.");
+  if (!isStaffProfileColor(profileColor)) throw new Error("Bitte eine gültige Profilfarbe wählen.");
+  await fbUpdate(`staffDirectory/${name}`, {
+    displayName: cleanName || null,
+    profileColor,
+  });
+  return {
+    displayName: cleanName || undefined,
+    profileColor,
+  } satisfies StaffProfile;
 }
 
 export async function createStaffAccount(input: {
@@ -465,7 +538,7 @@ export async function createStaffAccount(input: {
       createdBy: input.createdBy,
     });
     directoryWriteAttempted = true;
-    await fbSet(`staffDirectory/${name}`, {
+    await writeStaffDirectory(name, {
       role,
       disabled: false,
       lateDays: 3,
@@ -485,7 +558,7 @@ export async function createStaffAccount(input: {
       }
       if (directoryWriteAttempted) {
         try {
-          await fbSet(`staffDirectory/${name}`, { role, disabled: true, lateDays: 3 });
+          await writeStaffDirectory(name, { role, disabled: true, lateDays: 3 });
         } catch (cleanupError) {
           cleanupErrors.push(cleanupError instanceof Error ? cleanupError.message : "Teamverzeichnis");
         }
@@ -550,6 +623,23 @@ export async function logStaff(_by: string, action: string, detail = "") {
   await fbPush("staffLog", { action, detail: detail.slice(0, 180) });
 }
 
+async function writeStaffDirectory(
+  username: string,
+  fields: { role: string; disabled: boolean; lateDays: number },
+  savedProfile?: StaffProfile | null,
+) {
+  const name = staffName(username);
+  const profile =
+    savedProfile === undefined
+      ? await fbGet<StaffProfile>(`staffDirectory/${name}`)
+      : savedProfile;
+  await fbSet(`staffDirectory/${name}`, {
+    ...fields,
+    ...(validDisplayName(profile?.displayName) ? { displayName: profile.displayName.trim() } : {}),
+    ...(isStaffProfileColor(profile?.profileColor) ? { profileColor: profile.profileColor } : {}),
+  });
+}
+
 export async function setStaffRole(username: string, role: string, actor: string) {
   const name = staffName(username);
   const safeRole = asRole(role);
@@ -559,7 +649,7 @@ export async function setStaffRole(username: string, role: string, actor: string
   if (!row?.uid) throw new Error("Account fehlt oder ist nicht verknüpft.");
   await fbUpdate(`staffUsers/${name}`, { role: safeRole });
   await fbUpdate(`staffByUid/${row.uid}`, { role: safeRole });
-  await fbSet(`staffDirectory/${name}`, {
+  await writeStaffDirectory(name, {
     role: safeRole,
     disabled: row.disabled === true,
     lateDays: lateDays(row.lateDays),
@@ -580,12 +670,26 @@ export async function setStaffPaused(username: string, paused: boolean, actor: s
     await fbUpdate(`staffUsers/${name}`, { disabled: false });
     await fbUpdate(`staffByUid/${row.uid}`, { disabled: false });
   }
-  await fbSet(`staffDirectory/${name}`, {
+  await writeStaffDirectory(name, {
     role: asRole(row.role),
     disabled: paused,
     lateDays: lateDays(row.lateDays),
   });
   await logStaff(actor, paused ? "Account pausiert" : "Account freigegeben", name);
+}
+
+export async function syncMinecraftStaffActivity() {
+  const token = await ensureIdToken();
+  if (!token) throw new Error("Bitte melde dich erneut an.");
+  const response = await fetch(`${SITE.panelControlApi}/api/minecraft/staff-activity`, {
+    headers: { Authorization: `Bearer ${token}` },
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!response.ok) {
+    throw new Error(`Minecraft-Staff-Zuordnungen konnten nicht synchronisiert werden (${response.status}).`);
+  }
+  const result = await response.json() as { ok?: boolean; trackingReady?: boolean };
+  if (result.ok !== true) throw new Error("Minecraft-Staff-Zuordnungen konnten nicht bestätigt werden.");
 }
 
 export async function resetStaffPassword(username: string, actor: string) {
@@ -705,7 +809,7 @@ export async function removeStaffAccount(username: string, actor: string) {
   const row = await fbGet<{ uid?: string; role?: string; lateDays?: number }>(
     `staffUsers/${name}`,
   );
-  await fbSet(`staffDirectory/${name}`, {
+  await writeStaffDirectory(name, {
     role: asRole(row?.role),
     disabled: true,
     lateDays: lateDays(row?.lateDays),
@@ -716,7 +820,12 @@ export async function removeStaffAccount(username: string, actor: string) {
   await logStaff(actor, "Account gelöscht", name);
 }
 
-export async function loginStaff(nameOrEmail: string, password: string): Promise<StaffSession> {
+export async function loginStaff(
+  nameOrEmail: string,
+  password: string,
+  consent?: { accepted: boolean; minecraftName: string },
+  totpCode = "",
+): Promise<StaffSession> {
   const named = nameOrEmail.trim().toLowerCase();
   if (!password) throw new Error("Name und Passwort");
   const emails: string[] = [];
@@ -728,17 +837,18 @@ export async function loginStaff(nameOrEmail: string, password: string): Promise
   else {
     addEmail(staffLoginId(named));
   }
-  let signed: { email: string; uid: string } | null = null;
+  let signed: FirebaseLogin | null = null;
   let lastError: Error | null = null;
   for (const email of emails) {
     try {
-      signed = await signInEmail(email, password);
+      signed = await signInEmail(email, password, totpCode);
       break;
     } catch (err) {
       lastError = err instanceof Error ? err : new Error("Zugang ungültig");
     }
   }
   if (!signed) {
+    if (lastError instanceof FirebaseMfaChallengeRequired) throw lastError;
     if (lastError && !/ungültig/i.test(lastError.message)) throw lastError;
     throw new Error("Name oder Passwort stimmt nicht.");
   }
@@ -772,6 +882,7 @@ export async function loginStaff(nameOrEmail: string, password: string): Promise
     mustChangePw?: boolean;
     disabled?: boolean;
     ownerUntil?: number | null;
+    activityConsent?: unknown;
   }>(`staffUsers/${username}`);
   if (!row || row.disabled || link?.disabled || (row.uid && row.uid !== signed.uid)) {
     clearFirebaseLogin();
@@ -785,18 +896,48 @@ export async function loginStaff(nameOrEmail: string, password: string): Promise
     clearFirebaseLogin();
     throw new Error("Owner-Zeit abgelaufen");
   }
-  await fbUpdate(`staffUsers/${username}`, {
-    lastLogin: Date.now(),
-    email: signed.email,
-    uid: signed.uid,
-  }).catch(() => undefined);
-  await logStaff(username, "Login");
+  const consentIsCurrent = hasCurrentStaffActivityConsent(row.activityConsent);
+  if (!consentIsCurrent) {
+    if (!consent?.accepted || !isValidMinecraftUsername(consent.minecraftName)) {
+      clearFirebaseLogin();
+      throw new StaffActivityConsentRequired();
+    }
+    const acceptedAt = Date.now();
+    try {
+      await fbSet(`staffUsers/${username}/activityConsent`, {
+        version: STAFF_ACTIVITY_CONSENT_VERSION,
+        acceptedAt,
+        minecraftName: consent.minecraftName,
+      });
+    } catch (error) {
+      clearFirebaseLogin();
+      throw error;
+    }
+  }
+  const loginWarnings = [
+    await captureStaffLoginSideEffect(
+      () =>
+        fbUpdate(`staffUsers/${username}`, {
+          lastLogin: Date.now(),
+          email: signed.email,
+          uid: signed.uid,
+          mfaEnabled: signed.mfaEnabled,
+        }),
+      "Der Login-Zeitpunkt konnte nicht gespeichert werden.",
+    ),
+    await captureStaffLoginSideEffect(
+      () => logStaff(username, "Login"),
+      "Das Staff-Audit-Protokoll ist derzeit nicht erreichbar.",
+    ),
+  ].filter((warning): warning is string => Boolean(warning));
   return {
     username,
     role: row.role || link.role || "helper",
     mustChangePw: Boolean(row.mustChangePw),
     email: signed.email,
     uid: signed.uid,
+    mfaEnabled: signed.mfaEnabled,
+    ...(loginWarnings.length ? { loginWarning: `Anmeldung erfolgreich. ${loginWarnings.join(" ")}` } : {}),
   };
 }
 

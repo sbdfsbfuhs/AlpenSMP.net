@@ -16,17 +16,17 @@
     },
     "site_stats": {
       ".read": true,
-      ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true"
+      ".write": "auth != null && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true"
     },
     "site_stats_history": {
       ".read": true,
       "$id": {
-        ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true"
+        ".write": "auth != null && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true"
       }
     },
     "total_players_ever": {
       ".read": true,
-      ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true"
+      ".write": "auth != null && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true"
     },
     "mascotSettings": {
       ".read": false,
@@ -43,11 +43,11 @@
     "site_status": {
       "active": {
         ".read": true,
-        ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'admin')"
+        ".write": "auth != null && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'admin')"
       },
       "log": {
-        ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
-        ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'admin')"
+        ".read": "auth != null && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
+        ".write": "auth != null && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'admin')"
       }
     },
     "live_streams": {
@@ -63,43 +63,67 @@
       ".write": false
     },
     "helpRequests": {
-      ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
+      ".read": "auth != null && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
       "$id": {
-        ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true"
+        ".write": "auth != null && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true"
       }
     },
     "tickets": {
-      ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
+      ".read": "auth != null && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
       "$code": {
-        ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
-        ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true"
+        ".read": "auth != null && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
+        ".write": "auth != null && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true"
       }
     },
     "staffByUid": {
-      ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'Owner')",
+      ".read": "auth != null && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'Owner')",
       "$uid": {
-        ".read": "auth != null && ((root.child('staffByUid').child(auth.uid).child('disabled').val() != true && root.child('staffByUid').child(auth.uid).child('role').val() != null && (auth.uid == $uid || root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'Owner')) || (auth.uid == $uid && root.child('staffUsers').child('owner').child('uid').val() == auth.uid && root.child('staffUsers').child('owner').child('role').val() == 'owner' && root.child('staffUsers').child('owner').child('disabled').val() != true && root.child('staffByUid').child(auth.uid).child('disabled').val() != true))",
+        ".read": "auth != null && ((root.child('staffByUid').child(auth.uid).child('disabled').val() != true && root.child('staffByUid').child(auth.uid).child('role').val() != null && (auth.uid == $uid || (root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'Owner')))) || (auth.uid == $uid && root.child('staffUsers').child('owner').child('uid').val() == auth.uid && root.child('staffUsers').child('owner').child('role').val() == 'owner' && root.child('staffUsers').child('owner').child('disabled').val() != true && root.child('staffByUid').child(auth.uid).child('disabled').val() != true))",
         ".write": "auth != null && ((root.child('staffByUid').child(auth.uid).child('disabled').val() != true && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'Owner')) || (auth.uid == $uid && !data.exists() && root.child('staffUsers').child('owner').child('uid').val() == auth.uid && root.child('staffUsers').child('owner').child('role').val() == 'owner' && root.child('staffUsers').child('owner').child('disabled').val() != true && newData.child('username').val() == 'owner' && newData.child('role').val() == 'owner' && newData.child('disabled').val() != true && newData.child('email').val() == auth.token.email))"
       }
     },
     "staffUsers": {
-      ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'Owner')",
+      ".read": "auth != null && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'Owner')",
       "$name": {
-        ".read": "auth != null && ((root.child('staffByUid').child(auth.uid).child('disabled').val() != true && root.child('staffByUid').child(auth.uid).child('role').val() != null && (root.child('staffUsers').child($name).child('uid').val() == auth.uid || root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'Owner')) || ($name == 'owner' && root.child('staffUsers').child('owner').child('uid').val() == auth.uid && root.child('staffUsers').child('owner').child('role').val() == 'owner' && root.child('staffUsers').child('owner').child('disabled').val() != true && root.child('staffByUid').child(auth.uid).child('disabled').val() != true))",
-        ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && ((root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'Owner') || (root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffUsers').child($name).child('uid').val() == auth.uid && newData.child('role').val() == data.child('role').val() && newData.child('uid').val() == data.child('uid').val() && newData.child('disabled').val() == data.child('disabled').val()))"
+        ".read": "auth != null && ((root.child('staffByUid').child(auth.uid).child('disabled').val() != true && root.child('staffByUid').child(auth.uid).child('role').val() != null && (root.child('staffUsers').child($name).child('uid').val() == auth.uid || (root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'Owner')))) || ($name == 'owner' && root.child('staffUsers').child('owner').child('uid').val() == auth.uid && root.child('staffUsers').child('owner').child('role').val() == 'owner' && root.child('staffUsers').child('owner').child('disabled').val() != true && root.child('staffByUid').child(auth.uid).child('disabled').val() != true))",
+        ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && (((root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'Owner')) || (root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffUsers').child($name).child('uid').val() == auth.uid && newData.child('role').val() == data.child('role').val() && newData.child('uid').val() == data.child('uid').val() && newData.child('disabled').val() == data.child('disabled').val())))",
+        "activityConsent": {
+          ".validate": "newData.hasChildren(['version', 'acceptedAt', 'minecraftName']) && newData.child('version').val() == 'staff-activity-v2' && newData.child('acceptedAt').isNumber() && newData.child('acceptedAt').val() > 0 && newData.child('minecraftName').isString() && newData.child('minecraftName').val().length >= 3 && newData.child('minecraftName').val().length <= 16",
+          "version": {
+            ".validate": "newData.val() == 'staff-activity-v2'"
+          },
+          "acceptedAt": {
+            ".validate": "newData.isNumber() && newData.val() > 0"
+          },
+          "minecraftName": {
+            ".validate": "newData.isString() && newData.val().length >= 3 && newData.val().length <= 16"
+          }
+        }
       }
     },
     "staffDirectory": {
-      ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('role').val() != 'streamer' && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
+      ".read": "auth != null && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('role').val() != 'streamer' && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
       "$name": {
-        ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'Owner') && newData.exists()",
+        ".write": "auth != null && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && newData.exists() && ((root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'Owner') || (root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('role').val() != 'streamer' && root.child('staffUsers').child($name).child('uid').val() == auth.uid && newData.child('role').val() == data.child('role').val() && newData.child('disabled').val() == data.child('disabled').val() && newData.child('lateDays').val() == data.child('lateDays').val()))",
         ".validate": "newData.hasChildren(['role', 'disabled', 'lateDays'])",
         "role": {
           ".validate": "newData.isString() && (newData.val() == 'owner' || newData.val() == 'admin' || newData.val() == 'helper' || newData.val() == 'supporter' || newData.val() == 'builder' || newData.val() == 'streamer')"
         },
-        "disabled": { ".validate": "newData.isBoolean()" },
-        "lateDays": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 30" },
-        "$other": { ".validate": false }
+        "disabled": {
+          ".validate": "newData.isBoolean()"
+        },
+        "lateDays": {
+          ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 30"
+        },
+        "displayName": {
+          ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 32"
+        },
+        "profileColor": {
+          ".validate": "newData.isString() && (newData.val() == '#e1062c' || newData.val() == '#f97316' || newData.val() == '#eab308' || newData.val() == '#22c55e' || newData.val() == '#06b6d4' || newData.val() == '#3b82f6' || newData.val() == '#8b5cf6' || newData.val() == '#ec4899')"
+        },
+        "$other": {
+          ".validate": false
+        }
       }
     },
     "staffAuth": {
@@ -108,56 +132,89 @@
     },
     "staffGate": {
       "$name": {
-        ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'Owner')",
-        ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'Owner')"
+        ".read": "auth != null && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'Owner')",
+        ".write": "auth != null && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'Owner')"
       }
     },
     "staffOpen": {
       ".read": false,
       "$name": {
-        ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'Owner')"
+        ".write": "auth != null && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'Owner')"
       }
     },
     "staffLog": {
-      ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'Owner')",
+      ".read": "auth != null && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || root.child('staffByUid').child(auth.uid).child('role').val() == 'Owner')",
       ".write": false
     },
-    "commands": { ".read": false, ".write": false },
-    "bans": { ".read": false, ".write": false },
-    "kicks": { ".read": false, ".write": false },
-    "warns": { ".read": false, ".write": false },
-    "notes": { ".read": false, ".write": false },
-    "tasks": { ".read": false, ".write": false },
-    "absences": { ".read": false, ".write": false },
-    "banGuide": { ".read": false, ".write": false },
-    "rulesStaff": { ".read": false, ".write": false },
+    "commands": {
+      ".read": false,
+      ".write": false
+    },
+    "bans": {
+      ".read": false,
+      ".write": false
+    },
+    "kicks": {
+      ".read": false,
+      ".write": false
+    },
+    "warns": {
+      ".read": false,
+      ".write": false
+    },
+    "notes": {
+      ".read": false,
+      ".write": false
+    },
+    "tasks": {
+      ".read": false,
+      ".write": false
+    },
+    "absences": {
+      ".read": false,
+      ".write": false
+    },
+    "banGuide": {
+      ".read": false,
+      ".write": false
+    },
+    "rulesStaff": {
+      ".read": false,
+      ".write": false
+    },
     "presence": {
-      ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
+      ".read": "auth != null && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
       "$name": {
-        ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && root.child('staffUsers').child($name).child('uid').val() == auth.uid"
+        ".write": "auth != null && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && root.child('staffUsers').child($name).child('uid').val() == auth.uid"
       }
     },
-    "site_settings": { ".read": false, ".write": false },
+    "site_settings": {
+      ".read": false,
+      ".write": false
+    },
     "chats": {
       "team": {
-        ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('role').val() != 'builder' && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
+        ".read": "auth != null && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('role').val() != 'builder' && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
         "$id": {
-          ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('role').val() != 'builder' && ((!data.exists() && newData.child('by').val() == root.child('staffByUid').child(auth.uid).child('username').val() && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 800) || (!newData.exists() && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || (data.child('ts').isNumber() && data.child('ts').val() + 1209600000 < now))))"
+          ".write": "auth != null && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('role').val() != 'builder' && ((!data.exists() && newData.child('by').val() == root.child('staffByUid').child(auth.uid).child('username').val() && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 800) || (!newData.exists() && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || (data.child('ts').isNumber() && data.child('ts').val() + 1209600000 < now))))"
         }
       },
       "pin": {
-        ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
+        ".read": "auth != null && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true",
         "$id": {
-          ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && root.child('staffByUid').child(auth.uid).child('role').val() == 'owner'"
+          ".write": "auth != null && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && root.child('staffByUid').child(auth.uid).child('role').val() == 'owner'"
         }
       },
       "builder": {
-        ".read": "auth != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('role').val() != 'streamer'",
+        ".read": "auth != null && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && root.child('staffByUid').child(auth.uid).child('role').val() != null && root.child('staffByUid').child(auth.uid).child('role').val() != 'streamer'",
         "$id": {
-          ".write": "auth != null && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && (root.child('staffByUid').child(auth.uid).child('role').val() == 'builder' || root.child('staffByUid').child(auth.uid).child('role').val() == 'owner') && ((!data.exists() && newData.child('by').val() == root.child('staffByUid').child(auth.uid).child('username').val() && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 800) || (!newData.exists() && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || (data.child('ts').isNumber() && data.child('ts').val() + 1209600000 < now))))"
+          ".write": "auth != null && root.child('staffUsers').child(root.child('staffByUid').child(auth.uid).child('username').val()).child('activityConsent').child('version').val() == 'staff-activity-v2' && root.child('staffByUid').child(auth.uid).child('disabled').val() != true && (root.child('staffByUid').child(auth.uid).child('role').val() == 'builder' || root.child('staffByUid').child(auth.uid).child('role').val() == 'owner') && ((!data.exists() && newData.child('by').val() == root.child('staffByUid').child(auth.uid).child('username').val() && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 800) || (!newData.exists() && (root.child('staffByUid').child(auth.uid).child('role').val() == 'owner' || (data.child('ts').isNumber() && data.child('ts').val() + 1209600000 < now))))"
         }
       }
     },
-    "site_copy": { ".read": false, ".write": false }
+    "site_copy": {
+      ".read": false,
+      ".write": false
+    }
   }
 }

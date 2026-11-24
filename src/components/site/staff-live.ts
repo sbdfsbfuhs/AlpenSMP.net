@@ -9,9 +9,13 @@ function liveErrorCode(path: string) {
   return `LIVE-${slug || "DATA"}-001`;
 }
 
-export function useLive<T>(path: string) {
+export function useLive<T>(path: string, enabled = true) {
   const [data, setData] = useState<Record<string, T>>({});
   useEffect(() => {
+    if (!enabled) {
+      setData({});
+      return;
+    }
     let stop = false;
     const wait = isMoved(path) ? 8000 : 30000;
     const pull = () => {
@@ -48,7 +52,7 @@ export function useLive<T>(path: string) {
       window.clearInterval(id);
       document.removeEventListener("visibilitychange", onShow);
     };
-  }, [path]);
+  }, [path, enabled]);
   return data;
 }
 

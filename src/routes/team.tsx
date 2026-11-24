@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { lazy, Suspense, useEffect, useRef, useState, type FormEvent } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { PageHero, Shell } from "@/components/site/shell";
 import { SiteMascot } from "@/components/site/assistant";
 import { StaffChat } from "@/components/site/staff-chat";
@@ -7,7 +7,8 @@ import { PlayerSearch } from "@/components/site/staff-search";
 import { useLive } from "@/components/site/staff-live";
 import { can, roleLabel, ROLES, asRole, type Role } from "@/lib/alpen/roles";
 import { moveStaffLayoutTab, normalizeStaffLayout, reorderStaffLayoutTab, type StaffLayout } from "@/lib/alpen/staff-layout";
-import { sendPasswordResetEmail } from "@/lib/alpen/fb-auth";
+import { FirebaseMfaChallengeRequired, sendPasswordResetEmail } from "@/lib/alpen/fb-auth";
+import { securityJson } from "@/lib/alpen/security";
 
 const AbsenceBoard = lazy(() => import("@/components/site/staff-extra").then((m) => ({ default: m.AbsenceBoard })));
 const BanGuideEditor = lazy(() => import("@/components/site/staff-extra").then((m) => ({ default: m.BanGuideEditor })));
@@ -38,8 +39,12 @@ import {
   fbSet,
   fbUpdate,
   formatWhen,
+  hasCurrentStaffActivityConsent,
+  isStaffProfileColor,
+  isValidMinecraftUsername,
   shouldArchivePermanentBan,
   loginStaff,
+  StaffActivityConsentRequired,
   executeMinecraftUnban,
   fetchMinecraftPlayersSnapshot,
   minecraftBanKey,
@@ -49,6 +54,7 @@ import {
   type MinecraftBan,
   type MinecraftPlayersSnapshot,
   type ModItem,
+  type StaffProfile,
   type StaffSession,
 } from "@/lib/alpen/staff";
 
@@ -125,7 +131,7 @@ const TABS: { id: Tab; label: string; group: TabGroup; area: TabArea }[] = [
   { id: "stream", label: "Mein Stream", group: "Inhalte & Kommunikation", area: "stream" },
   { id: "season", label: "Season & Events", group: "Inhalte & Kommunikation", area: "season" },
   { id: "channels", label: "Kanäle", group: "Inhalte & Kommunikation", area: "channels" },
-  { id: "settings", label: "Einstellungen", group: "Verwaltung", area: "settings" },
+  { id: "settings", label: "Mein Konto", group: "Verwaltung", area: "settings" },
   { id: "website", label: "Website", group: "Verwaltung", area: "website" },
   { id: "users", label: "Accounts", group: "Verwaltung", area: "roles" },
 ];
@@ -150,9 +156,21 @@ function StaffPage() {
       setReady(true);
       return;
     }
-    void fbGet<{ role?: string; mustChangePw?: boolean; disabled?: boolean }>(`staffUsers/${saved.username}`)
+    void fbGet<{
+      role?: string;
+      mustChangePw?: boolean;
+      disabled?: boolean;
+      activityConsent?: unknown;
+      uid?: string;
+    }>(`staffUsers/${saved.username}`)
       .then((row) => {
-        if (!row || row.disabled || !saved.email) {
+        if (
+          !row ||
+          row.disabled ||
+          !saved.email ||
+          (row.uid && row.uid !== saved.uid) ||
+          !hasCurrentStaffActivityConsent(row.activityConsent)
+        ) {
           writeSession(null);
           setUser(null);
         } else {
@@ -188,14 +206,22 @@ function StaffPage() {
     };
   }, []);
 
-  function note(text: string) {
+  const note = useCallback((text: string) => {
     setToast(text);
     if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
     toastTimer.current = window.setTimeout(() => {
       setToast("");
       toastTimer.current = null;
     }, 6000);
-  }
+  }, []);
+
+  const updateProfile = useCallback((profile: StaffProfile) => {
+    const saved = readSession();
+    if (!saved) return;
+    const next = { ...saved, ...profile };
+    writeSession(next);
+    setUser(next);
+  }, []);
 
   function logout() {
     const name = user?.username;
@@ -232,14 +258,14 @@ function StaffPage() {
           </p>
         ) : null}
         {!ready ? <p className="text-muted">Lade Zugang…</p> : null}
-        {ready && !user ? <Login onIn={(next) => {
+        {ready && !user ? <Login note={note} onIn={(next) => {
           setBootstrapError("");
           setUser(next);
         }} /> : null}
         {user?.mustChangePw ? (
           <ForcePassword user={user} onDone={setUser} note={note} />
         ) : user ? (
-          <Desk user={user} onLogout={logout} note={note} />
+          <Desk user={user} onLogout={logout} note={note} onProfileChange={updateProfile} />
         ) : null}
         {toast ? <p role="status" className="panel-in fixed bottom-6 left-1/2 z-[80] max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-md bg-brand px-4 py-2 text-sm text-fg shadow-lg">{toast}</p> : null}
       </div>
@@ -247,7 +273,13 @@ function StaffPage() {
   );
 }
 
-function Login({ onIn }: { onIn: (user: StaffSession) => void }) {
+function Login({
+  onIn,
+  note,
+}: {
+  onIn: (user: StaffSession) => void;
+  note: (text: string) => void;
+}) {
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -256,18 +288,45 @@ function Login({ onIn }: { onIn: (user: StaffSession) => void }) {
   const [recoveryMessage, setRecoveryMessage] = useState("");
   const [recoveryError, setRecoveryError] = useState("");
   const [recoveryBusy, setRecoveryBusy] = useState(false);
+  const [consentRequired, setConsentRequired] = useState(false);
+  const [consentAccepted, setConsentAccepted] = useState(false);
+  const [minecraftName, setMinecraftName] = useState("");
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [mfaCode, setMfaCode] = useState("");
 
   async function submit(event: FormEvent) {
     event.preventDefault();
+    if (consentRequired && !consentAccepted) {
+      setError("Ohne Zustimmung ist kein Zugang zum Staff-Center möglich.");
+      return;
+    }
+    if (consentRequired && !isValidMinecraftUsername(minecraftName.trim())) {
+      setError("Bitte gib einen gültigen Minecraft-Namen ein (3–16 Zeichen, Buchstaben, Zahlen oder _).");
+      return;
+    }
     setBusy(true);
     setError("");
     try {
-      const session = await loginStaff(name, password);
+      const session = await loginStaff(
+        name,
+        password,
+        consentRequired ? { accepted: true, minecraftName: minecraftName.trim() } : undefined,
+        mfaCode,
+      );
       writeSession(session);
       void fbSet(`presence/${session.username}`, { username: session.username, role: session.role, online: true, lastSeen: Date.now() }).catch(() => undefined);
       onIn(session);
+      if (session.loginWarning) note(session.loginWarning);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Zugang ungültig");
+      if (err instanceof StaffActivityConsentRequired) {
+        setConsentRequired(true);
+        setError("");
+      } else if (err instanceof FirebaseMfaChallengeRequired) {
+        setMfaRequired(true);
+        setError("");
+      } else {
+        setError(err instanceof Error ? err.message : "Zugang ungültig");
+      }
     } finally {
       setBusy(false);
     }
@@ -292,7 +351,7 @@ function Login({ onIn }: { onIn: (user: StaffSession) => void }) {
     <div className="mx-auto max-w-md space-y-4">
       <form className="card card-still panel-in p-6" onSubmit={submit}>
         <h2 className="text-xl font-semibold">Anmelden</h2>
-        <p className="mt-2 text-sm text-muted">Melde dich mit der persönlichen E-Mail-Adresse deines Accounts und deinem Passwort an. Bei älteren Konten funktioniert übergangsweise auch der Teamname. Deine E-Mail-Adresse wird nicht öffentlich für die Teamnamen-Suche bereitgestellt.</p>
+        <p className="mt-2 text-sm text-muted">Melde dich mit der persönlichen E-Mail-Adresse deines Accounts und deinem Passwort an. Bei älteren Konten funktioniert übergangsweise auch der Teamname. Deine E-Mail-Adresse wird nicht öffentlich für die Teamnamen-Suche bereitgestellt. Der Minecraft-Server muss für die Anmeldung nicht online sein.</p>
         <label className="mt-5 block text-sm">
           Persönliche E-Mail-Adresse oder älterer Teamname
           <input className="field mt-1" value={name} onChange={(e) => setName(e.target.value)} autoComplete="username" required />
@@ -301,6 +360,53 @@ function Login({ onIn }: { onIn: (user: StaffSession) => void }) {
           Passwort
           <input className="field mt-1" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
         </label>
+        {mfaRequired ? (
+          <label className="mt-3 block text-sm">
+            Authenticator-Code
+            <input className="field mt-1" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" value={mfaCode} onChange={(event) => setMfaCode(event.target.value)} required />
+            <span className="mt-1 block text-xs text-muted">Gib den aktuellen sechsstelligen Code aus deiner Authenticator-App ein.</span>
+          </label>
+        ) : null}
+        {consentRequired ? (
+          <div className="mt-5 space-y-3 rounded-xl border border-brand/40 bg-brand/5 p-4">
+            <h3 className="font-semibold">Einwilligung erforderlich</h3>
+            <p className="text-sm text-muted">
+              Für den Zugang werden dein letzter Staff-Center-Aktivitätszeitpunkt und dein Minecraft-Name
+              für die interne Teamverwaltung gespeichert. Der Minecraft-Name wird deinem Staff-Konto
+              zugeordnet. Website-Nutzungszeit wird nur bei sichtbarem Tab und kürzlicher Bedienung
+              gezählt. Minecraft-Zeit misst die Serververbindung einschliesslich AFK-Zeit, keine
+              einzelnen Spielaktionen. Beide Werte werden getrennt erfasst und können als
+              Gesamtsumme angezeigt werden; Tagesdetails werden 30 Tage und anschliessend
+              Wochenwerte bis zu einem Jahr aufbewahrt. Ohne
+              Zustimmung kannst du nicht fortfahren; wende dich bei Fragen bitte an den Owner.
+            </p>
+            <label className="block text-sm">
+              Minecraft-Name
+              <input
+                className="field mt-1"
+                value={minecraftName}
+                onChange={(event) => setMinecraftName(event.target.value)}
+                autoComplete="off"
+                maxLength={16}
+                required
+              />
+            </label>
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                className="mt-1"
+                type="checkbox"
+                checked={consentAccepted}
+                onChange={(event) => setConsentAccepted(event.target.checked)}
+              />
+              <span>
+                Ich willige ein, dass meine aktive Nutzung des Staff-Centers sowie meine Spielzeit
+                als Server-Verbindungszeit auf dem Minecraft-Server erfasst, meinem Konto zugeordnet
+                und für die Teamverwaltung ausgewertet werden. Ich kann die Einwilligung für die
+                Zukunft über die Kontakt-E-Mail widerrufen.
+              </span>
+            </label>
+          </div>
+        ) : null}
         {error ? <p className="mt-3 text-sm text-ember">{error}</p> : null}
         <button className="btn-brand mt-5 w-full" type="submit" disabled={busy}>
           {busy ? "Prüfe…" : "Rein"}
@@ -357,12 +463,42 @@ function ForcePassword({ user, onDone, note }: { user: StaffSession; onDone: (us
   );
 }
 
-function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => void; note: (text: string) => void }) {
+function Desk({
+  user,
+  onLogout,
+  note,
+  onProfileChange,
+}: {
+  user: StaffSession;
+  onLogout: () => void;
+  note: (text: string) => void;
+  onProfileChange: (profile: StaffProfile) => void;
+}) {
   const real = user.role;
   const [view, setView] = useState<Role>(asRole(user.role));
   const shown = (real === "owner" ? view : user.role) as string;
   const previewing = shown !== real;
   const displayedUser = previewing ? { ...user, role: shown } : user;
+  useEffect(() => {
+    if (user.role === "streamer") return;
+    let active = true;
+    void fbGet<StaffProfile>(`staffDirectory/${user.username}`)
+      .then((profile) => {
+        if (!active) return;
+        onProfileChange({
+          displayName: typeof profile?.displayName === "string" ? profile.displayName : undefined,
+          profileColor: isStaffProfileColor(profile?.profileColor) ? profile.profileColor : undefined,
+        });
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        console.error("[Staff Center] PROFILE-STAFF-001: Profil konnte nicht geladen werden.", error);
+        note("Das Team-Profil konnte gerade nicht geladen werden. Die Anmeldung bleibt aktiv.");
+      });
+    return () => {
+      active = false;
+    };
+  }, [user.username, user.role, onProfileChange, note]);
   const [staffLayout, setStaffLayout] = useState<StaffLayout>(DEFAULT_LAYOUT);
   const [layoutLoading, setLayoutLoading] = useState(true);
   const [layoutSaving, setLayoutSaving] = useState(false);
@@ -492,16 +628,38 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
   const otherGroups = [...new Set(otherTabs.map((item) => item.group))];
   const helpRows = useLive<ModItem>("helpRequests");
   const absenceRows = useLive<ModItem>("absences");
+  const canReadCommunity = can(shown, "community") && can(real, "community");
+  const communityReviews = useLive<ModItem>("community_reviews", canReadCommunity);
+  const communityImages = useLive<ModItem>("community_images", canReadCommunity);
   const seen = readSeen(user.username);
   const fresh = (rows: Record<string, ModItem>, since: number) =>
     Object.values(rows).filter((item) => item && !item.archived && (item.ts || item.updatedAt || 0) > since).length;
+  const freshCommunity = (rows: Record<string, ModItem>, since: number) =>
+    Object.values(rows).filter(
+      (item) =>
+        item &&
+        !item.archived &&
+        (!item.status || item.status === "pending") &&
+        (item.ts || item.updatedAt || 0) > since,
+    ).length;
   const badges: Partial<Record<Tab, number>> = {
     moderation: safeTab === "moderation" ? 0 : fresh(banRows, seen.moderation || 0),
     absence: safeTab === "absence" ? 0 : fresh(absenceRows, seen.absence || 0),
     help: safeTab === "help" ? 0 : fresh(helpRows, seen.help || 0),
+    community:
+      safeTab === "community"
+        ? 0
+        : freshCommunity(communityReviews, seen.community || 0) +
+          freshCommunity(communityImages, seen.community || 0),
   };
   useEffect(() => {
-    if (safeTab !== "moderation" && safeTab !== "absence" && safeTab !== "help") return;
+    if (
+      safeTab !== "moderation" &&
+      safeTab !== "absence" &&
+      safeTab !== "help" &&
+      safeTab !== "community"
+    )
+      return;
     const next = readSeen(user.username);
     next[safeTab] = Date.now();
     window.localStorage.setItem(seenKey(user.username), JSON.stringify(next));
@@ -531,6 +689,43 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
       document.removeEventListener("input", onType);
     };
   }, [user.username, user.role]);
+
+  useEffect(() => {
+    let lastInteractionAt = 0;
+    let requestPending = false;
+    let failureReported = false;
+    const markActive = () => {
+      lastInteractionAt = Date.now();
+    };
+    const heartbeat = async () => {
+      if (
+        requestPending ||
+        document.visibilityState !== "visible" ||
+        !lastInteractionAt ||
+        Date.now() - lastInteractionAt > 60_000
+      ) return;
+      requestPending = true;
+      try {
+        await securityJson<void>("/api/staff-activity/heartbeat", { method: "POST" });
+        failureReported = false;
+      } catch (error) {
+        if (!failureReported) {
+          console.error("[Staff Center] Aktivitätsmessung konnte nicht gespeichert werden.", error);
+          note("Aktivitätsmessung ist vorübergehend nicht verfügbar.");
+          failureReported = true;
+        }
+      } finally {
+        requestPending = false;
+      }
+    };
+    const events = ["pointerdown", "keydown", "input", "touchstart"] as const;
+    for (const event of events) document.addEventListener(event, markActive, { passive: true });
+    const timer = window.setInterval(() => void heartbeat(), 30_000);
+    return () => {
+      window.clearInterval(timer);
+      for (const event of events) document.removeEventListener(event, markActive);
+    };
+  }, [note, user.username]);
 
   const showChat = can(shown, "chat") && can(real, "chat");
   const dockChat = showChat && safeTab !== "moderation";
@@ -567,13 +762,18 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
         <div className="flex min-w-0 items-center gap-3">
           <span
             aria-hidden="true"
-            className="grid size-12 shrink-0 place-items-center rounded-full border border-brand/40 bg-brand/10 text-lg font-semibold text-ice"
+            className="grid size-12 shrink-0 place-items-center rounded-full border text-lg font-semibold text-white"
+            style={{
+              backgroundColor: user.profileColor || "#e1062c",
+              borderColor: user.profileColor || "#e1062c",
+            }}
           >
-            {user.username.slice(0, 1).toUpperCase()}
+            {(user.displayName || user.username).slice(0, 1).toUpperCase()}
           </span>
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-faint">Angemeldet als</p>
-            <p className="truncate text-lg font-semibold text-fg">{user.username}</p>
+            <p className="truncate text-lg font-semibold text-fg">{user.displayName || user.username}</p>
+            {user.displayName ? <p className="truncate text-xs text-faint">@{user.username}</p> : null}
             <p className="text-sm text-muted">{roleLabel(shown)}</p>
           </div>
         </div>
@@ -641,7 +841,7 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
           </div>
           {otherTabs.length ? (
             <details className="staff-more">
-              <summary>Weitere Bereiche <span className="staff-more-count">{otherTabs.length}</span></summary>
+              <summary>Weitere Bereiche</summary>
               <div className="staff-more-panel">
                 {otherGroups.map((group) => (
                   <section key={group} className="staff-more-group">
@@ -782,7 +982,9 @@ function Desk({ user, onLogout, note }: { user: StaffSession; onLogout: () => vo
             ) : null}
             {safeTab === "guide" ? <GuideEditor real={shown} view={shown} note={note} /> : null}
             {safeTab === "roster" ? <Roster owner={shown === "owner"} note={note} /> : null}
-            {safeTab === "settings" ? <Settings user={displayedUser} note={note} /> : null}
+            {safeTab === "settings" ? (
+              <Settings user={displayedUser} note={note} onProfileChange={onProfileChange} />
+            ) : null}
             {safeTab === "news" ? <NewsEditor user={displayedUser} note={note} /> : null}
             {safeTab === "status" ? <StatusDesk user={displayedUser} note={note} /> : null}
             {safeTab === "stream" ? <StreamDesk user={displayedUser} note={note} /> : null}
@@ -1133,9 +1335,13 @@ function seenKey(username: string) {
   return `alpen-seen:${username}`;
 }
 
-function readSeen(username: string): Partial<Record<"moderation" | "absence" | "help", number>> {
+function readSeen(
+  username: string,
+): Partial<Record<"moderation" | "absence" | "help" | "community", number>> {
   try {
-    return JSON.parse(window.localStorage.getItem(seenKey(username)) || "{}") as Partial<Record<"moderation" | "absence" | "help", number>>;
+    return JSON.parse(window.localStorage.getItem(seenKey(username)) || "{}") as Partial<
+      Record<"moderation" | "absence" | "help" | "community", number>
+    >;
   } catch {
     return {};
   }

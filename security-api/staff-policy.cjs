@@ -20,6 +20,11 @@ function isActiveStaffIdentity(mapping, profile, uid) {
     STAFF_ROLES.has(mapping.role) &&
     mapping.disabled !== true &&
     profile.disabled !== true &&
+    profile.activityConsent?.version === "staff-activity-v2" &&
+    Number.isFinite(profile.activityConsent?.acceptedAt) &&
+    profile.activityConsent.acceptedAt > 0 &&
+    typeof profile.activityConsent.minecraftName === "string" &&
+    /^[A-Za-z0-9_]{3,16}$/.test(profile.activityConsent.minecraftName) &&
     profile.uid === uid &&
     profile.role === mapping.role
   );

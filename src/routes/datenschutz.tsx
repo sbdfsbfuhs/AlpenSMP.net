@@ -221,6 +221,31 @@ function PrivacyPage() {
           einen Grok-Auth-Broker ist laut Betreiberangabe in der Live-Umgebung nicht aktiv.
         </p>
         <p>
+          Nach ausdrücklicher aktueller Einwilligung werden Staff-Aktivitätswerte getrennt für
+          Website und Minecraft erfasst. Website-Zeit wird nur bei sichtbarem Staff-Center und
+          kürzlicher Eingabe über begrenzte Zeitintervalle aggregiert; Eingabetexte werden dafür
+          nicht gespeichert. Die optionale Minecraft-Erfassung misst die Server-Verbindungszeit
+          der zugeordneten Staff-Konten einschliesslich verbundener AFK-Zeit, nicht einzelne
+          Spielaktionen. Die Website-Werte
+          liegen in der lokalen Sicherheits-API-Datenbank; Minecraft-Werte in einer lokalen
+          Plugin-Datei auf der geprüften Serverinstanz. Tageswerte werden 30 Tage und anschliessend
+          Wochenwerte bis höchstens 365 Tage gespeichert. Die Erfassung beginnt erst nach
+          Aktivierung und Einwilligung; rückwirkende Werte werden nicht erstellt. Die aktuelle
+          Zustimmungs-Zuordnung für Minecraft wird beim Abruf der Owner-Statistik synchronisiert;
+          ein Pausieren wird deshalb bei der nächsten Owner-Synchronisierung wirksam. Beim
+          Selbst-Widerruf entfernt die Sicherheits-API die Minecraft-Zuordnung und Website-Historie;
+          das Plugin übernimmt die Änderung spätestens bei seiner nächsten Prüfung. Fragen kannst
+          du an die Kontakt-E-Mail richten.
+        </p>
+        <p>
+          Eine optionale TOTP-Zwei-Faktor-Anmeldung kann in Firebase Authentication eingerichtet
+          werden, sofern die dafür nötige Identity-Platform-Konfiguration aktiviert ist. Der
+          Authenticator-Schlüssel wird bei der Einrichtung angezeigt und muss in deiner
+          Authenticator-App gesichert werden; er wird von Firebase für die Anmeldung verwaltet.
+          Ohne eingerichteten Wiederherstellungsweg kann der Verlust des Geräts den Zugang
+          erschweren.
+        </p>
+        <p>
           Der Quellcode enthält zusätzlich Unterstützung für PostgreSQL (Neon) für diesen nicht
           aktiven Login-Pfad. Diese Datenbank wird laut Betreiberangabe in der Live-Umgebung nicht
           verwendet.

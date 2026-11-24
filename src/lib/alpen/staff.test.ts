@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  hasCurrentStaffActivityConsent,
+  isValidMinecraftUsername,
+  STAFF_ACTIVITY_CONSENT_VERSION,
+} from "./staff-consent.ts";
+import {
   canPublishCommunityItem,
   canShowCommunityItem,
   communitySubmissionGaps,
@@ -8,6 +13,7 @@ import {
 import { shouldArchivePermanentBan, type PermanentBanState } from "./moderation.ts";
 import { can } from "./roles.ts";
 import { moveStaffLayoutTab, normalizeStaffLayout, reorderStaffLayoutTab } from "./staff-layout.ts";
+import { captureStaffLoginSideEffect } from "./staff-login-audit.ts";
 
 describe("moderation role access", () => {
   it("allows owner, admin, and helper to moderate while supporters can only read", () => {
@@ -30,6 +36,44 @@ describe("moderation role access", () => {
     }
     assert.equal(can("builder", "commandsRead"), false);
     assert.equal(can("builder", "commandsEdit"), false);
+  });
+});
+
+describe("staff activity consent", () => {
+  const consent = {
+    version: STAFF_ACTIVITY_CONSENT_VERSION,
+    acceptedAt: 1_800_000_000_000,
+    minecraftName: "Test_Player",
+  };
+
+  it("accepts only a current consent record with a valid Minecraft name", () => {
+    assert.equal(isValidMinecraftUsername("Test_Player"), true);
+    assert.equal(isValidMinecraftUsername("ab"), false);
+    assert.equal(isValidMinecraftUsername("name with spaces"), false);
+    assert.equal(hasCurrentStaffActivityConsent(consent), true);
+    assert.equal(hasCurrentStaffActivityConsent({ ...consent, version: "old-version" }), false);
+    assert.equal(hasCurrentStaffActivityConsent({ ...consent, acceptedAt: NaN }), false);
+    assert.equal(hasCurrentStaffActivityConsent({ ...consent, minecraftName: "invalid name" }), false);
+    assert.equal(hasCurrentStaffActivityConsent(null), false);
+  });
+});
+
+describe("staff login audit availability", () => {
+  it("allows authentication to continue when a non-critical login side effect is unavailable", async () => {
+    assert.equal(
+      await captureStaffLoginSideEffect(async () => undefined, "Audit nicht erreichbar"),
+      undefined,
+    );
+    assert.equal(
+      await captureStaffLoginSideEffect(async () => {
+        throw new Error("Relay offline");
+      }, "Audit nicht erreichbar"),
+      "Audit nicht erreichbar",
+    );
+    assert.equal(
+      await captureStaffLoginSideEffect(() => new Promise(() => {}), "Audit nicht erreichbar", 1),
+      "Audit nicht erreichbar",
+    );
   });
 });
 

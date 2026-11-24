@@ -1,7 +1,18 @@
+import { useEffect, useState } from "react";
 import { useLive } from "@/components/site/staff-live";
 import { Neu } from "@/components/site/staff-shared";
+import { ensureIdToken } from "@/lib/alpen/fb-auth";
 import { asRole, roleLabel, ROLES } from "@/lib/alpen/roles";
-import { entries, fbUpdate, lateDays, type ModItem } from "@/lib/alpen/staff";
+import { securityJson } from "@/lib/alpen/security";
+import { SITE } from "@/lib/alpen/site";
+import {
+  entries,
+  fbUpdate,
+  formatWhen,
+  isStaffProfileColor,
+  lateDays,
+  type ModItem,
+} from "@/lib/alpen/staff";
 
 function WeekStats() {
   const bans = useLive<ModItem>("bans");
@@ -41,8 +52,185 @@ function weekStart() {
   return date.getTime();
 }
 
+function activityWeekStart() {
+  const date = new Date();
+  const day = (date.getUTCDay() + 6) % 7;
+  date.setUTCHours(0, 0, 0, 0);
+  date.setUTCDate(date.getUTCDate() - day);
+  return date.getTime();
+}
+
+type ActivityBuckets = { daily: Record<string, number>; weekly: Record<string, number> };
+type ActivityReport = { ok: true; trackingReady?: boolean; members: Record<string, { website?: ActivityBuckets; minecraft?: ActivityBuckets }> };
+
+function isActivityReport(value: unknown): value is ActivityReport {
+  if (!value || typeof value !== "object" || !("ok" in value) || value.ok !== true || !("members" in value)) return false;
+  const members = value.members;
+  if (!members || typeof members !== "object" || Array.isArray(members)) return false;
+  return Object.values(members).every((member) => {
+    if (!member || typeof member !== "object") return false;
+    return ["website", "minecraft"].every((source) => {
+      const buckets = (member as Record<string, unknown>)[source];
+      return buckets === undefined || (
+        buckets !== null &&
+        typeof buckets === "object" &&
+        "daily" in buckets &&
+        "weekly" in buckets &&
+        buckets.daily !== null &&
+        typeof buckets.daily === "object" &&
+        !Array.isArray(buckets.daily) &&
+        buckets.weekly !== null &&
+        typeof buckets.weekly === "object" &&
+        !Array.isArray(buckets.weekly)
+      );
+    });
+  });
+}
+
+function currentWeekActivity(buckets: ActivityBuckets | undefined, start: string) {
+  if (!buckets) return 0;
+  return Object.entries(buckets.daily).reduce((total, [day, seconds]) =>
+    day >= start && Number.isFinite(seconds) ? total + seconds : total, 0);
+}
+
+function durationLabel(seconds: number) {
+  const minutes = Math.round(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  return hours ? `${hours} h ${remainingMinutes} min` : `${minutes} min`;
+}
+
+function StaffActivityStats({
+  people,
+}: {
+  people: Array<{ username: string; label: string }>;
+}) {
+  const [website, setWebsite] = useState<ActivityReport | null>(null);
+  const [minecraft, setMinecraft] = useState<ActivityReport | null>(null);
+  const [errors, setErrors] = useState<{ website?: string; minecraft?: string }>({});
+  const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      setLoading(true);
+      setErrors({});
+      setWebsite(null);
+      setMinecraft(null);
+      const results = await Promise.allSettled([
+        securityJson<unknown>("/api/staff-activity/weekly"),
+        (async () => {
+          const token = await ensureIdToken();
+          if (!token) throw new Error("Bitte melde dich erneut an.");
+          const response = await fetch(`${SITE.panelControlApi}/api/minecraft/staff-activity`, {
+            headers: { Authorization: `Bearer ${token}` },
+            signal: AbortSignal.timeout(8000),
+          });
+          if (!response.ok) throw new Error(`Anfrage fehlgeschlagen (${response.status}).`);
+          return response.json() as Promise<unknown>;
+        })(),
+      ]);
+      if (!active) return;
+      const nextErrors: { website?: string; minecraft?: string } = {};
+      if (results[0].status === "fulfilled" && isActivityReport(results[0].value)) {
+        setWebsite(results[0].value);
+      } else {
+        setWebsite(null);
+        nextErrors.website = results[0].status === "rejected"
+          ? results[0].reason instanceof Error ? results[0].reason.message : "Nicht verfügbar."
+          : "Antwort des Sicherheitsdienstes ist ungültig.";
+      }
+      if (results[1].status === "fulfilled" && isActivityReport(results[1].value)) {
+        setMinecraft(results[1].value);
+      } else {
+        setMinecraft(null);
+        nextErrors.minecraft = results[1].status === "rejected"
+          ? results[1].reason instanceof Error ? results[1].reason.message : "Nicht verfügbar."
+          : "Antwort des Minecraft-Panels ist ungültig.";
+      }
+      setErrors(nextErrors);
+      setLoading(false);
+    };
+    void load();
+    return () => { active = false; };
+  }, [refreshKey]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setRefreshKey((value) => value + 1), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const start = new Date(activityWeekStart()).toISOString().slice(0, 10);
+  const days = Math.max(1, Math.floor((Date.now() - activityWeekStart()) / 86_400_000) + 1);
+  return (
+    <section className="card card-still space-y-3 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+        <h3 className="font-semibold">Aktivität diese Woche</h3>
+        <p className="mt-1 text-xs text-muted">
+          Website-Zeit zählt sichtbare Nutzung mit kürzlicher Eingabe; Minecraft-Zeit misst die Serververbindung, nicht AFK- oder Spielaktionen.
+          Tageswerte: 30 Tage, danach Wochenwerte bis maximal ein Jahr. Die Historie beginnt erst ab Aktivierung.
+        </p>
+        </div>
+        <button type="button" className="btn-ghost shrink-0" onClick={() => setRefreshKey((value) => value + 1)} disabled={loading}>
+          {loading ? "Lade…" : "Aktualisieren"}
+        </button>
+      </div>
+      {loading ? <p className="text-sm text-muted">Aktivitätsdaten werden geladen…</p> : null}
+      {errors.website ? <p className="text-sm text-red-300" role="alert">Website: {errors.website}</p> : null}
+      {errors.minecraft ? <p className="text-sm text-red-300" role="alert">Minecraft: {errors.minecraft}</p> : null}
+      {!loading && minecraft?.trackingReady === false && !errors.minecraft ? (
+        <p className="text-sm text-amber-200">Die Minecraft-Brücke hat die aktuelle Zustimmungs-Zuordnung noch nicht geladen. Aktualisiere nach etwa einer Minute.</p>
+      ) : null}
+      {!loading && people.length === 0 ? <p className="text-sm text-muted">Keine aktiven Staff-Konten.</p> : null}
+      {!loading && people.length > 0 ? (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[560px] text-left text-sm">
+            <thead className="text-xs text-muted">
+              <tr>
+                <th className="py-2 pr-3">Mitglied</th>
+                <th className="py-2 pr-3">Website</th>
+                <th className="py-2 pr-3">Minecraft</th>
+                <th className="py-2 pr-3">Gesamt</th>
+                <th className="py-2">Ø pro Tag</th>
+              </tr>
+            </thead>
+            <tbody>
+              {people.map(({ username, label }) => {
+                const siteMember = website?.members[username];
+                const gameMember = minecraft?.members[username];
+                const siteSeconds = currentWeekActivity(siteMember?.website, start);
+                const gameSeconds = currentWeekActivity(gameMember?.minecraft, start);
+                const siteReady = Boolean(siteMember);
+                const gameReady = Boolean(gameMember && minecraft?.trackingReady);
+                const complete = siteReady && gameReady;
+                return (
+                  <tr key={username} className="border-t border-white/10">
+                    <th scope="row" className="py-2 pr-3 font-medium">{label}</th>
+                    <td className="py-2 pr-3">{siteReady ? durationLabel(siteSeconds) : "Nicht erfasst"}</td>
+                    <td className="py-2 pr-3">{gameReady ? durationLabel(gameSeconds) : minecraft?.trackingReady ? "Nicht erfasst" : "—"}</td>
+                    <td className="py-2 pr-3">{complete ? durationLabel(siteSeconds + gameSeconds) : "Unvollständig"}</td>
+                    <td className="py-2">{complete ? `${Math.round((siteSeconds + gameSeconds) / days / 60)} min` : "—"}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 export function Roster({ owner, note }: { owner: boolean; note: (text: string) => void }) {
-  const users = useLive<{ role?: string; disabled?: boolean; lateDays?: number }>("staffDirectory");
+  const users = useLive<{
+    role?: string;
+    disabled?: boolean;
+    lateDays?: number;
+    displayName?: string;
+    profileColor?: string;
+  }>("staffDirectory");
   const presence = useLive<{ lastSeen?: number; writingAt?: number }>("presence");
   const tasks = useLive<{ title?: string; assignee?: string; by?: string; acceptedBy?: string; status?: string; done?: boolean; ts?: number; updatedAt?: number }>("tasks");
   const absences = useLive<{ by?: string; from?: string; until?: string }>("absences");
@@ -79,7 +267,16 @@ export function Roster({ owner, note }: { owner: boolean; note: (text: string) =
           Nicht online und nicht abwesend: {late.map(([name]) => name).join(", ")}
         </p>
       ) : null}
-      {owner ? <WeekStats /> : null}
+      {owner ? (
+        <>
+          <WeekStats />
+          <StaffActivityStats
+            people={people
+              .filter(([, item]) => !item.disabled)
+              .map(([username, item]) => ({ username, label: item.displayName || username }))}
+          />
+        </>
+      ) : null}
       {people.map(([name, item], index) => {
         const role = asRole(item.role);
         const previous = index > 0 ? asRole(people[index - 1][1].role) : "";
@@ -113,9 +310,29 @@ export function Roster({ owner, note }: { owner: boolean; note: (text: string) =
             <article className={`card card-still mt-2 border-2 p-4 text-sm ${tone}`}>
               <p className={`font-semibold${overdue ? " text-red-200" : ""}`}>
                 <span className={`mr-2 inline-block h-2.5 w-2.5 rounded-full ${online ? "bg-emerald-400" : "bg-zinc-500"}`} />
-                {name} · {roleLabel(role)}
+                <span
+                  className="mr-2 inline-grid size-7 place-items-center rounded-full text-xs font-bold text-white"
+                  style={{
+                    backgroundColor: isStaffProfileColor(item.profileColor)
+                      ? item.profileColor
+                      : "#e1062c",
+                  }}
+                  aria-hidden="true"
+                >
+                  {(item.displayName || name).slice(0, 1).toUpperCase()}
+                </span>
+                {item.displayName || name}
+                {item.displayName ? ` · @${name}` : ""}
+                {" · "}
+                {roleLabel(role)}
                 {item.disabled ? " · pausiert" : ""}
-                {absent ? " · abwesend" : online ? " · online" : seen ? ` · vor ${Math.max(1, Math.floor(days))} Tag${Math.floor(days) === 1 ? "" : "en"}` : " · noch nie online"}
+                {absent
+                  ? " · abwesend"
+                  : online
+                    ? " · online"
+                    : seen
+                      ? ` · vor ${Math.max(1, Math.floor(days))} Tag${Math.floor(days) === 1 ? "" : "en"} · ${formatWhen(seen)}`
+                      : " · noch nie online"}
                 {typing ? " · schreibt" : ""}
               </p>
               {owner ? (

@@ -3,7 +3,16 @@ import test from "node:test";
 import { canAccessStaffLog, isActiveStaffIdentity } from "../security-api/staff-policy.cjs";
 
 const activeMapping = { username: "helper", role: "helper", disabled: false };
-const activeProfile = { uid: "helper-uid", role: "helper", disabled: false };
+const activeProfile = {
+  uid: "helper-uid",
+  role: "helper",
+  disabled: false,
+  activityConsent: {
+    version: "staff-activity-v2",
+    acceptedAt: 1_800_000_000_000,
+    minecraftName: "TestPlayer",
+  },
+};
 
 test("staff authorization requires an active matching UID mapping and account profile", () => {
   assert.equal(isActiveStaffIdentity(activeMapping, activeProfile, "helper-uid"), true);
@@ -21,6 +30,25 @@ test("staff authorization requires an active matching UID mapping and account pr
   );
   assert.equal(
     isActiveStaffIdentity(activeMapping, { ...activeProfile, uid: "other-uid" }, "helper-uid"),
+    false,
+  );
+  assert.equal(
+    isActiveStaffIdentity(
+      activeMapping,
+      { ...activeProfile, activityConsent: undefined },
+      "helper-uid",
+    ),
+    false,
+  );
+  assert.equal(
+    isActiveStaffIdentity(
+      activeMapping,
+      {
+        ...activeProfile,
+        activityConsent: { ...activeProfile.activityConsent, minecraftName: "not valid" },
+      },
+      "helper-uid",
+    ),
     false,
   );
   assert.equal(

@@ -6,10 +6,15 @@ import {
   assertSucceeds,
   initializeTestEnvironment,
 } from "@firebase/rules-unit-testing";
-import { get, ref, set, update } from "firebase/database";
+import { get, ref, remove, set, update } from "firebase/database";
 
 const projectId = "demo-alpensmp-security";
 let environment;
+const activityConsent = {
+  version: "staff-activity-v2",
+  acceptedAt: 1_800_000_000_000,
+  minecraftName: "TestPlayer",
+};
 
 before(async () => {
   environment = await initializeTestEnvironment({
@@ -31,14 +36,17 @@ before(async () => {
         "paused-owner-uid": { username: "pausedowner", role: "owner", disabled: true, email: "paused@example.test" },
         "paused-helper-uid": { username: "pausedhelper", role: "helper", disabled: true, email: "paused-helper@example.test" },
         "streamer-uid": { username: "streamer", role: "streamer", disabled: false, email: "streamer@example.test" },
+        "pending-uid": { username: "pending", role: "helper", disabled: false, email: "pending@example.test" },
       },
       staffUsers: {
-        owner: { uid: "owner-uid", role: "owner", disabled: false, email: "owner@example.test" },
-        admin: { uid: "admin-uid", role: "admin", disabled: false, email: "admin@example.test" },
-        helper: { uid: "helper-uid", role: "helper", disabled: false, email: "helper@example.test" },
+        owner: { uid: "owner-uid", role: "owner", disabled: false, email: "owner@example.test", activityConsent },
+        admin: { uid: "admin-uid", role: "admin", disabled: false, email: "admin@example.test", activityConsent },
+        helper: { uid: "helper-uid", role: "helper", disabled: false, email: "helper@example.test", activityConsent },
+        builder: { uid: "builder-uid", role: "builder", disabled: false, email: "builder@example.test", activityConsent },
         pausedowner: { uid: "paused-owner-uid", role: "owner", disabled: true, email: "paused@example.test" },
         pausedhelper: { uid: "paused-helper-uid", role: "helper", disabled: true, email: "paused-helper@example.test" },
-        streamer: { uid: "streamer-uid", role: "streamer", disabled: false, email: "streamer@example.test" },
+        streamer: { uid: "streamer-uid", role: "streamer", disabled: false, email: "streamer@example.test", activityConsent },
+        pending: { uid: "pending-uid", role: "helper", disabled: false, email: "pending@example.test" },
       },
       staffDirectory: {
         owner: { role: "owner", disabled: false, lateDays: 3 },
@@ -121,6 +129,29 @@ test("paused accounts cannot read staff data or regain access through alternate 
   await assertFails(set(ref(helper, "staffOpen/helper"), { open: true, role: "owner" }));
 });
 
+test("staff data stays blocked until the account records valid activity consent", async () => {
+  const pending = db("pending-uid");
+  await assertSucceeds(get(ref(pending, "staffUsers/pending")));
+  await assertFails(get(ref(pending, "staffDirectory")));
+  await assertFails(get(ref(pending, "presence")));
+  await assertFails(get(ref(pending, "staffLog")));
+
+  await assertFails(
+    set(ref(pending, "staffUsers/pending/activityConsent"), {
+      version: "wrong-version",
+      acceptedAt: 1_800_000_000_000,
+      minecraftName: "TestPlayer",
+    }),
+  );
+  await assertSucceeds(
+    set(ref(pending, "staffUsers/pending/activityConsent"), activityConsent),
+  );
+  await assertSucceeds(get(ref(pending, "staffDirectory")));
+  await assertSucceeds(remove(ref(pending, "staffUsers/pending/activityConsent")));
+  await assertFails(get(ref(pending, "staffDirectory")));
+  await assertFails(remove(ref(pending, "staffUsers/owner/activityConsent")));
+});
+
 test("only an active owner can maintain staff accounts and the sanitized directory", async () => {
   const owner = db("owner-uid");
   await assertSucceeds(update(ref(owner, "staffUsers/helper"), { role: "admin" }));
@@ -150,6 +181,7 @@ test("owner bootstrap is limited to a pre-provisioned active owner identity", as
     role: "owner",
     disabled: false,
     email: "owner@example.test",
+    activityConsent,
   };
   await environment.withSecurityRulesDisabled(async (context) => {
     await set(ref(context.database(), "staffUsers/owner"), {
@@ -221,6 +253,36 @@ test("presence is writable only by the staff member whose username owns the reco
   const owner = db("owner-uid");
   await assertSucceeds(set(ref(owner, "presence/owner"), { lastSeen: 200 }));
   await assertFails(set(ref(owner, "presence/helper"), { lastSeen: 200 }));
+});
+
+test("staff can change only their own public profile fields", async () => {
+  const helper = db("helper-uid");
+  await assertSucceeds(
+    update(ref(helper, "staffDirectory/helper"), {
+      displayName: "Team Helfer",
+      profileColor: "#3b82f6",
+    }),
+  );
+  await assertFails(
+    update(ref(helper, "staffDirectory/helper"), {
+      role: "owner",
+    }),
+  );
+  await assertFails(
+    update(ref(helper, "staffDirectory/owner"), {
+      displayName: "Fremdes Profil",
+    }),
+  );
+  await assertFails(
+    update(ref(helper, "staffDirectory/helper"), {
+      profileColor: "javascript:alert(1)",
+    }),
+  );
+  await assertFails(
+    update(ref(db("paused-helper-uid"), "staffDirectory/pausedhelper"), {
+      displayName: "Pausiert",
+    }),
+  );
 });
 
 test("staff chat authors must match the authenticated staff identity", async () => {

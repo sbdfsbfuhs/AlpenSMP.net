@@ -128,7 +128,7 @@ export function ReviewForm() {
   }
 
   return (
-    <form className="card card-still review-form space-y-5 p-5" onSubmit={onSubmit}>
+    <form className={`card card-still review-form${sent ? " is-live" : ""} space-y-5 p-5`} onSubmit={onSubmit}>
       <div>
         <h3 className="text-lg font-semibold">Reiche deinen Community-Beitrag ein</h3>
         <p className="mt-1 text-sm text-muted">
@@ -251,9 +251,7 @@ export function ReviewForm() {
             </div>
           ) : null}
         </div>
-      ) : (
-        <p className="review-block text-sm text-muted">Kein Bild nötig.</p>
-      )}
+      ) : null}
       <label className="review-block block text-sm" htmlFor="review-text">
         Text{textNeeded ? "" : " · optional"}
         <textarea
@@ -273,11 +271,7 @@ export function ReviewForm() {
       <ul className="review-list text-sm">
         <Check ok={name.trim().length >= 2} label="Name eingetragen" />
         <Check ok label={`Sterne: ${rating} · ${STAR_LINE[rating]}`} />
-        <Check
-          ok={Boolean(file)}
-          optional={!imageNeeded && !file}
-          label={imageNeeded ? "Bild ausgewählt" : "Bild"}
-        />
+        {imageNeeded ? <Check ok={Boolean(file)} label="Bild ausgewählt" /> : null}
         <Check
           ok={text.trim().length >= 4}
           optional={!textNeeded && text.trim().length < 4}
@@ -371,7 +365,8 @@ export function ReviewForm() {
       >
         {busy ? "Wird gesendet…" : sent ? "Angekommen" : "Zur Prüfung absenden"}
       </button>
-      <p className={sent ? "review-ok text-sm" : "text-sm text-muted"} role="status">
+      <p className={sent ? "review-ok review-success text-sm" : "text-sm text-muted"} role="status">
+        {sent ? <span className="review-success-plane" aria-hidden="true">✈</span> : null}
         {note ||
           "Das Team prüft deinen Beitrag intern. Öffentlich erscheint nur, was du separat freigibst."}
       </p>

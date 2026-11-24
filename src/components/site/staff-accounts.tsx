@@ -10,6 +10,7 @@ import {
   setStaffEmail,
   setStaffPaused,
   setStaffRole,
+  syncMinecraftStaffActivity,
   syncStaffDirectory,
   type ModItem,
   type StaffSession,
@@ -175,6 +176,37 @@ function AccountCard({
   const [role, setRole] = useState(item.role || "helper");
   const [email, setEmail] = useState(item.email || "");
 
+  async function changePausedState() {
+    try {
+      await setStaffPaused(name, !item.disabled, actor.username);
+    } catch (error) {
+      note(error instanceof Error ? error.message : "Pausenstatus konnte nicht gespeichert werden.");
+      return;
+    }
+    try {
+      await syncMinecraftStaffActivity();
+      note(item.disabled ? "Account frei; Minecraft-Zuordnung synchronisiert." : "Account pausiert; Minecraft-Zuordnung entfernt.");
+    } catch (error) {
+      note(`Accountstatus gespeichert, aber Minecraft-Zuordnung nicht synchronisiert: ${error instanceof Error ? error.message : "unbekannter Fehler"}`);
+    }
+  }
+
+  async function deleteAccount() {
+    if (!window.confirm("Account löschen? Gespeicherte Bans bleiben.")) return;
+    try {
+      await removeStaffAccount(name, actor.username);
+    } catch (error) {
+      note(error instanceof Error ? error.message : "Löschen fehlgeschlagen.");
+      return;
+    }
+    try {
+      await syncMinecraftStaffActivity();
+      note("Account gelöscht; Minecraft-Zuordnung synchronisiert.");
+    } catch (error) {
+      note(`Account gelöscht, aber Minecraft-Zuordnung nicht synchronisiert: ${error instanceof Error ? error.message : "unbekannter Fehler"}`);
+    }
+  }
+
   return (
     <li className={`card card-still p-4 text-sm${item.disabled ? " border border-red-500 bg-red-950/40" : ""}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -234,16 +266,13 @@ function AccountCard({
               Passwort-Link erneut senden
             </button>
           ) : null}
-          <button type="button" className="btn-ghost" onClick={() => void setStaffPaused(name, !item.disabled, actor.username).then(() => note(item.disabled ? "Account frei" : "Account pausiert")).catch((err) => note(err instanceof Error ? err.message : "Fehlgeschlagen"))}>
+          <button type="button" className="btn-ghost" onClick={() => void changePausedState()}>
             {item.disabled ? "Freigeben" : "Pausieren"}
           </button>
           <button
             type="button"
             className="btn-ghost"
-            onClick={() =>
-              window.confirm("Account löschen? Gespeicherte Bans bleiben.") &&
-              void removeStaffAccount(name, actor.username).then(() => note("Account gelöscht")).catch((err) => note(err instanceof Error ? err.message : "Löschen fehlgeschlagen"))
-            }
+            onClick={() => void deleteAccount()}
           >
             Löschen
           </button>
