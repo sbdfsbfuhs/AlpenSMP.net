@@ -131,9 +131,6 @@ function ModForm({
       : [],
     [known, minecraftBans, path],
   );
-  const past = withDuration && needle.length >= 2
-    ? entries(known).filter(([, item]) => (item.name || "").toLowerCase().includes(needle))
-    : [];
   const guideRows = entries(guide).filter(([, item]) => item.offense && item.duration);
   const selectedBan = path === "bans"
     ? minecraftBans.find((item) => item.name.toLowerCase() === needle)
@@ -144,10 +141,10 @@ function ModForm({
   const serverReason = selectedBan && hasMinecraftBanReason(selectedBan.reason) ? selectedBan.reason.trim() : "";
   const savedReason = selectedRecord && hasMinecraftBanReason(selectedRecord.reason) ? selectedRecord.reason?.trim() || "" : "";
   const displayedReason = serverReason || savedReason || reason;
-  const canEditReason = path !== "bans" || (!serverReason && !savedReason);
 
   function choosePlayer(player: string) {
     setName(player);
+    setReason("");
     setActiveSuggestion(-1);
     setSuggestionsOpen(false);
   }
@@ -199,11 +196,14 @@ function ModForm({
         setConfirmBan({ name: name.trim(), reason: reason.trim(), duration: duration.trim() });
         return;
       }
-      const finalReason = serverReason || savedReason || reason.trim();
+      const finalReason = reason.trim() || serverReason || savedReason;
       if (!hasMinecraftBanReason(finalReason)) return setFormError("Bitte ergänze einen konkreten Bann-Grund.");
       const createdAt = selectedBan.created && Number.isFinite(Date.parse(selectedBan.created)) ? Date.parse(selectedBan.created) : Date.now();
       const banKey = minecraftBanKey(selectedBan);
+      const reasonWasEdited = Boolean(reason.trim() && reason.trim() !== (serverReason || savedReason));
       body.name = selectedBan.name;
+      body.by = selectedRecord?.by || user.username;
+      body.ts = selectedRecord?.ts || createdAt;
       body.reason = finalReason;
       body.duration = selectedBan.until && !/^(?:forever|never|permanent)$/i.test(selectedBan.until) && Number.isFinite(Date.parse(selectedBan.until))
         ? `bis ${formatWhen(Date.parse(selectedBan.until))}`
@@ -216,9 +216,9 @@ function ModForm({
       if (selectedBan.created) body.minecraftCreated = selectedBan.created;
       if (selectedBan.source) body.minecraftSource = selectedBan.source;
       if (selectedBan.until) body.minecraftExpires = selectedBan.until;
-      body.reasonSource = serverReason ? "minecraft" : "staff";
-      body.reasonAddedAt = serverReason ? createdAt : savedReason ? selectedRecord?.reasonAddedAt || Date.now() : Date.now();
-      body.reasonAddedBy = user.username;
+      body.reasonSource = reasonWasEdited ? "staff" : serverReason ? "minecraft" : "staff";
+      body.reasonAddedAt = reasonWasEdited ? Date.now() : serverReason ? createdAt : savedReason ? selectedRecord?.reasonAddedAt || Date.now() : Date.now();
+      if (reasonWasEdited || !selectedRecord?.reasonAddedBy) body.reasonAddedBy = user.username;
       body.updatedAt = Date.now();
       try {
         const rows = await fbGet<Record<string, ModItem>>("bans") || {};
@@ -232,11 +232,11 @@ function ModForm({
       } catch (error) {
         return setFormError(error instanceof Error ? error.message : "Speichern fehlgeschlagen.");
       }
-      void logStaff(user.username, "Banngrund ergänzt", `${selectedBan.name} · ${finalReason}`);
+      void logStaff(user.username, reasonWasEdited ? "Banngrund geändert" : "Banngrund ergänzt", `${selectedBan.name} · ${finalReason}`);
       setName("");
       setReason("");
       setDuration("");
-      note("Banngrund im Staff-Center gespeichert");
+      note(reasonWasEdited ? "Banngrund im Staff-Center geändert" : "Banngrund im Staff-Center gespeichert");
       return;
     }
     try {
@@ -269,6 +269,7 @@ function ModForm({
           aria-activedescendant={activeSuggestion >= 0 ? `minecraft-player-option-${activeSuggestion}` : undefined}
           onChange={(event) => {
             setName(event.target.value);
+            setReason("");
             setActiveSuggestion(-1);
             setSuggestionsOpen(true);
           }}
@@ -324,7 +325,7 @@ function ModForm({
       {path === "bans" && name.trim() ? (
         <p className="mt-2 text-sm text-muted">
           {selectedBan
-            ? `${hasMinecraftBanReason(selectedBan.reason) ? "Aktiver Ingame-Bann gefunden." : "Aktiver Ingame-Bann gefunden – bitte einen konkreten Grund ergänzen."} Das ergänzt nur den Website-Eintrag; der bestehende Minecraft-Bann wird nicht geändert.`
+            ? `${hasMinecraftBanReason(selectedBan.reason) ? "Aktiver Ingame-Bann gefunden." : "Aktiver Ingame-Bann gefunden – bitte einen konkreten Grund ergänzen."} Der Grund wird hier im Staff-Center-Eintrag bearbeitet; der Minecraft-Bann selbst bleibt unverändert.`
             : "Noch nicht ingame gebannt – beim Eintragen kannst du den Ingame-Bann bestätigen. Dein Staffname wird im Minecraft-Banngrund ergänzt; als Quelle zeigt Minecraft weiterhin Console (RCON)."}
         </p>
       ) : null}
@@ -333,7 +334,7 @@ function ModForm({
       ) : null}
       <label className="mt-3 block text-sm font-medium">
         {path === "bans" ? "Konkreter Grund" : "Grund der Verwarnung"}
-        <input className="field mt-1" placeholder={path === "bans" ? "z. B. X-Ray beim Mining" : "Was ist vorgefallen?"} value={displayedReason} onChange={(e) => setReason(e.target.value)} readOnly={!canEditReason} required={path !== "bans" || !hasMinecraftBanReason(selectedBan?.reason)} />
+        <input className="field mt-1" placeholder={path === "bans" ? "z. B. X-Ray beim Mining" : "Was ist vorgefallen?"} value={displayedReason} onChange={(e) => setReason(e.target.value)} required />
       </label>
       {presets ? (
         <div className="mt-3 flex flex-wrap gap-2">
@@ -367,16 +368,14 @@ function ModForm({
           <input className="field mt-1" placeholder="Eigene Dauer, z. B. 12h" value={duration} onChange={(e) => setDuration(e.target.value)} />
         </label>
       ) : null}
-      {past.length ? (
-        <ul className="mt-3 space-y-1 text-sm">
-          {past.slice(0, 5).map(([key, item]) => (
-            <li key={key} className={isPermanentBan(item) ? "text-red-300" : "text-muted"}>
-              Schon erfasst: {item.reason} · {item.duration || "ohne Dauer"} · {formatWhen(item.ts)}{item.archived ? " · archiviert" : ""}
-            </li>
-          ))}
-        </ul>
+      {path === "bans" && name.trim() ? (
+        <p className="mt-2 text-xs text-muted">Vorhandene Banns findest du unten in der Bans-Liste. Wenn du einen Grund dort änderst, wird derselbe Eintrag aktualisiert.</p>
       ) : null}
-      <button className="btn-brand mt-4" type="submit">Eintragen</button>
+      <button className="btn-brand mt-4" type="submit">
+        {selectedBan
+          ? hasMinecraftBanReason(serverReason || savedReason) ? "Banngrund ändern" : "Banngrund ergänzen"
+          : "Eintragen"}
+      </button>
       {formError ? <p className="mt-3 text-sm text-ember" role="alert">{formError}</p> : null}
       {confirmBan ? (
         <div className="fixed inset-0 z-[90] grid place-items-center bg-black/70 p-4">
@@ -484,6 +483,9 @@ function List({
   const [filter, setFilter] = useState<Filter>(notes ? "all" : "active");
   const [q, setQ] = useState("");
   const [unbanningKey, setUnbanningKey] = useState<string | null>(null);
+  const [editingReasonKey, setEditingReasonKey] = useState<string | null>(null);
+  const [reasonDraft, setReasonDraft] = useState("");
+  const [savingReasonKey, setSavingReasonKey] = useState<string | null>(null);
   const counts = useMemo(() => {
     let activeCount = 0;
     let expiredCount = 0;
@@ -508,6 +510,38 @@ function List({
       return matchesFilter && blob.includes(q.trim().toLowerCase());
     }).sort(([, a], [, b]) => (b.updatedAt || b.ts || 0) - (a.updatedAt || a.ts || 0));
   }, [items, filter, q, notes]);
+
+  async function saveReason(key: string, item: ModItem) {
+    if (savingReasonKey) return;
+    const reason = reasonDraft.trim();
+    if (!hasMinecraftBanReason(reason)) {
+      note("Bitte gib einen konkreten Bann-Grund an.");
+      return;
+    }
+    if (reason.length > 240) {
+      note("Der Bann-Grund darf höchstens 240 Zeichen lang sein.");
+      return;
+    }
+    const updatedAt = Date.now();
+    setSavingReasonKey(key);
+    try {
+      await fbUpdate(`${path}/${key}`, {
+        reason,
+        reasonSource: "staff",
+        reasonAddedAt: updatedAt,
+        reasonAddedBy: user.username,
+        updatedAt,
+      });
+      void logStaff(user.username, "Banngrund geändert", `${item.name || "Unbekannt"} · ${reason}`);
+      setEditingReasonKey(null);
+      setReasonDraft("");
+      note("Banngrund geändert; der vorhandene Eintrag wurde aktualisiert.");
+    } catch (error) {
+      note(error instanceof Error ? error.message : "Banngrund konnte nicht gespeichert werden.");
+    } finally {
+      setSavingReasonKey(null);
+    }
+  }
 
   return (
     <section className="card card-still p-5">
@@ -536,13 +570,59 @@ function List({
             <p className="text-xs text-faint">
               {timed && !waiting ? formatRemaining(item.endsAt) : ""} {item.duration ? `· ${item.duration}` : ""} · Erfasst von {item.by || "unbekannt"} · {formatWhen(item.ts)}
               {item.minecraftSource ? ` · Minecraft-Quelle: ${item.minecraftSource}` : ""}
-              {item.reasonAddedBy ? ` · Grund erfasst von ${item.reasonAddedBy}` : ""}
+              {item.reasonAddedBy ? ` · Grund zuletzt aktualisiert von ${item.reasonAddedBy}` : ""}
               {item.unbannedBy ? ` · Entbannt von ${item.unbannedBy} am ${formatWhen(item.unbannedAt)}` : ""}
               {item.pendingMinecraftSync ? " · Minecraft-Abgleich ausstehend" : ""}
             </p>
+            {editingReasonKey === key ? (
+              <div className="mt-3 space-y-2 rounded-md border border-line p-3">
+                <label className="block text-xs font-medium">
+                  Neuer Website-Banngrund
+                  <textarea
+                    className="field mt-1 min-h-20"
+                    value={reasonDraft}
+                    maxLength={240}
+                    disabled={savingReasonKey !== null}
+                    onChange={(event) => setReasonDraft(event.target.value)}
+                  />
+                </label>
+                <p className="text-xs text-muted">Das ändert den Eintrag im Staff-Center, nicht den Bann-Grund auf dem Minecraft-Server.</p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="btn-brand px-3"
+                    disabled={savingReasonKey !== null}
+                    onClick={() => void saveReason(key, item)}
+                  >
+                    {savingReasonKey === key ? "Speichere…" : "Grund speichern"}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-ghost px-3"
+                    disabled={savingReasonKey !== null}
+                    onClick={() => { setEditingReasonKey(null); setReasonDraft(""); }}
+                  >
+                    Abbrechen
+                  </button>
+                </div>
+              </div>
+            ) : null}
             {waiting ? <p className="text-xs font-semibold text-amber-300">Permanent. Wartet auf den Owner.</p> : null}
             {perm && !waiting ? <p className="text-xs font-semibold text-red-300">{permLeft(item.confirmedAt || item.ts)}</p> : null}
             <div className="mt-2 flex flex-wrap gap-2">
+              {path === "bans" && write && !waiting ? (
+                <button
+                  type="button"
+                  className="btn-ghost px-3"
+                  disabled={savingReasonKey !== null || unbanningKey !== null}
+                  onClick={() => {
+                    setEditingReasonKey(key);
+                    setReasonDraft(item.reason || "");
+                  }}
+                >
+                  Grund ändern
+                </button>
+              ) : null}
               {path === "bans" && write && banName && !item.archived && !waiting && (!item.endsAt || item.endsAt > Date.now()) ? (
                 <button
                   type="button"
