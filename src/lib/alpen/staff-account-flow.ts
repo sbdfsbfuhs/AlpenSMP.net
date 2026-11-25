@@ -6,6 +6,14 @@ export function normalizeStaffEmail(value: string) {
   return email;
 }
 
+export function normalizeRecoveryEmail(value: string) {
+  const email = normalizeStaffEmail(value);
+  if (email.endsWith("@staff.alpensmp.net")) {
+    throw new Error("Bitte gib deine persönliche E-Mail-Adresse ein, keine interne Staff-Adresse.");
+  }
+  return email;
+}
+
 export function temporaryStaffPassword() {
   const bytes = globalThis.crypto.getRandomValues(new Uint8Array(32));
   return `Alpen!${Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;

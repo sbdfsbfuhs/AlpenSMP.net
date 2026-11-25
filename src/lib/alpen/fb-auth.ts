@@ -7,6 +7,7 @@ import {
   inMemoryPersistence,
   initializeAuth,
   multiFactor,
+  sendEmailVerification,
   signInWithEmailAndPassword,
   signOut,
   TotpMultiFactorGenerator,
@@ -15,7 +16,9 @@ import {
   type MultiFactorResolver,
   type TotpSecret,
   type User,
+  verifyBeforeUpdateEmail,
 } from "firebase/auth";
+import { normalizeRecoveryEmail } from "./staff-account-flow.ts";
 
 const KEY = "alpen-fb-token";
 
@@ -81,6 +84,13 @@ function authErrorMessage(error: unknown) {
     return "Firebase Identity Platform muss TOTP-Zwei-Faktor-Anmeldung zuerst aktivieren.";
   if (code === "auth/invalid-verification-code" || code === "auth/invalid-verification-id")
     return "Der Authenticator-Code ist ungültig oder abgelaufen.";
+  if (code === "auth/email-already-in-use")
+    return "Diese E-Mail-Adresse ist bereits einem anderen Firebase-Konto zugeordnet.";
+  if (code === "auth/invalid-email") return "Bitte gib eine gültige E-Mail-Adresse ein.";
+  if (code === "auth/invalid-credential" || code === "auth/invalid-login-credentials")
+    return "E-Mail-Adresse oder Passwort stimmen nicht.";
+  if (code === "auth/too-many-requests")
+    return "Zu viele Versuche. Bitte warte kurz und versuche es erneut.";
   if (code === "auth/requires-recent-login")
     return "Bitte melde dich erneut an und wiederhole den Vorgang.";
   if (code === "auth/email-not-verified")
@@ -282,6 +292,42 @@ export async function beginStaffTotpEnrollment(email: string, password: string) 
   } catch (error) {
     throw new Error(authErrorMessage(error));
   }
+}
+
+export async function requestOwnEmailVerification(
+  currentEmail: string,
+  nextEmailValue: string,
+  password: string,
+  expectedUid: string,
+  totpCode = "",
+) {
+  const nextEmail = normalizeRecoveryEmail(nextEmailValue);
+  const current = currentEmail.trim().toLowerCase();
+  if (!current) throw new Error("Bitte melde dich erneut an.");
+  if (!password) throw new Error("Bitte gib dein aktuelles Konto-Passwort ein.");
+
+  const signed = await signInEmail(current, password, totpCode);
+  if (signed.uid !== expectedUid) {
+    clearFirebaseLogin();
+    throw new Error("Der angemeldete Account hat sich geändert. Bitte melde dich erneut an.");
+  }
+  const user = getStaffAuth().currentUser;
+  if (!user || user.uid !== expectedUid) {
+    clearFirebaseLogin();
+    throw new Error("Bitte melde dich erneut an.");
+  }
+
+  const alreadyCurrent = user.email?.trim().toLowerCase() === nextEmail;
+  if (alreadyCurrent && user.emailVerified) {
+    return { email: nextEmail, alreadyVerified: true };
+  }
+  try {
+    if (alreadyCurrent) await sendEmailVerification(user);
+    else await verifyBeforeUpdateEmail(user, nextEmail);
+  } catch (error) {
+    throw new Error(authErrorMessage(error));
+  }
+  return { email: nextEmail, alreadyVerified: false };
 }
 
 export async function finishStaffTotpEnrollment(code: string) {

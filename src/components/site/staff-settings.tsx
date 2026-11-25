@@ -13,6 +13,7 @@ import {
   beginStaffTotpEnrollment,
   disableStaffTotp,
   finishStaffTotpEnrollment,
+  requestOwnEmailVerification,
 } from "@/lib/alpen/fb-auth";
 import { securityJson } from "@/lib/alpen/security";
 
@@ -35,6 +36,14 @@ export function Settings({
   const [totp, setTotp] = useState<{ secret: string; uri: string } | null>(null);
   const [mfaBusy, setMfaBusy] = useState(false);
   const [mfaError, setMfaError] = useState("");
+  const [accountEmail, setAccountEmail] = useState(
+    user.email.toLowerCase().endsWith("@staff.alpensmp.net") ? "" : user.email,
+  );
+  const [emailPassword, setEmailPassword] = useState("");
+  const [emailMfaCode, setEmailMfaCode] = useState("");
+  const [emailBusy, setEmailBusy] = useState(false);
+  const [emailMessage, setEmailMessage] = useState("");
+  const [emailError, setEmailError] = useState("");
   const [withdrawingConsent, setWithdrawingConsent] = useState(false);
   const [withdrawalError, setWithdrawalError] = useState("");
   const [displayName, setDisplayName] = useState(user.displayName || "");
@@ -46,7 +55,10 @@ export function Settings({
     setDisplayName(user.displayName || "");
     setProfileColor(user.profileColor || STAFF_PROFILE_COLORS[0].value);
     setMfaEnabled(Boolean(user.mfaEnabled));
-  }, [user.displayName, user.profileColor, user.mfaEnabled]);
+    setAccountEmail(
+      user.email.toLowerCase().endsWith("@staff.alpensmp.net") ? "" : user.email,
+    );
+  }, [user.displayName, user.profileColor, user.mfaEnabled, user.email]);
 
   async function saveProfile(event: FormEvent) {
     event.preventDefault();
@@ -92,6 +104,33 @@ export function Settings({
       setMfaError(error instanceof Error ? error.message : "2FA-Einrichtung fehlgeschlagen.");
     } finally {
       setMfaBusy(false);
+    }
+  }
+
+  async function verifyAccountEmail(event: FormEvent) {
+    event.preventDefault();
+    setEmailBusy(true);
+    setEmailMessage("");
+    setEmailError("");
+    try {
+      const result = await requestOwnEmailVerification(
+        user.email,
+        accountEmail,
+        emailPassword,
+        user.uid,
+        emailMfaCode,
+      );
+      setEmailPassword("");
+      setEmailMfaCode("");
+      setEmailMessage(
+        result.alreadyVerified
+          ? "Diese E-Mail-Adresse ist bereits verifiziert. Du kannst jetzt 2FA einrichten."
+          : `Verifizierungslink an ${result.email} gesendet. Bitte bestätige die Adresse und melde dich danach mit der neuen E-Mail-Adresse erneut an.`,
+      );
+    } catch (error) {
+      setEmailError(error instanceof Error ? error.message : "E-Mail konnte nicht verifiziert werden.");
+    } finally {
+      setEmailBusy(false);
     }
   }
 
@@ -194,6 +233,55 @@ export function Settings({
         <input className="field mt-2" type="password" placeholder="Wiederholen" value={b} onChange={(e) => setB(e.target.value)} />
         <button className="btn-brand mt-4" type="submit">Passwort speichern</button>
       </form>
+      <section className="card card-still max-w-md p-5">
+        <h2 className="text-lg font-semibold">Persönliche Konto-E-Mail</h2>
+        <p className="mt-1 text-sm text-muted">
+          Hinterlege eine persönliche Adresse für Anmeldung und Wiederherstellung. Erst nach dem Bestätigungslink wird sie als Login-Adresse übernommen.
+        </p>
+        <form className="mt-4 space-y-3" onSubmit={verifyAccountEmail}>
+          <label className="block text-sm">
+            Deine E-Mail-Adresse
+            <input
+              className="field mt-1"
+              type="email"
+              value={accountEmail}
+              onChange={(event) => setAccountEmail(event.target.value)}
+              autoComplete="email"
+              required
+            />
+          </label>
+          <label className="block text-sm">
+            Aktuelles Konto-Passwort
+            <input
+              className="field mt-1"
+              type="password"
+              value={emailPassword}
+              onChange={(event) => setEmailPassword(event.target.value)}
+              autoComplete="current-password"
+              required
+            />
+          </label>
+          {user.mfaEnabled ? (
+            <label className="block text-sm">
+              Aktueller Authenticator-Code
+              <input
+                className="field mt-1"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]{6}"
+                value={emailMfaCode}
+                onChange={(event) => setEmailMfaCode(event.target.value)}
+                required
+              />
+            </label>
+          ) : null}
+          <button className="btn-brand" type="submit" disabled={emailBusy}>
+            {emailBusy ? "Verifizierungslink wird gesendet…" : "E-Mail verifizieren"}
+          </button>
+        </form>
+        {emailMessage ? <p className="mt-3 text-sm text-emerald-200" role="status">{emailMessage}</p> : null}
+        {emailError ? <p className="mt-3 text-sm text-red-300" role="alert">{emailError}</p> : null}
+      </section>
       <section className="card card-still max-w-md p-5">
         <h2 className="text-lg font-semibold">Zwei-Faktor-Authentifizierung</h2>
         <p className="mt-1 text-sm text-muted">

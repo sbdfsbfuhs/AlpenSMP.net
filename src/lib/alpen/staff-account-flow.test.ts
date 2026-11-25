@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { describe, it } from "node:test";
-import { normalizeStaffEmail, temporaryStaffPassword } from "./staff-account-flow.ts";
+import {
+  normalizeRecoveryEmail,
+  normalizeStaffEmail,
+  temporaryStaffPassword,
+} from "./staff-account-flow.ts";
 import { createTicketCode, normalizeTicketCode, ticketAccessIsValid, TICKET_ACCESS_TTL_MS } from "./ticket-access.ts";
 
 describe("staff account email recovery", () => {
@@ -93,6 +97,11 @@ describe("staff account email recovery", () => {
   it("rejects malformed or missing email addresses", () => {
     assert.throws(() => normalizeStaffEmail(""), /gültige E-Mail/);
     assert.throws(() => normalizeStaffEmail("not-an-email"), /gültige E-Mail/);
+  });
+
+  it("requires a personal address for account recovery", () => {
+    assert.equal(normalizeRecoveryEmail("  Owner@example.com "), "owner@example.com");
+    assert.throws(() => normalizeRecoveryEmail("owner@staff.alpensmp.net"), /persönliche E-Mail/);
   });
 
   it("generates an unpredictable one-time password without exposing it in the account flow", () => {
