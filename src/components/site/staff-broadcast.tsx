@@ -301,16 +301,38 @@ export function StreamDesk({ user, note }: { user: StaffSession; note: (text: st
   const platformLabel = PLATFORMS.find((item) => item.id === (live?.platform || platform))?.label || live?.platform || "Stream";
 
   return (
-    <div className="space-y-4">
-      <section className="stream-board">
+    <div className="stream-desk space-y-4">
+      <section className={`stream-hero${onAir ? " is-on" : ""}`}>
+        <header className="stream-hero-head">
+          <div>
+            <p className="stream-kicker">CREATOR CONTROL</p>
+            <h2 className="stream-hero-title">Mein Stream</h2>
+            <p className="stream-hero-copy">Steuere deinen Live-Auftritt und sieh direkt, wie er auf der Website wirkt.</p>
+          </div>
+          <span className={`stream-status-badge${onAir ? " is-on" : " is-off"}`} aria-live="polite">
+            <i className="live-dot" aria-hidden="true" />
+            {onAir ? "LIVE" : "OFFLINE"}
+          </span>
+        </header>
+
+        <div className="stream-board">
         <div className="stream-panel">
-          <p className="text-xs uppercase tracking-[0.14em] text-faint">Schalter</p>
+          <div className="stream-control-head">
+            <div>
+              <p className="stream-control-label">LIVE-SCHALTER</p>
+              <p className="stream-control-subtitle">Ein Zug startet oder beendet deinen Stream.</p>
+            </div>
+            <span className={`stream-control-state${busy ? " is-busy" : onAir ? " is-on" : ""}`}>
+              {busy ? "SPEICHERT" : onAir ? "AKTIV" : "BEREIT"}
+            </span>
+          </div>
           <button
             type="button"
             className="stream-hook"
             data-on={onAir ? "1" : "0"}
             role="switch"
             aria-checked={onAir}
+            aria-label={onAir ? "Stream beenden" : "Stream jetzt starten"}
             disabled={busy || (onAir && !mine)}
             onClick={() => {
               if (onAir) void stopLive();
@@ -322,68 +344,127 @@ export function StreamDesk({ user, note }: { user: StaffSession; note: (text: st
           >
             <span className="stream-hook-track" aria-hidden="true">
               <span className="stream-hook-knob" />
+              <span className="stream-hook-track-label">{onAir ? "LIVE" : "GO"}</span>
             </span>
             <span className="stream-hook-copy">
-              <strong>{onAir ? "Live" : "Offline"}</strong>
-              <span>{onAir ? "Zum Ausschalten nach links tippen" : "Zum Livegehen nach rechts tippen"}</span>
+              <strong>{busy ? "Einen Moment …" : onAir ? "Du bist live" : "Bereit zum Livegehen"}</strong>
+              <span>{onAir ? "Nach links schieben, um zu beenden" : "Nach rechts schieben, um live zu gehen"}</span>
             </span>
           </button>
-          {onAir && mine ? (
-            <button type="button" className="stream-stop" disabled={busy} onClick={() => void stopLive()}>
-              Stream aus
-            </button>
-          ) : null}
-          {onAir && !mine ? <p className="text-sm text-muted">{live?.streamer_name} ist gerade live. Nur diese Person oder der Owner stellt aus.</p> : null}
+          <p className="stream-control-hint">
+            {onAir && !mine
+              ? `${live?.streamer_name || "Ein Teammitglied"} ist live. Nur diese Person oder der Owner kann den Stream beenden.`
+              : busy
+                ? "Deine Änderung wird gespeichert."
+                : onAir
+                  ? "Dein Live-Hinweis ist aktuell auf der Website sichtbar."
+                  : "Deine Angaben kannst du unten vorbereiten. Live geht es erst mit dem Schalter."}
+          </p>
         </div>
         <figure className="stream-frame">
-          <figcaption>So sehen es Besucher</figcaption>
+          <figcaption>
+            <span>VORSCHAU FÜR BESUCHER</span>
+            <span className={`stream-preview-state${onAir ? " is-on" : ""}`}>{onAir ? "LIVE-KARTE" : "BEREIT"}</span>
+          </figcaption>
           <div className={`stream-mini${onAir ? " is-on" : ""}`}>
-            <i className="live-dot" aria-hidden="true" />
-            <div className="min-w-0">
-              <p className="text-xs font-extrabold uppercase tracking-[0.12em]">{onAir ? "Jetzt live" : "Offline"}</p>
-              <p className="truncate text-sm font-semibold">{onAir ? `${live?.streamer_name || name} streamt` : "Noch niemand"}</p>
-              <p className="truncate text-xs text-muted">{onAir ? `„${live?.title || "AlpenSMP"}" · ${platformLabel}` : "Vorschau bleibt leer, bis der Schalter rechts steht"}</p>
+            <div className="stream-mini-top">
+              <span>ALPENSMP <b>·</b> COMMUNITY</span>
+              <span className="stream-mini-live">{onAir ? "● ON AIR" : "STREAM PREVIEW"}</span>
+            </div>
+            <div className="stream-mini-content">
+              <i className={`live-dot${onAir ? "" : " stream-dot-off"}`} aria-hidden="true" />
+              <div className="min-w-0">
+                <p className="stream-mini-kicker">{onAir ? `${platformLabel} · JETZT LIVE` : "DEIN NÄCHSTER STREAM"}</p>
+                <p className="stream-mini-title">{onAir ? `${live?.streamer_name || name} streamt` : "Dein Stream erscheint hier"}</p>
+                <p className="stream-mini-description">
+                  {onAir
+                    ? live?.title || "AlpenSMP"
+                    : "Sobald du live gehst, sehen Besucher hier deinen Namen, Titel und Plattform."}
+                </p>
+              </div>
+            </div>
+            <div className="stream-mini-footer">
+              <span>{onAir ? "LIVE AUF DER WEBSITE" : "VORSCHAU · NUR FÜR DICH"}</span>
+              <span aria-hidden="true">↗</span>
             </div>
           </div>
         </figure>
-      </section>
-      <form id="stream-form" className="card card-still p-5" onSubmit={(event) => void goLive(event)}>
-        <h2 className="text-lg font-semibold">Stream ankündigen</h2>
-        <label className="mt-3 block text-sm">
-          Anzeigename
-          <input className="field mt-1" value={name} onChange={(e) => setName(e.target.value)} />
-        </label>
-        <label className="mt-3 block text-sm">
-          Plattform
-          <select className="field mt-1" value={platform} onChange={(e) => setPlatform(e.target.value)}>
-            {PLATFORMS.map((item) => (
-              <option key={item.id} value={item.id}>{item.label}</option>
-            ))}
-          </select>
-        </label>
-        <label className="mt-3 block text-sm">
-          Titel
-          <input className="field mt-1" maxLength={80} value={title} onChange={(e) => setTitle(e.target.value.slice(0, 80))} />
-        </label>
-        <p className="text-xs text-faint">{title.length}/80</p>
-        <label className="mt-3 block text-sm">
-          Link
-          <input className="field mt-1" placeholder="https://" value={url} onChange={(e) => setUrl(e.target.value)} />
-        </label>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <button type="button" className={when === "now" ? "btn-brand" : "btn-ghost"} onClick={() => setWhen("now")}>Jetzt live</button>
-          <button type="button" className={when === "later" ? "btn-brand" : "btn-ghost"} onClick={() => setWhen("later")}>Zeitpunkt wählen</button>
         </div>
-        {when === "later" ? <input className="field mt-2" type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} /> : null}
-        <label className="mt-3 block text-sm">
-          Ende, optional
-          <input className="field mt-1" type="datetime-local" value={end} onChange={(e) => setEnd(e.target.value)} />
-        </label>
+      </section>
+
+      <form id="stream-form" className="card card-still stream-form" onSubmit={(event) => void goLive(event)}>
+        <header className="stream-form-head">
+          <div>
+            <p className="stream-kicker">STREAM SETUP</p>
+            <h2 className="stream-form-title">{onAir ? "Stream-Details" : "Stream vorbereiten"}</h2>
+            <p className="stream-form-copy">Lege fest, was deine Community sieht, wenn du live bist.</p>
+          </div>
+          <span className="stream-form-step">01 <i>/</i> 01</span>
+        </header>
+
+        <div className="stream-fields">
+          <label className="stream-field">
+            <span>Anzeigename</span>
+            <input className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder={user.username} />
+          </label>
+          <label className="stream-field">
+            <span>Plattform</span>
+            <select className="field" value={platform} onChange={(e) => setPlatform(e.target.value)}>
+              {PLATFORMS.map((item) => (
+                <option key={item.id} value={item.id}>{item.label}</option>
+              ))}
+            </select>
+          </label>
+          <label className="stream-field stream-field-wide">
+            <span className="stream-field-row">
+              <span>Streamtitel</span>
+              <span className="stream-char-count">{title.length}/80</span>
+            </span>
+            <input className="field" maxLength={80} value={title} onChange={(e) => setTitle(e.target.value.slice(0, 80))} placeholder="Woran arbeitest du heute?" />
+          </label>
+          <label className="stream-field stream-field-wide">
+            <span>Stream-Link</span>
+            <input className="field" placeholder="https://twitch.tv/deinname" value={url} onChange={(e) => setUrl(e.target.value)} />
+          </label>
+        </div>
+
+        <fieldset className="stream-schedule">
+          <legend>Wann startest du?</legend>
+          <div className="stream-schedule-options">
+            <button type="button" className={when === "now" ? "stream-schedule-choice is-active" : "stream-schedule-choice"} aria-pressed={when === "now"} onClick={() => setWhen("now")}>
+              <span className="stream-schedule-icon" aria-hidden="true">●</span>
+              <span><strong>Jetzt live</strong><small>Direkt ankündigen</small></span>
+            </button>
+            <button type="button" className={when === "later" ? "stream-schedule-choice is-active" : "stream-schedule-choice"} aria-pressed={when === "later"} onClick={() => setWhen("later")}>
+              <span className="stream-schedule-icon" aria-hidden="true">◷</span>
+              <span><strong>Später planen</strong><small>Startzeit festlegen</small></span>
+            </button>
+          </div>
+          {when === "later" ? (
+            <label className="stream-field stream-field-wide stream-date-field">
+              <span>Geplanter Start</span>
+              <input className="field" type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} />
+            </label>
+          ) : null}
+          <label className="stream-field stream-field-wide stream-date-field">
+            <span>Ende <i>optional</i></span>
+            <input className="field" type="datetime-local" value={end} onChange={(e) => setEnd(e.target.value)} />
+          </label>
+        </fieldset>
+
         {msg ? (
-          <p className={`mt-3 rounded-md border px-3 py-2 text-sm ${msg.ok ? "border-[#34d399]/50 bg-[#34d399]/10 text-[#bbf7d0]" : "border-brand bg-brand/15 text-fg"}`} role="status">
+          <p className={`stream-feedback${msg.ok ? " is-ok" : " is-error"}`} role="status">
+            <span aria-hidden="true">{msg.ok ? "✓" : "!"}</span>
             {msg.text}
           </p>
         ) : null}
+
+        <footer className="stream-form-footer">
+          <p>{onAir ? "Deine Änderungen werden direkt für den Stream übernommen." : "Du kannst den Stream auch mit dem Schalter oben starten."}</p>
+          <button className="btn-brand stream-submit" type="submit" disabled={busy || (onAir && !mine)}>
+            {busy ? "Wird gespeichert …" : onAir ? "Stream-Details aktualisieren" : "Jetzt live gehen"}
+          </button>
+        </footer>
       </form>
     </div>
   );
