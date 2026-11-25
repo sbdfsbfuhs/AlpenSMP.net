@@ -801,7 +801,7 @@ function Desk({
   }, [note, user.username]);
 
   const showChat = can(shown, "chat") && can(real, "chat");
-  const dockChat = showChat && safeTab !== "moderation";
+  const dockChat = showChat;
   const seeTeamChat = showChat && shown !== "builder";
   const seeBuilderChat = showChat && (shown === "builder" || shown === "owner" || shown === "admin" || shown === "helper" || shown === "supporter");
 
@@ -897,7 +897,7 @@ function Desk({
             <div inert={previewing}><LiveNotices note={note} /></div>
           </Suspense>
         ) : null}
-      <div className="staff-layout mt-5 min-w-0">
+      <div className={`staff-layout mt-5 min-w-0${dockChat ? " has-chat" : ""}`}>
         <nav className="staff-nav" aria-label="Team-Bereiche">
           <div className="staff-primary-nav">
             {quickTabs.map((item) => {
@@ -1075,7 +1075,7 @@ function Desk({
           </Suspense>
         </section>
         {dockChat ? (
-          <div inert={previewing} className="sticky top-20 hidden h-[calc(100vh-6rem)] min-w-0 xl:block">
+          <div id="staff-chat-sidebar" inert={previewing} className="staff-chat-dock sticky top-20 hidden h-[calc(100vh-6rem)] min-w-0 xl:block">
             <StaffChat user={displayedUser} team={seeTeamChat} builder={seeBuilderChat} dock />
           </div>
         ) : null}
@@ -1085,17 +1085,26 @@ function Desk({
           <button
             type="button"
             inert={previewing}
-            className={`btn-brand fixed bottom-24 right-3 z-40 ${safeTab === "moderation" ? "" : "xl:hidden"}`}
+            className="btn-brand fixed bottom-24 right-3 z-40 xl:hidden"
             aria-expanded={chatOpen}
             onClick={() => setChatOpen(true)}
           >
-            Chat
+            Chat öffnen
           </button>
           {chatOpen ? (
-            <div className="fixed inset-3 z-50 flex flex-col xl:inset-y-6 xl:left-auto xl:right-6 xl:w-[26rem]">
-              <button type="button" className="btn-ghost mb-2 self-end" onClick={() => setChatOpen(false)}>Schliessen</button>
-              <div inert={previewing} className="min-h-0 flex-1">
-                <StaffChat user={displayedUser} team={seeTeamChat} builder={seeBuilderChat} dock />
+            <div id="staff-chat-overlay" className="fixed inset-0 z-50 bg-black/70 p-3 backdrop-blur-sm xl:hidden">
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-label="Team-Chat"
+                className="mx-auto flex h-full max-h-[calc(100dvh-1.5rem)] w-full max-w-xl flex-col"
+              >
+                <button type="button" className="btn-ghost mb-2 self-end" onClick={() => setChatOpen(false)}>
+                  Chat schließen
+                </button>
+                <div inert={previewing} className="min-h-0 flex-1">
+                  <StaffChat user={displayedUser} team={seeTeamChat} builder={seeBuilderChat} dock />
+                </div>
               </div>
             </div>
           ) : null}

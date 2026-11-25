@@ -135,6 +135,7 @@ function ModForm({
   const selectedBan = path === "bans"
     ? minecraftBans.find((item) => item.name.toLowerCase() === needle)
     : undefined;
+  const selectedBanPermanent = Boolean(selectedBan && /^(?:forever|never|permanent)$/i.test(selectedBan.until));
   const selectedRecord = selectedBan
     ? entries(known).find(([, item]) => item.minecraftBanKey === minecraftBanKey(selectedBan))?.[1]
     : undefined;
@@ -175,6 +176,19 @@ function ModForm({
     if (path === "bans" && !/^\.?[A-Za-z0-9_]{1,16}$/.test(name.trim())) return setFormError("Ungültiger Minecraft-Spielername.");
     if (withDuration && !duration.trim() && !selectedBan) return setFormError("Dauer wählen.");
     if (path === "bans" && !hasMinecraftBanReason(displayedReason)) return setFormError("Bitte gib einen konkreten Bann-Grund an.");
+    let updatedEndsAt: number | null = null;
+    if (path === "bans" && selectedBan && duration.trim()) {
+      if (selectedBanPermanent) return setFormError("Ein permanenter Bann hat keine Laufzeit, die verlängert werden kann.");
+      if (duration.trim().length > 32 || !/^(?:[1-9]\d*[smhdw])+$/i.test(duration.trim())) {
+        return setFormError("Ungültige Verlängerung. Verwende zum Beispiel 1d, 12h oder 30m.");
+      }
+      updatedEndsAt = parseDuration(duration.trim());
+      if (!updatedEndsAt) return setFormError("Die neue Bann-Dauer ist ungültig.");
+      const currentEndsAt = Date.parse(selectedBan.until);
+      if (Number.isFinite(currentEndsAt) && updatedEndsAt <= currentEndsAt) {
+        return setFormError("Die neue Restdauer muss über dem aktuellen Ablaufdatum liegen.");
+      }
+    }
     const body: ModItem = {
       name: name.trim(),
       reason: displayedReason.trim() || "–",
@@ -201,22 +215,44 @@ function ModForm({
       const createdAt = selectedBan.created && Number.isFinite(Date.parse(selectedBan.created)) ? Date.parse(selectedBan.created) : Date.now();
       const banKey = minecraftBanKey(selectedBan);
       const reasonWasEdited = Boolean(reason.trim() && reason.trim() !== (serverReason || savedReason));
+      const durationWasUpdated = Boolean(updatedEndsAt);
+      let minecraftBanUpdated = false;
+      if (durationWasUpdated) {
+        setSendingBan(true);
+        try {
+          const minecraftReason = finalReason.replace(/\s+\|\s*Staff:\s*[a-z0-9._-]{2,24}$/i, "").trim();
+          const result = await executeMinecraftBan({ name: selectedBan.name, duration: duration.trim(), reason: minecraftReason });
+          if (result.action !== "tempban") throw new Error("Minecraft hat die Bann-Verlängerung nicht als Tempban bestätigt.");
+          minecraftBanUpdated = true;
+        } catch (error) {
+          setSendingBan(false);
+          return setFormError(error instanceof Error ? error.message : "Minecraft-Bann konnte nicht verlängert werden.");
+        }
+      }
       body.name = selectedBan.name;
       body.by = selectedRecord?.by || user.username;
       body.ts = selectedRecord?.ts || createdAt;
-      body.reason = finalReason;
-      body.duration = selectedBan.until && !/^(?:forever|never|permanent)$/i.test(selectedBan.until) && Number.isFinite(Date.parse(selectedBan.until))
+      body.reason = reasonWasEdited
+        ? finalReason
+        : durationWasUpdated
+          ? savedReason || finalReason.replace(/\s+\|\s*Staff:\s*[a-z0-9._-]{2,24}$/i, "").trim()
+          : finalReason;
+      body.duration = updatedEndsAt
+        ? `bis ${formatWhen(updatedEndsAt)}`
+        : selectedBan.until && !/^(?:forever|never|permanent)$/i.test(selectedBan.until) && Number.isFinite(Date.parse(selectedBan.until))
         ? `bis ${formatWhen(Date.parse(selectedBan.until))}`
         : "Permanent";
-      body.endsAt = selectedBan.until && !/^(?:forever|never|permanent)$/i.test(selectedBan.until) && Number.isFinite(Date.parse(selectedBan.until))
+      body.endsAt = updatedEndsAt ?? (selectedBan.until && !/^(?:forever|never|permanent)$/i.test(selectedBan.until) && Number.isFinite(Date.parse(selectedBan.until))
         ? Date.parse(selectedBan.until)
-        : null;
+        : null);
       body.minecraftBanKey = banKey;
       if (selectedBan.uuid) body.minecraftUuid = selectedBan.uuid;
       if (selectedBan.created) body.minecraftCreated = selectedBan.created;
       if (selectedBan.source) body.minecraftSource = selectedBan.source;
-      if (selectedBan.until) body.minecraftExpires = selectedBan.until;
-      body.reasonSource = reasonWasEdited ? "staff" : serverReason ? "minecraft" : "staff";
+      if (updatedEndsAt) body.minecraftExpires = new Date(updatedEndsAt).toISOString();
+      else if (selectedBan.until) body.minecraftExpires = selectedBan.until;
+      if (minecraftBanUpdated) body.pendingMinecraftSync = true;
+      body.reasonSource = reasonWasEdited || durationWasUpdated ? "staff" : serverReason ? "minecraft" : "staff";
       body.reasonAddedAt = reasonWasEdited ? Date.now() : serverReason ? createdAt : savedReason ? selectedRecord?.reasonAddedAt || Date.now() : Date.now();
       if (reasonWasEdited || !selectedRecord?.reasonAddedBy) body.reasonAddedBy = user.username;
       body.updatedAt = Date.now();
@@ -230,13 +266,24 @@ function ModForm({
           await fbSet(`bans/minecraft_${safeKey}`, body);
         }
       } catch (error) {
-        return setFormError(error instanceof Error ? error.message : "Speichern fehlgeschlagen.");
+        const detail = error instanceof Error ? error.message : "Speichern fehlgeschlagen.";
+        return setFormError(minecraftBanUpdated
+          ? `Minecraft-Bann wurde verlängert, aber der Website-Eintrag konnte nicht aktualisiert werden: ${detail}`
+          : detail);
+      } finally {
+        if (durationWasUpdated) setSendingBan(false);
       }
-      void logStaff(user.username, reasonWasEdited ? "Banngrund geändert" : "Banngrund ergänzt", `${selectedBan.name} · ${finalReason}`);
+      void logStaff(
+        user.username,
+        durationWasUpdated ? "Minecraft-Bann verlängert" : reasonWasEdited ? "Banngrund geändert" : "Banngrund ergänzt",
+        `${selectedBan.name} · ${durationWasUpdated ? duration.trim() : finalReason}`,
+      );
       setName("");
       setReason("");
       setDuration("");
-      note(reasonWasEdited ? "Banngrund im Staff-Center geändert" : "Banngrund im Staff-Center gespeichert");
+      note(durationWasUpdated
+        ? "Minecraft-Bann verlängert; die Ablaufzeit wird mit dem Server abgeglichen."
+        : reasonWasEdited ? "Banngrund im Staff-Center geändert" : "Banngrund im Staff-Center gespeichert");
       return;
     }
     try {
@@ -325,7 +372,7 @@ function ModForm({
       {path === "bans" && name.trim() ? (
         <p className="mt-2 text-sm text-muted">
           {selectedBan
-            ? `${hasMinecraftBanReason(selectedBan.reason) ? "Aktiver Ingame-Bann gefunden." : "Aktiver Ingame-Bann gefunden – bitte einen konkreten Grund ergänzen."} Der Grund wird hier im Staff-Center-Eintrag bearbeitet; der Minecraft-Bann selbst bleibt unverändert.`
+            ? `${hasMinecraftBanReason(selectedBan.reason) ? "Aktiver Ingame-Bann gefunden." : "Aktiver Ingame-Bann gefunden – bitte einen konkreten Grund ergänzen."} Ohne neue Dauer änderst du nur den Staff-Center-Grund. ${selectedBanPermanent ? "Ein permanenter Bann hat keine Laufzeit, die verlängert werden kann." : "Eine eingetragene Restdauer verlängert den Bann ab jetzt und muss über dem bisherigen Ablaufdatum liegen."}`
             : "Noch nicht ingame gebannt – beim Eintragen kannst du den Ingame-Bann bestätigen. Dein Staffname wird im Minecraft-Banngrund ergänzt; als Quelle zeigt Minecraft weiterhin Console (RCON)."}
         </p>
       ) : null}
@@ -336,9 +383,9 @@ function ModForm({
         {path === "bans" ? "Konkreter Grund" : "Grund der Verwarnung"}
         <input className="field mt-1" placeholder={path === "bans" ? "z. B. X-Ray beim Mining" : "Was ist vorgefallen?"} value={displayedReason} onChange={(e) => setReason(e.target.value)} required />
       </label>
-      {presets ? (
+      {presets && (!selectedBan || !selectedBanPermanent) ? (
         <div className="mt-3 flex flex-wrap gap-2">
-          {presets.map((item) => (
+          {presets.filter((item) => !selectedBan || item.toLowerCase() !== "permanent").map((item) => (
             <button key={item} type="button" className={duration === item ? "btn-brand px-3" : "btn-ghost px-3"} onClick={() => setDuration(item)}>
               {item}
             </button>
@@ -362,18 +409,18 @@ function ModForm({
           ))}
         </div>
       ) : null}
-      {withDuration ? (
+      {withDuration && (!selectedBan || !selectedBanPermanent) ? (
         <label className="mt-3 block text-sm font-medium">
-          Dauer
-          <input className="field mt-1" placeholder="Eigene Dauer, z. B. 12h" value={duration} onChange={(e) => setDuration(e.target.value)} />
+          {selectedBan ? "Neue Restdauer ab jetzt" : "Dauer"}
+          <input className="field mt-1" placeholder={selectedBan ? "z. B. 7d" : "Eigene Dauer, z. B. 12h"} value={duration} onChange={(e) => setDuration(e.target.value)} disabled={sendingBan} />
         </label>
       ) : null}
       {path === "bans" && name.trim() ? (
         <p className="mt-2 text-xs text-muted">Vorhandene Banns findest du unten in der Bans-Liste. Wenn du einen Grund dort änderst, wird derselbe Eintrag aktualisiert.</p>
       ) : null}
-      <button className="btn-brand mt-4" type="submit">
+      <button className="btn-brand mt-4" type="submit" disabled={sendingBan}>
         {selectedBan
-          ? hasMinecraftBanReason(serverReason || savedReason) ? "Banngrund ändern" : "Banngrund ergänzen"
+          ? sendingBan ? "Aktualisiere Minecraft-Bann…" : duration.trim() ? "Grund und Dauer aktualisieren" : hasMinecraftBanReason(serverReason || savedReason) ? "Banngrund ändern" : "Banngrund ergänzen"
           : "Eintragen"}
       </button>
       {formError ? <p className="mt-3 text-sm text-ember" role="alert">{formError}</p> : null}

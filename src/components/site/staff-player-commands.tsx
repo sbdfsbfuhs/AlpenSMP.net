@@ -33,6 +33,8 @@ export function PlayerCommandEditor({
     mergeLegacyCommands(null, null, null),
   );
   const [groupId, setGroupId] = useState("claims");
+  const [commandQuery, setCommandQuery] = useState("");
+  const [editingCommandId, setEditingCommandId] = useState<string | null>(null);
   const [newCommand, setNewCommand] = useState({ cmd: "", bedrockCmd: "", text: "" });
   const [saving, setSaving] = useState(false);
   const editable = can(real, "commandsEdit") && can(view, "commandsEdit");
@@ -148,6 +150,16 @@ export function PlayerCommandEditor({
   }
 
   const selectedGroup = groups.find((group) => group.id === groupId);
+  const normalizedCommandQuery = commandQuery.trim().toLocaleLowerCase();
+  const visibleRows = selectedGroup?.rows
+    .filter((row) =>
+      row.id === editingCommandId || [row.cmd, row.bedrockCmd, row.text]
+          .filter(Boolean)
+          .join(" ")
+          .toLocaleLowerCase()
+          .includes(normalizedCommandQuery),
+    )
+    .sort((first, second) => first.cmd.localeCompare(second.cmd, "de")) ?? [];
 
   return (
     <section className="card card-still space-y-5 p-5">
@@ -155,19 +167,19 @@ export function PlayerCommandEditor({
         <div>
           <h2 className="text-lg font-semibold">Spieler-Befehle</h2>
           <p className="mt-1 text-sm text-muted">
-            Ein gemeinsamer Katalog für den Guide, die Features-Seite und die Website-Suche.
+            Gemeinsamer Katalog für Guide, Features-Seite und Website-Suche. Wähle eine Gruppe und bearbeite einzelne Befehle bei Bedarf.
           </p>
         </div>
-        {editable ? (
+        {editable && dirty ? (
           <button
             className="btn-brand"
             type="button"
-            disabled={!dirty || saving}
+            disabled={saving}
             onClick={() => void save()}
           >
-            {saving ? "Speichert…" : dirty ? "Änderungen speichern" : "Gespeichert"}
+            {saving ? "Speichert…" : "Änderungen speichern"}
           </button>
-        ) : null}
+        ) : editable ? <span className="rounded-full border border-line px-3 py-1 text-sm text-muted">Änderungen gespeichert</span> : null}
       </div>
 
       <label className="grid max-w-md gap-1 text-sm font-medium">
@@ -175,11 +187,15 @@ export function PlayerCommandEditor({
         <select
           className="field"
           value={groupId}
-          onChange={(event) => setGroupId(event.target.value)}
+          onChange={(event) => {
+            setGroupId(event.target.value);
+            setEditingCommandId(null);
+            setCommandQuery("");
+          }}
         >
           {groups.map((group) => (
             <option key={group.id} value={group.id}>
-              {group.title}
+              {group.title} ({group.rows.length})
             </option>
           ))}
         </select>
@@ -187,58 +203,98 @@ export function PlayerCommandEditor({
 
       {selectedGroup ? (
         <div className="space-y-3">
-          {selectedGroup.rows.map((row) => (
-            <article
-              key={row.id}
-              className="grid gap-2 rounded-md border border-line p-3 md:grid-cols-2"
-            >
-              <label className="grid gap-1 text-xs text-muted">
-                Java-Befehl
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <p className="text-sm text-muted">{selectedGroup.rows.length} {selectedGroup.rows.length === 1 ? "Befehl" : "Befehle"} in „{selectedGroup.title}“</p>
+            {selectedGroup.rows.length > 0 ? (
+              <label className="block w-full text-sm font-medium sm:max-w-sm">
+                Befehle in dieser Gruppe suchen
                 <input
-                  className="field"
-                  value={row.cmd}
-                  disabled={!editable}
-                  onChange={(event) =>
-                    changeCommand(selectedGroup.id, row.id, { cmd: event.target.value })
-                  }
+                  className="field mt-1"
+                  type="search"
+                  value={commandQuery}
+                  onChange={(event) => setCommandQuery(event.target.value)}
+                  placeholder="Befehl oder Beschreibung"
                 />
               </label>
-              <label className="grid gap-1 text-xs text-muted">
-                Bedrock-Befehl (optional)
-                <input
-                  className="field"
-                  value={row.bedrockCmd ?? ""}
-                  disabled={!editable}
-                  placeholder="Wie Java, falls gleich"
-                  onChange={(event) =>
-                    changeCommand(selectedGroup.id, row.id, { bedrockCmd: event.target.value })
-                  }
-                />
-              </label>
-              <label className="grid gap-1 text-xs text-muted md:col-span-2">
-                Beschreibung
-                <textarea
-                  className="field min-h-20"
-                  value={row.text}
-                  disabled={!editable}
-                  onChange={(event) =>
-                    changeCommand(selectedGroup.id, row.id, { text: event.target.value })
-                  }
-                />
-              </label>
-              {editable ? (
-                <button
-                  className="btn-ghost justify-self-start"
-                  type="button"
-                  onClick={() => removeCommand(selectedGroup.id, row.id)}
-                >
-                  Befehl entfernen
-                </button>
-              ) : null}
-            </article>
-          ))}
+            ) : null}
+          </div>
+          {visibleRows.map((row) => {
+            const editing = editingCommandId === row.id;
+            return (
+              <article key={row.id} className="rounded-lg border border-line p-3 sm:p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <code className="font-semibold text-brand">{row.cmd}</code>
+                    {row.bedrockCmd ? <p className="mt-1 text-xs text-faint">Bedrock: <code>{row.bedrockCmd}</code></p> : null}
+                    <p className="mt-2 text-sm text-muted">{row.text}</p>
+                  </div>
+                  {editable ? (
+                    <button
+                      className="btn-ghost px-3"
+                      type="button"
+                      aria-expanded={editing}
+                      onClick={() => setEditingCommandId(editing ? null : row.id)}
+                    >
+                      {editing ? "Schließen" : "Bearbeiten"}
+                    </button>
+                  ) : null}
+                </div>
+                {editing ? (
+                  <div className="mt-4 grid gap-2 border-t border-line pt-4 md:grid-cols-2">
+                    <label className="grid gap-1 text-xs text-muted">
+                      Java-Befehl
+                      <input
+                        className="field"
+                        value={row.cmd}
+                        disabled={!editable}
+                        onChange={(event) =>
+                          changeCommand(selectedGroup.id, row.id, { cmd: event.target.value })
+                        }
+                      />
+                    </label>
+                    <label className="grid gap-1 text-xs text-muted">
+                      Bedrock-Befehl <span className="font-normal">(optional)</span>
+                      <input
+                        className="field"
+                        value={row.bedrockCmd ?? ""}
+                        disabled={!editable}
+                        placeholder="Wie Java, falls gleich"
+                        onChange={(event) =>
+                          changeCommand(selectedGroup.id, row.id, { bedrockCmd: event.target.value })
+                        }
+                      />
+                    </label>
+                    <label className="grid gap-1 text-xs text-muted md:col-span-2">
+                      Beschreibung
+                      <textarea
+                        className="field min-h-20"
+                        value={row.text}
+                        disabled={!editable}
+                        onChange={(event) =>
+                          changeCommand(selectedGroup.id, row.id, { text: event.target.value })
+                        }
+                      />
+                    </label>
+                    <button
+                      className="btn-ghost justify-self-start"
+                      type="button"
+                      onClick={() => {
+                        removeCommand(selectedGroup.id, row.id);
+                        setEditingCommandId(null);
+                      }}
+                    >
+                      Befehl entfernen
+                    </button>
+                  </div>
+                ) : null}
+              </article>
+            );
+          })}
           {!selectedGroup.rows.length ? (
             <p className="text-sm text-muted">In dieser Gruppe sind noch keine Befehle.</p>
+          ) : null}
+          {selectedGroup.rows.length > 0 && !visibleRows.length ? (
+            <p className="text-sm text-muted">Keine Befehle passen zu dieser Suche.</p>
           ) : null}
         </div>
       ) : (
@@ -246,30 +302,41 @@ export function PlayerCommandEditor({
       )}
 
       {editable ? (
-        <fieldset className="grid gap-2 border-t border-line pt-4 md:grid-cols-2" disabled={saving}>
-          <legend className="px-1 text-sm font-semibold">Befehl ergänzen</legend>
-          <input
-            className="field"
-            placeholder="Java-Befehl, z. B. /spawn"
-            value={newCommand.cmd}
-            onChange={(event) => setNewCommand({ ...newCommand, cmd: event.target.value })}
-          />
-          <input
-            className="field"
-            placeholder="Bedrock-Variante (optional)"
-            value={newCommand.bedrockCmd}
-            onChange={(event) => setNewCommand({ ...newCommand, bedrockCmd: event.target.value })}
-          />
-          <textarea
-            className="field min-h-20 md:col-span-2"
-            placeholder="Kurze Erklärung"
-            value={newCommand.text}
-            onChange={(event) => setNewCommand({ ...newCommand, text: event.target.value })}
-          />
-          <button className="btn-ghost justify-self-start" type="button" onClick={addCommand}>
-            Zur Gruppe hinzufügen
-          </button>
-        </fieldset>
+        <details className="rounded-lg border border-line p-3">
+          <summary className="cursor-pointer font-semibold">Befehl zu „{selectedGroup?.title || "Gruppe"}“ hinzufügen</summary>
+          <fieldset className="mt-3 grid gap-2 md:grid-cols-2" disabled={saving || !selectedGroup}>
+            <label className="grid gap-1 text-xs text-muted">
+              Java-Befehl
+              <input
+                className="field"
+                placeholder="/spawn"
+                value={newCommand.cmd}
+                onChange={(event) => setNewCommand({ ...newCommand, cmd: event.target.value })}
+              />
+            </label>
+            <label className="grid gap-1 text-xs text-muted">
+              Bedrock-Befehl <span className="font-normal">(optional)</span>
+              <input
+                className="field"
+                placeholder="Wie Java, falls gleich"
+                value={newCommand.bedrockCmd}
+                onChange={(event) => setNewCommand({ ...newCommand, bedrockCmd: event.target.value })}
+              />
+            </label>
+            <label className="grid gap-1 text-xs text-muted md:col-span-2">
+              Beschreibung
+              <textarea
+                className="field min-h-20"
+                placeholder="Kurze Erklärung"
+                value={newCommand.text}
+                onChange={(event) => setNewCommand({ ...newCommand, text: event.target.value })}
+              />
+            </label>
+            <button className="btn-ghost justify-self-start" type="button" onClick={addCommand}>
+              Zur Gruppe hinzufügen
+            </button>
+          </fieldset>
+        </details>
       ) : (
         <p className="text-sm text-muted">Du kannst den Katalog ansehen, aber nicht bearbeiten.</p>
       )}

@@ -105,6 +105,35 @@
     padding-inline: 1.25rem;
   }
 
+  .staff-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 1rem;
+  }
+
+  .staff-layout > .staff-nav,
+  .staff-layout > .staff-content {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+
+  @media (min-width: 80rem) {
+    .staff-layout.has-chat {
+      grid-template-columns: minmax(0, 1fr) minmax(20rem, 25rem);
+    }
+
+    .staff-layout.has-chat > .staff-content {
+      grid-column: 1;
+      grid-row: 2;
+    }
+
+    .staff-layout.has-chat > .staff-chat-dock {
+      grid-column: 2;
+      grid-row: 2;
+    }
+  }
+
   .staff-nav {
     position: sticky;
     top: 0.75rem;

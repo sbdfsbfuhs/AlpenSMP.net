@@ -137,10 +137,28 @@ type TaskItem = {
   done?: boolean;
 };
 
-function taskState(item: TaskItem) {
+type TaskState = "archived" | "active" | "open";
+type TaskFilter = "all" | "mine" | "open" | "active";
+
+function taskState(item: TaskItem): TaskState {
   if (item.status === "archived" || item.done) return "archived";
   if (item.status === "active") return "active";
   return "open";
+}
+
+function taskIsRelevantTo(item: TaskItem, username: string, real: string) {
+  if (real === "owner") return true;
+  if (item.acceptedBy) return item.acceptedBy === username;
+  return !item.assignee || item.assignee === username || item.scope === "all";
+}
+
+function taskMatchesSearch(item: TaskItem, query: string) {
+  if (!query) return true;
+  return [item.title, item.text, item.by, item.assignee, item.acceptedBy, item.note, item.question, item.reply]
+    .filter(Boolean)
+    .join(" ")
+    .toLocaleLowerCase()
+    .includes(query);
 }
 
 export function TasksBoard({ real, view, note, username }: { real: string; view: string; note: Note; username: string }) {
@@ -153,132 +171,330 @@ export function TasksBoard({ real, view, note, username }: { real: string; view:
   const [scope, setScope] = useState(lead ? "all" : "one");
   const [assignee, setAssignee] = useState(username);
   const [due, setDue] = useState("");
-  const open = entries(rows).filter(([, item]) => taskState(item) !== "archived");
-  const archived = entries(rows).filter(([, item]) => taskState(item) === "archived");
+  const [filter, setFilter] = useState<TaskFilter>(lead ? "all" : "mine");
+  const [query, setQuery] = useState("");
+  const [saving, setSaving] = useState(false);
+  const today = localDateKey();
+  const members = [...new Set([username, ...entries(people).map(([name]) => name)])]
+    .sort((first, second) => first.localeCompare(second, "de"));
+  const allRows = entries(rows);
+  const activeRows = allRows
+    .filter(([, item]) => taskState(item) !== "archived")
+    .sort(([, first], [, second]) => {
+      const firstDue = first.due || "9999-12-31";
+      const secondDue = second.due || "9999-12-31";
+      return firstDue.localeCompare(secondDue) || (second.updatedAt || second.ts || 0) - (first.updatedAt || first.ts || 0);
+    });
+  const archivedRows = allRows
+    .filter(([, item]) => taskState(item) === "archived")
+    .sort(([, first], [, second]) => (second.archivedAt || second.updatedAt || 0) - (first.archivedAt || first.updatedAt || 0));
+  const counts = {
+    all: activeRows.length,
+    mine: activeRows.filter(([, item]) => taskIsRelevantTo(item, username, real)).length,
+    open: activeRows.filter(([, item]) => taskState(item) === "open").length,
+    active: activeRows.filter(([, item]) => taskState(item) === "active").length,
+  };
+  const search = query.trim().toLocaleLowerCase();
+  const visibleRows = activeRows.filter(([, item]) => {
+    if (filter === "open" && taskState(item) !== "open") return false;
+    if (filter === "active" && taskState(item) !== "active") return false;
+    if (filter === "mine" && !taskIsRelevantTo(item, username, real)) return false;
+    return taskMatchesSearch(item, search);
+  });
+  const visibleArchived = archivedRows.filter(([, item]) => taskMatchesSearch(item, search));
+
+  async function createTask(event: FormEvent) {
+    event.preventDefault();
+    if (!guard(real, "tasks", note) || !title.trim() || saving) return;
+    setSaving(true);
+    const forAll = lead && scope === "all";
+    try {
+      await fbPush("tasks", {
+        title: title.trim(),
+        text: text.trim(),
+        by: username,
+        scope: forAll ? "all" : "one",
+        assignee: forAll ? "" : assignee || username,
+        due,
+        status: "open",
+        done: false,
+        ts: Date.now(),
+      });
+      setTitle("");
+      setText("");
+      setDue("");
+      note("Aufgabe liegt bereit");
+    } catch (error) {
+      note(error instanceof Error ? error.message : "Aufgabe konnte nicht gespeichert werden");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
-    <section className="space-y-3">
+    <section className="space-y-4">
+      <header className="card card-still flex flex-wrap items-start justify-between gap-4 p-4 sm:p-5">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-brand">Teamplanung</p>
+          <h2 className="mt-1 text-xl font-semibold">Aufgaben</h2>
+          <p className="mt-1 text-sm text-muted">Aufgaben annehmen, bearbeiten und mit Ergebnis im Archiv abschließen.</p>
+        </div>
+        <div className="flex flex-wrap gap-2 text-xs">
+          <span className="rounded-full bg-amber-500/15 px-3 py-1.5 text-amber-200">{counts.open} bereit</span>
+          <span className="rounded-full bg-sky-500/15 px-3 py-1.5 text-sky-200">{counts.active} in Arbeit</span>
+          {activeRows.some(([, item]) => item.due && item.due < today) ? (
+            <span className="rounded-full bg-red-500/15 px-3 py-1.5 text-red-200">
+              {activeRows.filter(([, item]) => item.due && item.due < today).length} Frist(en) überschritten
+            </span>
+          ) : null}
+        </div>
+      </header>
+
       {edit ? (
-        <form
-          className="card card-still p-5"
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (!guard(real, "tasks", note) || !title.trim()) return;
-            const forAll = lead && scope === "all";
-            void fbPush("tasks", {
-              title: title.trim(),
-              text: text.trim(),
-              by: username,
-              scope: forAll ? "all" : "one",
-              assignee: forAll ? "" : assignee || username,
-              due,
-              status: "open",
-              done: false,
-              ts: Date.now(),
-            }).then(() => {
-              setTitle("");
-              setText("");
-              setDue("");
-              note("Aufgabe liegt bereit");
-            });
-          }}
-        >
-          <h2 className="text-lg font-semibold">Aufgabe</h2>
-          <p className="mt-1 text-sm text-muted">Jemand nimmt sie an, bearbeitet sie und archiviert sie. Im Archiv steht, wer sie erledigt hat, von wann bis wann, plus Notiz oder Frage.</p>
-          <input className="field mt-3" placeholder="Titel" value={title} onChange={(e) => setTitle(e.target.value)} />
-          <textarea className="field mt-2 min-h-20" placeholder="Details" value={text} onChange={(e) => setText(e.target.value)} />
-          {lead ? (
-            <div className="mt-2 flex flex-wrap gap-2">
-              <button type="button" className={scope === "all" ? "btn-brand px-3" : "btn-ghost px-3"} onClick={() => setScope("all")}>Für alle</button>
-              <button type="button" className={scope === "one" ? "btn-brand px-3" : "btn-ghost px-3"} onClick={() => setScope("one")}>Für eine Person</button>
-            </div>
-          ) : null}
-          {scope === "one" || !lead ? (
-            <select className="field mt-2" value={assignee} onChange={(e) => setAssignee(e.target.value)}>
-              <option value={username}>{username}</option>
-              {entries(people).map(([name]) => name === username ? null : <option key={name} value={name}>{name}</option>)}
-            </select>
-          ) : null}
-          <label className="mt-2 block text-sm">Frist, optional<input className="field mt-1" type="date" value={due} onChange={(e) => setDue(e.target.value)} /></label>
-          <button className="btn-brand mt-3" type="submit">Speichern</button>
-        </form>
+        <details className="card card-still p-4 sm:p-5">
+          <summary className="cursor-pointer font-semibold">Neue Aufgabe erstellen</summary>
+          <form className="mt-4 space-y-3" onSubmit={(event) => void createTask(event)}>
+            <label className="block text-sm font-medium">
+              Titel
+              <input className="field mt-1" placeholder="Was soll erledigt werden?" value={title} onChange={(event) => setTitle(event.target.value)} required />
+            </label>
+            <label className="block text-sm font-medium">
+              Details <span className="font-normal text-muted">(optional)</span>
+              <textarea className="field mt-1 min-h-20" placeholder="Zusätzliche Informationen" value={text} onChange={(event) => setText(event.target.value)} />
+            </label>
+            {lead ? (
+              <fieldset>
+                <legend className="text-sm font-medium">Zuweisung</legend>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <button type="button" aria-pressed={scope === "all"} className={scope === "all" ? "btn-brand px-3" : "btn-ghost px-3"} onClick={() => setScope("all")}>Für alle</button>
+                  <button type="button" aria-pressed={scope === "one"} className={scope === "one" ? "btn-brand px-3" : "btn-ghost px-3"} onClick={() => setScope("one")}>Für eine Person</button>
+                </div>
+              </fieldset>
+            ) : null}
+            {scope === "one" || !lead ? (
+              <label className="block text-sm font-medium">
+                Für Teammitglied
+                <select className="field mt-1" value={assignee} onChange={(event) => setAssignee(event.target.value)}>
+                  {members.map((name) => <option key={name} value={name}>{name}</option>)}
+                </select>
+              </label>
+            ) : null}
+            <label className="block text-sm font-medium">
+              Frist <span className="font-normal text-muted">(optional)</span>
+              <input className="field mt-1" type="date" value={due} onChange={(event) => setDue(event.target.value)} />
+            </label>
+            <button className="btn-brand" type="submit" disabled={saving || !title.trim()}>
+              {saving ? "Speichert …" : "Aufgabe erstellen"}
+            </button>
+          </form>
+        </details>
       ) : null}
-      {open.map(([key, item]) => (
-        <TaskCard key={key} id={key} item={item} real={real} username={username} note={note} />
-      ))}
-      <h2 className="pt-2 text-lg font-semibold">Archiviert</h2>
-      {archived.map(([key, item]) => (
-        <article key={key} className="card card-still p-4 text-sm">
-          <p className="font-semibold">{item.title}</p>
-          <p className="mt-1 text-muted">{item.text}</p>
-          <p className="mt-2 text-xs text-faint">
-            Erledigt durch {item.acceptedBy || item.by || "–"} · von {formatWhen(item.acceptedAt || item.ts)} bis {formatWhen(item.archivedAt || item.updatedAt)}
-          </p>
-          {item.note ? <p className="mt-2">Notiz: {item.note}</p> : null}
-          {item.question ? <p className="mt-1">Frage: {item.question}</p> : null}
-          {item.reply ? <p className="mt-1 text-muted">Antwort: {item.reply}</p> : null}
-          {real === "owner" ? <TaskReply id={key} note={note} /> : null}
-        </article>
-      ))}
-      {!archived.length ? <p className="text-sm text-muted">Noch nichts archiviert</p> : null}
+
+      <section className="card card-still space-y-4 p-4 sm:p-5" aria-label="Aufgaben filtern">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Aufgabenstatus">
+          {([
+            ["mine", "Für mich"],
+            ["all", "Alle aktiven"],
+            ["open", "Bereit"],
+            ["active", "In Arbeit"],
+          ] as const).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={filter === value}
+              className={filter === value ? "btn-brand px-3" : "btn-ghost px-3"}
+              onClick={() => setFilter(value)}
+            >
+              {label} <span className="ml-1 text-xs opacity-70">{counts[value]}</span>
+            </button>
+          ))}
+        </div>
+        <label className="block text-sm font-medium">
+          Aufgaben durchsuchen
+          <input
+            className="field mt-1"
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Titel, Details oder Teammitglied"
+          />
+        </label>
+        <p className="text-xs text-faint">{visibleRows.length} von {activeRows.length} aktiven Aufgaben · Fristen zuerst</p>
+      </section>
+
+      <div className="space-y-3">
+        {visibleRows.map(([key, item]) => (
+          <TaskCard key={key} id={key} item={item} real={real} username={username} note={note} today={today} />
+        ))}
+        {!visibleRows.length ? (
+          <div className="card card-still p-5 text-center">
+            <h3 className="font-semibold">{activeRows.length ? "Keine passenden Aufgaben" : "Keine aktiven Aufgaben"}</h3>
+            <p className="mt-1 text-sm text-muted">
+              {activeRows.length ? "Ändere die Suche oder den Statusfilter." : "Neue Aufgaben erscheinen hier, sobald sie erstellt werden."}
+            </p>
+            {activeRows.length && (query || filter !== (lead ? "all" : "mine")) ? (
+              <button type="button" className="btn-ghost mt-3" onClick={() => { setQuery(""); setFilter(lead ? "all" : "mine"); }}>
+                Filter zurücksetzen
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+
+      <details className="card card-still p-4 sm:p-5">
+        <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-3 font-semibold">
+          <span>Aufgabenarchiv</span>
+          <span className="rounded-full border border-line px-3 py-1 text-sm text-muted">{archivedRows.length} {archivedRows.length === 1 ? "Aufgabe" : "Aufgaben"}</span>
+        </summary>
+        <div className="mt-4 space-y-3">
+          {visibleArchived.map(([key, item]) => (
+            <article key={key} className="rounded-lg border border-line p-4 text-sm">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <h3 className="font-semibold">{item.title || "Aufgabe"}</h3>
+                  <p className="mt-1 text-muted">{item.text || "Keine Details hinterlegt."}</p>
+                </div>
+                <span className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs font-medium text-emerald-200">Erledigt</span>
+              </div>
+              <p className="mt-3 text-xs text-faint">
+                Erledigt durch {item.acceptedBy || item.by || "Unbekannt"} · gestartet {formatWhen(item.acceptedAt || item.ts)} · abgeschlossen {formatWhen(item.archivedAt || item.updatedAt)}
+              </p>
+              {item.note ? <p className="mt-3 rounded-md bg-bg p-3"><span className="font-semibold">Ergebnis:</span> {item.note}</p> : null}
+              {item.question ? <p className="mt-2 rounded-md bg-bg p-3"><span className="font-semibold">Frage ans Team:</span> {item.question}</p> : null}
+              {item.reply ? <p className="mt-2 text-muted"><span className="font-semibold">Antwort:</span> {item.reply}</p> : null}
+              {real === "owner" && item.question ? <TaskReply id={key} note={note} /> : null}
+            </article>
+          ))}
+          {!visibleArchived.length ? (
+            <p className="rounded-md border border-dashed border-line p-4 text-sm text-muted">
+              {archivedRows.length ? "Keine archivierten Aufgaben passen zur Suche." : "Noch keine Aufgaben archiviert."}
+            </p>
+          ) : null}
+        </div>
+      </details>
     </section>
   );
 }
 
-function TaskCard({ id, item, real, username, note }: { id: string; item: TaskItem; real: string; username: string; note: Note }) {
+function TaskCard({ id, item, real, username, note, today }: { id: string; item: TaskItem; real: string; username: string; note: Note; today: string }) {
   const state = taskState(item);
-  const mine = !item.assignee || item.assignee === username || item.scope === "all" || real === "owner";
+  const mine = taskIsRelevantTo(item, username, real);
   const worker = item.acceptedBy === username || real === "owner";
   const [extra, setExtra] = useState(item.note || "");
   const [question, setQuestion] = useState(item.question || "");
+  const [finishing, setFinishing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [accepting, setAccepting] = useState(false);
+  const overdue = state !== "archived" && Boolean(item.due) && (item.due || "") < today;
 
-  const today = new Date().toISOString().slice(0, 10);
-  const overdue = state === "open" && Boolean(item.due) && (item.due || "") < today;
+  async function acceptTask() {
+    if (accepting) return;
+    setAccepting(true);
+    try {
+      await fbUpdate(`tasks/${id}`, { status: "active", acceptedBy: username, acceptedAt: Date.now(), updatedAt: Date.now() });
+      note("Aufgabe angenommen");
+    } catch (error) {
+      note(error instanceof Error ? error.message : "Aufgabe konnte nicht angenommen werden");
+    } finally {
+      setAccepting(false);
+    }
+  }
+
+  async function completeTask(event: FormEvent) {
+    event.preventDefault();
+    if (saving) return;
+    setSaving(true);
+    try {
+      await fbUpdate(`tasks/${id}`, {
+        status: "archived",
+        done: true,
+        note: extra.trim(),
+        question: question.trim(),
+        archivedAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+      note("Aufgabe erledigt und archiviert");
+    } catch (error) {
+      note(error instanceof Error ? error.message : "Aufgabe konnte nicht archiviert werden");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
-    <article className={`card card-still p-4 text-sm${overdue ? " border-red-500 bg-red-950/40" : freshStamp(item.ts, item.updatedAt) ? " mark-new" : ""}`}>
-      <p className={`font-semibold${overdue ? " text-red-200" : ""}`}>
-        {overdue ? "Frist vorbei · " : state === "active" ? "In Arbeit · " : "Offen · "}
-        {item.title}
-        {freshStamp(item.ts, item.updatedAt) ? <span className="ml-2 rounded bg-emerald-500 px-1.5 py-0.5 text-[10px] font-bold uppercase text-black">Neu</span> : null}
-      </p>
-      <p className="mt-1 text-muted">{item.text}</p>
-      <p className="mt-1 text-xs text-faint">
-        {item.scope === "all" || !item.assignee ? "Für alle" : `Für ${item.assignee}`} · von {item.by}
-        {item.due ? ` · Frist ${item.due}` : ""}
-        {item.acceptedBy ? ` · angenommen von ${item.acceptedBy}` : ""}
-      </p>
+    <article className={`card card-still p-4 sm:p-5${overdue ? " border-red-500 bg-red-950/20" : freshStamp(item.ts, item.updatedAt) ? " mark-new" : ""}`}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+              overdue ? "bg-red-500/15 text-red-200" : state === "active" ? "bg-sky-500/15 text-sky-200" : "bg-amber-500/15 text-amber-200"
+            }`}>
+              {overdue ? "Frist überschritten" : state === "active" ? "In Arbeit" : "Bereit"}
+            </span>
+            {item.scope === "all" || !item.assignee ? (
+              <span className="rounded-full border border-line px-2.5 py-1 text-xs text-muted">Für alle</span>
+            ) : (
+              <span className="rounded-full border border-line px-2.5 py-1 text-xs text-muted">Für {item.assignee}</span>
+            )}
+            {freshStamp(item.ts, item.updatedAt) ? <span className="rounded bg-emerald-500 px-1.5 py-0.5 text-[10px] font-bold uppercase text-black">Neu</span> : null}
+          </div>
+          <h3 className="mt-3 font-semibold">{item.title || "Aufgabe ohne Titel"}</h3>
+          {item.text ? <p className="mt-1 whitespace-pre-wrap text-sm text-muted">{item.text}</p> : null}
+        </div>
+        {item.due ? (
+          <div className={`shrink-0 rounded-lg border px-3 py-2 text-xs ${overdue ? "border-red-500/40 text-red-200" : "border-line text-muted"}`}>
+            <span className="block text-faint">Frist</span>
+            <time className="mt-0.5 block font-semibold">{formatAbsenceDate(item.due)}</time>
+          </div>
+        ) : null}
+      </div>
+      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 border-t border-line pt-3 text-xs text-faint">
+        <span>Erstellt von {item.by || "Unbekannt"}</span>
+        {item.acceptedBy ? <span>Bearbeitet von {item.acceptedBy}</span> : <span>Noch nicht angenommen</span>}
+        <span>Erstellt {formatWhen(item.ts)}</span>
+      </div>
       {state === "open" && mine ? (
         <button
           type="button"
           className="btn-brand mt-3"
-          onClick={() => void fbUpdate(`tasks/${id}`, { status: "active", acceptedBy: username, acceptedAt: Date.now(), updatedAt: Date.now() }).then(() => note("Angenommen"))}
+          disabled={accepting}
+          onClick={() => void acceptTask()}
         >
-          Annehmen
+          {accepting ? "Wird angenommen …" : "Aufgabe annehmen"}
         </button>
       ) : null}
       {state === "active" && worker ? (
-        <div className="mt-3 space-y-2">
-          <textarea className="field min-h-16" placeholder="Notiz zum Ergebnis" value={extra} onChange={(e) => setExtra(e.target.value)} />
-          <textarea className="field min-h-16" placeholder="Frage ans Team, optional" value={question} onChange={(e) => setQuestion(e.target.value)} />
-          <button
-            type="button"
-            className="btn-brand"
-            onClick={() => void fbUpdate(`tasks/${id}`, {
-              status: "archived",
-              done: true,
-              note: extra.trim(),
-              question: question.trim(),
-              archivedAt: Date.now(),
-              updatedAt: Date.now(),
-            }).then(() => note("Archiviert"))}
-          >
-            Erledigt und archivieren
-          </button>
-        </div>
+        finishing ? (
+          <form className="mt-4 space-y-3 rounded-lg border border-line p-4" onSubmit={(event) => void completeTask(event)}>
+            <h4 className="font-semibold">Aufgabe abschließen</h4>
+            <label className="block text-sm font-medium">
+              Ergebnisnotiz <span className="font-normal text-muted">(optional)</span>
+              <textarea className="field mt-1 min-h-20" placeholder="Was wurde erledigt?" value={extra} onChange={(event) => setExtra(event.target.value)} />
+            </label>
+            <label className="block text-sm font-medium">
+              Frage ans Team <span className="font-normal text-muted">(optional)</span>
+              <textarea className="field mt-1 min-h-20" placeholder="Gibt es noch etwas zu klären?" value={question} onChange={(event) => setQuestion(event.target.value)} />
+            </label>
+            <div className="flex flex-wrap gap-2">
+              <button type="submit" className="btn-brand" disabled={saving}>{saving ? "Wird archiviert …" : "Erledigt und archivieren"}</button>
+              <button type="button" className="btn-ghost" disabled={saving} onClick={() => setFinishing(false)}>Abbrechen</button>
+            </div>
+          </form>
+        ) : (
+          <button type="button" className="btn-brand mt-3" onClick={() => setFinishing(true)}>Ergebnis eintragen und abschließen</button>
+        )
       ) : null}
       {real === "owner" ? (
-        <button type="button" className="btn-ghost mt-2 px-3" onClick={() => void fbRemove(`tasks/${id}`).then(() => note("Gelöscht"))}>Löschen</button>
+        <button
+          type="button"
+          className="btn-ghost mt-3 px-3"
+          onClick={() => {
+            if (!window.confirm("Diese Aufgabe endgültig löschen?")) return;
+            void fbRemove(`tasks/${id}`).then(() => note("Aufgabe gelöscht")).catch((error) => note(error instanceof Error ? error.message : "Löschen fehlgeschlagen"));
+          }}
+        >
+          Aufgabe löschen
+        </button>
       ) : null}
     </article>
   );
@@ -286,20 +502,30 @@ function TaskCard({ id, item, real, username, note }: { id: string; item: TaskIt
 
 function TaskReply({ id, note }: { id: string; note: Note }) {
   const [reply, setReply] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function send(event: FormEvent) {
+    event.preventDefault();
+    if (!reply.trim() || saving) return;
+    setSaving(true);
+    try {
+      await fbUpdate(`tasks/${id}`, { reply: reply.trim(), updatedAt: Date.now() });
+      setReply("");
+      note("Antwort gespeichert");
+    } catch (error) {
+      note(error instanceof Error ? error.message : "Antwort konnte nicht gespeichert werden");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
-    <form
-      className="mt-2 flex gap-2"
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (!reply.trim()) return;
-        void fbUpdate(`tasks/${id}`, { reply: reply.trim(), updatedAt: Date.now() }).then(() => {
-          setReply("");
-          note("Antwort gespeichert");
-        });
-      }}
-    >
-      <input className="field" placeholder="Antwort auf die Frage" value={reply} onChange={(e) => setReply(e.target.value)} />
-      <button className="btn-ghost" type="submit">Antworten</button>
+    <form className="mt-3 space-y-2" onSubmit={(event) => void send(event)}>
+      <label className="block text-sm font-medium">
+        Antwort auf die Frage
+        <textarea className="field mt-1 min-h-20" placeholder="Nachricht ans Teammitglied" value={reply} onChange={(event) => setReply(event.target.value)} required />
+      </label>
+      <button className="btn-ghost" type="submit" disabled={saving || !reply.trim()}>{saving ? "Speichert …" : "Antwort senden"}</button>
     </form>
   );
 }
@@ -309,12 +535,23 @@ export function AbsenceBoard({ real, view, note, username }: { real: string; vie
   const people = useLive<{ role?: string }>("staffDirectory");
   const edit = can(view, "absence");
   const owner = real === "owner";
+  const today = localDateKey();
+  const teamMembers = [...new Set([...entries(people).map(([name]) => name), username])]
+    .sort((first, second) => first.localeCompare(second, "de"));
   const [who, setWho] = useState(username);
   const [from, setFrom] = useState("");
   const [until, setUntil] = useState("");
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const absenceRows = entries(rows).sort(([, first], [, second]) => {
+    const firstPast = Boolean(first.until && first.until < today);
+    const secondPast = Boolean(second.until && second.until < today);
+    if (firstPast !== secondPast) return firstPast ? 1 : -1;
+    return firstPast
+      ? (second.from || "").localeCompare(first.from || "")
+      : (first.from || "").localeCompare(second.from || "");
+  });
 
   async function saveAbsence(event: FormEvent) {
     event.preventDefault();
@@ -352,71 +589,215 @@ export function AbsenceBoard({ real, view, note, username }: { real: string; vie
   }
 
   return (
-    <section className="space-y-3">
+    <section className="space-y-4">
       {edit ? (
-        <form className="card card-still p-5" onSubmit={(event) => void saveAbsence(event)}>
-          <h2 className="text-lg font-semibold">{owner ? "Abwesenheit eintragen" : "Eigene Abwesenheit"}</h2>
+        <form className="card card-still space-y-4 p-5" onSubmit={(event) => void saveAbsence(event)}>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-brand">Teamplanung</p>
+            <h2 className="mt-1 text-lg font-semibold">{owner ? "Abwesenheit eintragen" : "Eigene Abwesenheit"}</h2>
+            <p className="mt-1 text-sm text-muted">Wähle den Zeitraum. Der Eintrag erscheint danach im Kalender.</p>
+          </div>
           {owner ? (
-            <select className="field mt-3" value={who} onChange={(e) => setWho(e.target.value)}>
-              <option value={username}>{username}</option>
-              {entries(people).map(([name]) => name === username ? null : <option key={name} value={name}>{name}</option>)}
-            </select>
+            <label className="block text-sm font-medium">
+              Für Teammitglied
+              <select className="field mt-1" value={who} onChange={(e) => setWho(e.target.value)}>
+                {teamMembers.map((name) => <option key={name} value={name}>{name}</option>)}
+              </select>
+            </label>
           ) : null}
-          <label className="mt-3 block text-sm">Von<input className="field mt-1" type="date" required value={from} onChange={(e) => setFrom(e.target.value)} /></label>
-          <label className="mt-2 block text-sm">Bis<input className="field mt-1" type="date" required value={until} onChange={(e) => setUntil(e.target.value)} /></label>
-          <input className="field mt-2" placeholder="Grund" value={reason} onChange={(e) => setReason(e.target.value)} />
-          {error ? <p className="mt-3 text-sm text-ember" role="alert">{error}</p> : null}
-          <button className="btn-brand mt-3" type="submit" disabled={saving}>{saving ? "Speichere…" : "Abwesenheit speichern"}</button>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block text-sm font-medium">
+              Von
+              <input className="field mt-1" type="date" required value={from} onChange={(e) => setFrom(e.target.value)} />
+            </label>
+            <label className="block text-sm font-medium">
+              Bis
+              <input className="field mt-1" type="date" required value={until} onChange={(e) => setUntil(e.target.value)} />
+            </label>
+          </div>
+          <label className="block text-sm font-medium">
+            Hinweis <span className="font-normal text-muted">(optional)</span>
+            <input className="field mt-1" placeholder="Zum Beispiel: Ferien oder Schule" value={reason} onChange={(e) => setReason(e.target.value)} />
+          </label>
+          {error ? <p className="text-sm text-ember" role="alert">{error}</p> : null}
+          <button className="btn-brand w-full sm:w-auto" type="submit" disabled={saving}>{saving ? "Speichere…" : "Abwesenheit speichern"}</button>
         </form>
       ) : null}
-      <AbsenceCalendar rows={entries(rows)} />
-      {entries(rows).map(([key, item]) => (
-        <article key={key} className={`card card-still p-4 text-sm${freshStamp(item.ts, item.updatedAt) ? " mark-new" : ""}`}>
-          <p className="font-semibold">{item.by}{freshStamp(item.ts, item.updatedAt) ? <span className="ml-2 rounded bg-emerald-500 px-1.5 py-0.5 text-[10px] font-bold uppercase text-black">Neu</span> : null}</p>
-          <p className="text-muted">{item.from} bis {item.until}</p>
-          <p className="text-muted">{item.reason}</p>
-          {(owner || item.by === username) && edit ? (
-            <button type="button" className="btn-ghost mt-2 px-3" onClick={() => void removeAbsence(key)}>
-              {owner ? "Löschen" : "Meine entfernen"}
-            </button>
-          ) : null}
-        </article>
-      ))}
+      <AbsenceCalendar rows={absenceRows.map(([, item]) => item)} today={today} />
+      <section className="card card-still space-y-3 p-4 sm:p-5" aria-labelledby="absence-list-heading">
+        <div>
+          <h2 id="absence-list-heading" className="text-lg font-semibold">Eingetragene Abwesenheiten</h2>
+          <p className="mt-1 text-sm text-muted">Aktuelle und geplante zuerst; vergangene Einträge bleiben zum Nachschauen erhalten.</p>
+        </div>
+        {absenceRows.length === 0 ? (
+          <p className="rounded-md border border-line p-4 text-sm text-muted">Noch keine Abwesenheiten eingetragen.</p>
+        ) : (
+          <div className="space-y-2">
+            {absenceRows.map(([key, item]) => {
+              const status = !item.from || !item.until
+                ? "Zeitraum prüfen"
+                : item.from > today
+                  ? "Geplant"
+                  : item.until < today
+                    ? "Vergangen"
+                    : "Aktuell";
+              const isNew = freshStamp(item.ts, item.updatedAt);
+              return (
+                <article key={key} className={`rounded-lg border border-line p-4${isNew ? " mark-new" : ""}`}>
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p className="font-semibold">
+                        {item.by || "Unbekannt"}
+                        {isNew ? <span className="ml-2 rounded bg-emerald-500 px-1.5 py-0.5 text-[10px] font-bold uppercase text-black">Neu</span> : null}
+                      </p>
+                      <p className="mt-1 text-sm text-muted">
+                        {formatAbsenceDate(item.from)} – {formatAbsenceDate(item.until)}
+                      </p>
+                      <p className="mt-1 text-sm">{item.reason?.trim() || "Kein Hinweis angegeben"}</p>
+                    </div>
+                    <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                      status === "Aktuell"
+                        ? "bg-emerald-500/15 text-emerald-200"
+                        : status === "Geplant"
+                          ? "bg-brand/15 text-brand"
+                          : "bg-line text-muted"
+                    }`}>
+                      {status}
+                    </span>
+                  </div>
+                  {(owner || item.by === username) && edit ? (
+                    <button type="button" className="btn-ghost mt-3 px-3" onClick={() => void removeAbsence(key)}>
+                      {owner ? "Abwesenheit löschen" : "Meine Abwesenheit entfernen"}
+                    </button>
+                  ) : null}
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
     </section>
   );
 }
 
-function AbsenceCalendar({ rows }: { rows: [string, { by?: string; from?: string; until?: string }][] }) {
+type AbsenceCalendarRow = { by?: string; from?: string; until?: string; reason?: string };
+
+function localDateKey(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function formatAbsenceDate(value?: string) {
+  if (!value) return "Datum fehlt";
+  const date = new Date(`${value}T12:00:00`);
+  return Number.isNaN(date.getTime())
+    ? value
+    : date.toLocaleDateString("de-CH", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function AbsenceCalendar({ rows, today }: { rows: AbsenceCalendarRow[]; today: string }) {
   const [cursor, setCursor] = useState(() => new Date());
+  const [selectedDate, setSelectedDate] = useState<string | null>(() => localDateKey());
   const year = cursor.getFullYear();
   const month = cursor.getMonth();
   const pad = (new Date(year, month, 1).getDay() + 6) % 7;
   const count = new Date(year, month + 1, 0).getDate();
   const cells: Array<number | null> = [...Array(pad).fill(null), ...Array.from({ length: count }, (_, index) => index + 1)];
   const label = cursor.toLocaleString("de-CH", { month: "long", year: "numeric" });
+  const selectedRows = selectedDate
+    ? rows.filter((item) => item.from && item.until && item.from <= selectedDate && selectedDate <= item.until)
+    : [];
+  const todayCursor = localDateKey(cursor) === today;
+
+  function moveMonth(offset: number) {
+    setCursor(new Date(year, month + offset, 1));
+    setSelectedDate(null);
+  }
+
+  function showCurrentMonth() {
+    const currentDate = new Date();
+    setCursor(currentDate);
+    setSelectedDate(localDateKey(currentDate));
+  }
 
   return (
-    <section className="card card-still p-4">
-      <div className="flex items-center justify-between gap-2">
-        <button type="button" className="btn-ghost px-3" onClick={() => setCursor(new Date(year, month - 1, 1))}>Zurück</button>
-        <h2 className="text-lg font-semibold capitalize">{label}</h2>
-        <button type="button" className="btn-ghost px-3" onClick={() => setCursor(new Date(year, month + 1, 1))}>Weiter</button>
+    <section className="card card-still space-y-4 p-4 sm:p-5" aria-labelledby="absence-calendar-heading">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-brand">Übersicht</p>
+          <h2 id="absence-calendar-heading" className="mt-1 text-lg font-semibold">Abwesenheitskalender</h2>
+        </div>
+        <div className="flex items-center gap-1">
+          <button type="button" className="btn-ghost px-3" aria-label="Vorheriger Monat" onClick={() => moveMonth(-1)}>←</button>
+          <div className="min-w-32 text-center">
+            <p className="font-semibold capitalize">{label}</p>
+            {!todayCursor ? (
+              <button type="button" className="text-xs text-brand underline underline-offset-2" onClick={showCurrentMonth}>
+                Zum aktuellen Monat
+              </button>
+            ) : null}
+          </div>
+          <button type="button" className="btn-ghost px-3" aria-label="Nächster Monat" onClick={() => moveMonth(1)}>→</button>
+        </div>
       </div>
-      <div className="mt-3 grid grid-cols-7 gap-1 text-xs">
+      <div className="grid grid-cols-7 gap-1.5 text-center text-xs">
         {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((day) => (
-          <p key={day} className="px-1 text-faint">{day}</p>
+          <p key={day} className="py-1 font-semibold text-faint">{day}</p>
         ))}
         {cells.map((day, index) => {
-          if (!day) return <div key={`empty-${index}`} />;
+          if (!day) return <div key={`empty-${index}`} aria-hidden="true" />;
           const key = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-          const who = rows.filter(([, item]) => item.from && item.until && item.from <= key && key <= item.until).map(([, item]) => item.by || "");
+          const names = [...new Set(rows
+            .filter((item) => item.from && item.until && item.from <= key && key <= item.until)
+            .map((item) => item.by || "Unbekannt"))];
+          const isSelected = selectedDate === key;
+          const isToday = today === key;
           return (
-            <div key={key} className={`min-h-16 rounded-md border p-1 ${who.length ? "border-brand bg-brand/10" : "border-line"}`}>
-              <p>{day}</p>
-              {who.map((person) => <p key={person} className="truncate text-brand">{person}</p>)}
-            </div>
+            <button
+              key={key}
+              type="button"
+              aria-pressed={isSelected}
+              aria-label={`${formatAbsenceDate(key)}: ${names.length ? `${names.length} abwesend: ${names.join(", ")}` : "keine Abwesenheiten"}`}
+              title={names.length ? names.join(", ") : "Keine Abwesenheiten"}
+              onClick={() => setSelectedDate(key)}
+              className={`flex min-h-16 flex-col items-center justify-start rounded-lg border p-1.5 text-center transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand sm:min-h-20 ${
+                isSelected
+                  ? "border-brand bg-brand/15 ring-1 ring-brand/40"
+                  : names.length
+                    ? "border-brand/50 bg-brand/5 hover:bg-brand/10"
+                    : "border-line hover:bg-panel"
+              }`}
+            >
+              <span className={`grid h-6 w-6 place-items-center rounded-full font-semibold ${isToday ? "bg-brand text-white" : ""}`}>{day}</span>
+              <span className={`mt-1 text-[9px] leading-tight sm:text-[10px] ${names.length ? "font-semibold text-brand" : "text-transparent"}`}>
+                {names.length ? `${names.length} abw.` : "—"}
+              </span>
+            </button>
           );
         })}
+      </div>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
+        <span><span className="mr-1.5 inline-block h-2.5 w-2.5 rounded-sm border border-brand/50 bg-brand/10 align-middle" />Abwesenheit eingetragen</span>
+        <span><span className="mr-1.5 inline-block h-2.5 w-2.5 rounded-full bg-brand align-middle" />Heute</span>
+        <span>Tag auswählen, um Details zu sehen</span>
+      </div>
+      <div className="rounded-lg border border-line bg-panel p-4" aria-live="polite">
+        <h3 className="font-semibold">
+          {selectedDate ? `Abwesenheiten am ${formatAbsenceDate(selectedDate)}` : "Tagesdetails"}
+        </h3>
+        {!selectedDate ? (
+          <p className="mt-1 text-sm text-muted">Wähle einen Tag im Kalender aus.</p>
+        ) : selectedRows.length ? (
+          <ul className="mt-2 space-y-2">
+            {selectedRows.map((item, index) => (
+              <li key={`${item.by || "staff"}-${item.from}-${index}`} className="rounded-md border border-line p-3 text-sm">
+                <p className="font-medium">{item.by || "Unbekannt"}</p>
+                <p className="mt-0.5 text-muted">{item.reason?.trim() || "Kein Hinweis angegeben"}</p>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-1 text-sm text-muted">An diesem Tag ist niemand als abwesend eingetragen.</p>
+        )}
       </div>
     </section>
   );
