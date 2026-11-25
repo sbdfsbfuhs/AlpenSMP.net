@@ -3,7 +3,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { ChevronDown, Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CautionTape, useSiteNotice } from "@/components/site/live";
-import { LiveDock, LiveHero, ServerStatusBanner } from "@/components/site/broadcast";
+import { LiveDock, ServerStatusBanner } from "@/components/site/broadcast";
 import { LockScreen } from "@/components/site/offline-run";
 import { MORE, NAV, SITE } from "@/lib/alpen/site";
 import { FooterReview } from "@/components/site/reviews";
@@ -73,7 +73,7 @@ export function Shell({ children }: { children: ReactNode }) {
       </a>
       <Header />
       <ServerStatusBanner />
-      {path === "/" ? <LiveHero /> : <LiveDock />}
+      {path === "/" ? null : <LiveDock />}
       <main id="main" className={path.startsWith("/team") ? undefined : "page-enter"}>{children}</main>
       <Footer />
       </div>

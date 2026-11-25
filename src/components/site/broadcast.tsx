@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ArrowUpRight, Play } from "lucide-react";
 import { countdown, useFbValue, type LiveStream, type ServerStatus } from "@/lib/alpen/broadcast";
 
 const STATUS_COPY: Record<string, { icon: string; fallback: string; tone: string }> = {
@@ -74,7 +75,7 @@ const PLATFORMS: Record<string, string> = {
   other: "Stream",
 };
 
-export function LiveHero() {
+export function HomeLiveCard() {
   const live = useFbValue<LiveStream>("live_streams/active");
   const [, setTick] = useState(0);
   useEffect(() => {
@@ -84,18 +85,27 @@ export function LiveHero() {
   if (!live?.is_live || !live.url) return null;
   const left = countdown(live.ends_at);
   return (
-    <section className="live-hero" aria-label="Livestream">
-      <div className="live-hero-row">
-        <p className="live-kicker">
+    <section className="home-live-card" aria-label="Community-Livestream, jetzt live">
+      <div className="home-live-card-head">
+        <p className="home-live-kicker">
           <i className="live-dot" aria-hidden="true" /> Jetzt live
         </p>
-        <p className="live-hero-name">{live.streamer_name || "Jemand"}</p>
-        <p className="live-hero-plat">{PLATFORMS[live.platform || "other"] || live.platform}{left ? ` · ${left}` : ""}</p>
-        {live.title ? <p className="live-hero-title">„{live.title}"</p> : null}
-        <a className="btn-brand live-cta" href={live.url} target="_blank" rel="noopener noreferrer">
-          ▶ Stream ansehen
-        </a>
+        <span className="home-live-platform">
+          {PLATFORMS[live.platform || "other"] || live.platform}
+          {left ? ` · ${left}` : ""}
+        </span>
       </div>
+      <div className="home-live-card-main">
+        <span className="home-live-play" aria-hidden="true"><Play className="size-5 fill-current" /></span>
+        <div className="min-w-0">
+          <p className="home-live-eyebrow">Aus der AlpenSMP-Community</p>
+          <h2 className="home-live-name">{live.streamer_name || "Ein Teammitglied"}</h2>
+          <p className="home-live-title">{live.title ? `„${live.title}“` : "Schau live beim Abenteuer zu."}</p>
+        </div>
+      </div>
+      <a className="btn-brand home-live-cta" href={live.url} target="_blank" rel="noopener noreferrer">
+        Stream ansehen <ArrowUpRight className="size-4" />
+      </a>
     </section>
   );
 }

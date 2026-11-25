@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { DiscordLink, Shell, TikTokLink } from "@/components/site/shell";
 import { ModrinthLink } from "@/components/site/guide/mods";
 import { SiteMascot } from "@/components/site/assistant";
+import { HomeLiveCard } from "@/components/site/broadcast";
 import { CopyIp, MotdNotice, PlayerChart, StatStrip, StatusCard } from "@/components/site/live";
 import { SeasonalDecorations } from "@/components/site/season-decor";
 import { FEATURES, PILLARS } from "@/lib/alpen/content";
@@ -156,6 +157,7 @@ function Home() {
             </div>
           </div>
           <div className="home-hero-live">
+            <HomeLiveCard />
             <MotdNotice />
             <StatusCard compact />
           </div>
