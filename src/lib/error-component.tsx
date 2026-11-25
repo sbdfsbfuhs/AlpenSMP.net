@@ -24,6 +24,9 @@ export function AppErrorComponent({ error }: ErrorComponentProps) {
       <p className="max-w-md text-sm break-words text-zinc-500 dark:text-zinc-400">
         {errorMessage(error)}
       </p>
+      <button className="btn-brand mt-2" type="button" onClick={() => window.location.reload()}>
+        Seite neu laden
+      </button>
     </main>
   );
 }

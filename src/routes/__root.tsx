@@ -52,7 +52,7 @@ function RootDocument() {
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "window.addEventListener('vite:preloadError',function(e){e.preventDefault();var k='alpen-chunk-reload';if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');location.reload()});window.addEventListener('unhandledrejection',function(e){var m=String(e.reason&&(e.reason.message||e.reason));if(m.indexOf('dynamically imported module')<0)return;var k='alpen-chunk-reload';if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');location.reload()});",
+              "var reloadForChunkError=function(){var k='alpen-chunk-reload-at';var last=Number(sessionStorage.getItem(k)||0);if(Date.now()-last<20000)return;sessionStorage.setItem(k,String(Date.now()));location.reload()};window.addEventListener('vite:preloadError',function(e){e.preventDefault();reloadForChunkError()});window.addEventListener('unhandledrejection',function(e){var m=String(e.reason&&(e.reason.message||e.reason));var chunkError=m.indexOf('dynamically imported module')>=0||m.indexOf('importing a module script failed')>=0||(m.indexOf('Cannot read properties of undefined')>=0&&(m.indexOf('default')>=0||m.indexOf('component')>=0));if(chunkError)reloadForChunkError()});window.addEventListener('load',function(){sessionStorage.removeItem('alpen-chunk-reload');setTimeout(function(){sessionStorage.removeItem('alpen-chunk-reload-at')},20000)},{once:true});",
           }}
         />
         <script src="/season-loader.js" />
