@@ -142,8 +142,9 @@ export type CommunityItem = {
 };
 
 type MapOf<T> = Record<string, T>;
+export type FirebaseQuery = { orderBy: string; equalTo: string };
 
-async function request(path: string, method: string, body?: unknown) {
+async function request(path: string, method: string, body?: unknown, query?: FirebaseQuery) {
   if (method === "GET" && isMoved(path)) return loadPath(path);
   if (method !== "GET" && isMoved(path)) {
     const moved = await relayDetail(path, method, body);
@@ -154,13 +155,17 @@ async function request(path: string, method: string, body?: unknown) {
       throw new SecurityDown(moved.error || "nicht erreichbar");
     throw new Error(moved.error || "Speichern abgelehnt");
   }
-  return firebaseRaw(path, method, body);
+  return firebaseRaw(path, method, body, query);
 }
 
-async function firebaseRaw(path: string, method: string, body?: unknown) {
+async function firebaseRaw(path: string, method: string, body?: unknown, query?: FirebaseQuery) {
   const token = await ensureIdToken();
   const url = new URL(`${ROOT}/${path}.json`);
   if (token) url.searchParams.set("auth", token);
+  if (query) {
+    url.searchParams.set("orderBy", JSON.stringify(query.orderBy));
+    url.searchParams.set("equalTo", JSON.stringify(query.equalTo));
+  }
   const res = await fetch(url, {
     method,
     headers: body === undefined ? undefined : { "Content-Type": "application/json" },
@@ -179,8 +184,8 @@ async function firebaseRaw(path: string, method: string, body?: unknown) {
   return res.json();
 }
 
-export function fbGet<T>(path: string): Promise<T | null> {
-  return request(path, "GET") as Promise<T | null>;
+export function fbGet<T>(path: string, query?: FirebaseQuery): Promise<T | null> {
+  return request(path, "GET", undefined, query) as Promise<T | null>;
 }
 
 export async function fbUpdate(path: string, body: unknown) {
@@ -507,10 +512,14 @@ export async function createStaffAccount(input: {
   email: string;
   role: string;
   createdBy: string;
+  actorRole: string;
 }) {
   const name = staffName(input.username);
   const email = normalizeStaffEmail(input.email);
   const role = asRole(input.role);
+  if (input.actorRole !== "owner" && !(input.actorRole === "buildmanager" && role === "builder")) {
+    throw new Error("Buildmanager dürfen nur Builder-Accounts anlegen.");
+  }
   const token = await ensureIdToken();
   if (!token) throw new Error("Bitte neu anmelden. Die Sitzung ist abgelaufen.");
   const keep = window.sessionStorage.getItem("alpen-fb-token");
@@ -595,7 +604,7 @@ export async function createStaffAccount(input: {
       `Account ist angelegt, aber der Passwort-Link konnte nicht gesendet werden: ${detail}`,
     );
   }
-  await logStaff(input.createdBy, "Account angelegt", `${name} · ${role}`);
+  await logStaff(input.createdBy, "Account angelegt", `${name} · ${role}`, name);
 }
 
 async function describeLogin(token: string) {
@@ -619,8 +628,12 @@ async function describeLogin(token: string) {
   }
 }
 
-export async function logStaff(_by: string, action: string, detail = "") {
-  await fbPush("staffLog", { action, detail: detail.slice(0, 180) });
+export async function logStaff(_by: string, action: string, detail = "", target?: string) {
+  await fbPush("staffLog", {
+    action,
+    detail: detail.slice(0, 180),
+    ...(target ? { target: staffName(target) } : {}),
+  });
 }
 
 async function writeStaffDirectory(
@@ -640,7 +653,8 @@ async function writeStaffDirectory(
   });
 }
 
-export async function setStaffRole(username: string, role: string, actor: string) {
+export async function setStaffRole(username: string, role: string, actor: string, actorRole: string) {
+  if (actorRole !== "owner") throw new Error("Nur der Owner darf Rollen ändern.");
   const name = staffName(username);
   const safeRole = asRole(role);
   const row = await fbGet<{ uid?: string; disabled?: boolean; lateDays?: number }>(
@@ -654,15 +668,18 @@ export async function setStaffRole(username: string, role: string, actor: string
     disabled: row.disabled === true,
     lateDays: lateDays(row.lateDays),
   });
-  await logStaff(actor, "Rolle geändert", `${name} · ${role}`);
+  await logStaff(actor, "Rolle geändert", `${name} · ${role}`, name);
 }
 
-export async function setStaffPaused(username: string, paused: boolean, actor: string) {
+export async function setStaffPaused(username: string, paused: boolean, actor: string, actorRole: string) {
   const name = staffName(username);
   const row = await fbGet<{ uid?: string; role?: string; lateDays?: number }>(
     `staffUsers/${name}`,
   );
   if (!row?.uid) throw new Error("Account fehlt oder ist nicht verknüpft.");
+  if (actorRole !== "owner" && !(actorRole === "buildmanager" && row.role === "builder")) {
+    throw new Error("Buildmanager dürfen nur Builder-Accounts verwalten.");
+  }
   if (paused) {
     await fbUpdate(`staffByUid/${row.uid}`, { disabled: true });
     await fbUpdate(`staffUsers/${name}`, { disabled: true });
@@ -675,7 +692,7 @@ export async function setStaffPaused(username: string, paused: boolean, actor: s
     disabled: paused,
     lateDays: lateDays(row.lateDays),
   });
-  await logStaff(actor, paused ? "Account pausiert" : "Account freigegeben", name);
+  await logStaff(actor, paused ? "Account pausiert" : "Account freigegeben", name, name);
 }
 
 export async function syncMinecraftStaffActivity() {
@@ -722,10 +739,13 @@ export async function verifyMinecraftNamePlayed(name: string) {
   return { canonicalName: result.canonicalName, indexed: result.indexed };
 }
 
-export async function resetStaffPassword(username: string, actor: string) {
+export async function resetStaffPassword(username: string, actor: string, actorRole: string) {
   const name = staffName(username);
-  const row = await fbGet<{ uid?: string; email?: string }>(`staffUsers/${name}`);
+  const row = await fbGet<{ uid?: string; email?: string; role?: string }>(`staffUsers/${name}`);
   if (!row?.uid) throw new Error("Account fehlt");
+  if (actorRole !== "owner" && !(actorRole === "buildmanager" && row.role === "builder")) {
+    throw new Error("Buildmanager dürfen nur Builder-Accounts verwalten.");
+  }
   const email = row.email?.trim();
   if (!email || email.endsWith(STAFF_MAIL))
     throw new Error(
@@ -733,10 +753,10 @@ export async function resetStaffPassword(username: string, actor: string) {
     );
   await fbRemove(`staffGate/${name}`);
   await sendPasswordResetEmail(email);
-  await logStaff(actor, "Passwort zurückgesetzt", name);
+  await logStaff(actor, "Passwort zurückgesetzt", name, name);
 }
 
-export async function setStaffEmail(username: string, value: string, actor: string) {
+export async function setStaffEmail(username: string, value: string, actor: string, actorRole: string) {
   const name = staffName(username);
   const email = normalizeStaffEmail(value);
   const row = await fbGet<{
@@ -747,10 +767,13 @@ export async function setStaffEmail(username: string, value: string, actor: stri
     mustChangePw?: boolean;
   }>(`staffUsers/${name}`);
   if (!row) throw new Error("Account fehlt");
+  if (actorRole !== "owner" && !(actorRole === "buildmanager" && row.role === "builder")) {
+    throw new Error("Buildmanager dürfen nur Builder-Accounts verwalten.");
+  }
   if (row.email?.trim().toLowerCase() === email && row.uid) {
     await fbRemove(`staffGate/${name}`);
     await sendPasswordResetEmail(email);
-    await logStaff(actor, "Passwort-Setup-Link gesendet", name);
+    await logStaff(actor, "Passwort-Setup-Link gesendet", name, name);
     return;
   }
 
@@ -831,23 +854,26 @@ export async function setStaffEmail(username: string, value: string, actor: stri
         : "E-Mail ist gespeichert, aber der Passwort-Link konnte nicht gesendet werden.",
     );
   }
-  await logStaff(actor, "E-Mail-Adresse aktualisiert", name);
+  await logStaff(actor, "E-Mail-Adresse aktualisiert", name, name);
 }
 
-export async function removeStaffAccount(username: string, actor: string) {
+export async function removeStaffAccount(username: string, actor: string, actorRole: string) {
   const name = staffName(username);
   const row = await fbGet<{ uid?: string; role?: string; lateDays?: number }>(
     `staffUsers/${name}`,
   );
+  if (actorRole !== "owner" && !(actorRole === "buildmanager" && row?.role === "builder")) {
+    throw new Error("Buildmanager dürfen nur Builder-Accounts verwalten.");
+  }
   await writeStaffDirectory(name, {
     role: asRole(row?.role),
     disabled: true,
     lateDays: lateDays(row?.lateDays),
   });
-  await fbRemove(`staffUsers/${name}`);
-  if (row?.uid) await fbUpdate(`staffByUid/${row.uid}`, { disabled: true, removed: true });
   await fbRemove(`staffGate/${name}`);
-  await logStaff(actor, "Account gelöscht", name);
+  if (row?.uid) await fbUpdate(`staffByUid/${row.uid}`, { disabled: true, removed: true });
+  await fbRemove(`staffUsers/${name}`);
+  await logStaff(actor, "Account gelöscht", name, name);
 }
 
 export async function loginStaff(

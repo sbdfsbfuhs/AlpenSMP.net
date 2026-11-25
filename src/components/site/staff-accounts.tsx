@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLive } from "@/components/site/staff-live";
 import {
   createStaffAccount,
   entries,
+  fbGet,
   fbUpdate,
   formatWhen,
   removeStaffAccount,
@@ -16,13 +17,61 @@ import {
   type StaffSession,
 } from "@/lib/alpen/staff";
 
+const BUILDER_DIRECTORY_QUERY = { orderBy: "role", equalTo: "builder" } as const;
+
+function useBuilderPresence(names: string[]) {
+  const key = names.join("\u0000");
+  const [presence, setPresence] = useState<Record<string, { lastSeen?: number }>>({});
+
+  useEffect(() => {
+    let stop = false;
+    const usernames = key ? key.split("\u0000") : [];
+    if (!usernames.length) {
+      setPresence({});
+      return () => {
+        stop = true;
+      };
+    }
+
+    void Promise.all(
+      usernames.map(async (name) => [name, await fbGet<{ lastSeen?: number }>(`presence/${name}`)] as const),
+    )
+      .then((rows) => {
+        if (!stop) setPresence(Object.fromEntries(rows.map(([name, value]) => [name, value ?? {}])));
+      })
+      .catch((error: unknown) => {
+        if (stop) return;
+        const code = "LIVE-BUILDER-PRESENCE-001";
+        console.error(`[Staff Center] ${code}: Builder-Präsenz konnte nicht geladen werden.`, error);
+        window.dispatchEvent(new CustomEvent("staff-live:error", {
+          detail: {
+            code,
+            message: error instanceof Error ? error.message : "Unbekannter Fehler",
+          },
+        }));
+      });
+
+    return () => {
+      stop = true;
+    };
+  }, [key]);
+
+  return presence;
+}
+
 export function Accounts({ note, actor }: { note: (text: string) => void; actor: StaffSession }) {
-  const users = useLive<{ role?: string; email?: string; mustChangePw?: boolean; uid?: string; disabled?: boolean; lastLogin?: number }>("staffUsers");
-  const presence = useLive<{ lastSeen?: number }>("presence");
-  const logs = useLive<{ by?: string; action?: string; detail?: string; ts?: number }>("staffLog");
-  const bans = useLive<ModItem>("bans");
-  const warns = useLive<ModItem>("warns");
-  const notes = useLive<ModItem>("notes");
+  const users = useLive<{ role?: string; email?: string; mustChangePw?: boolean; uid?: string; disabled?: boolean; lastLogin?: number }>(
+    "staffUsers",
+    true,
+    actor.role === "buildmanager" ? BUILDER_DIRECTORY_QUERY : undefined,
+  );
+  const builderPresence = useBuilderPresence(actor.role === "buildmanager" ? Object.keys(users) : []);
+  const allPresence = useLive<{ lastSeen?: number }>("presence", actor.role !== "buildmanager");
+  const presence = actor.role === "buildmanager" ? builderPresence : allPresence;
+  const logs = useLive<{ by?: string; target?: string; action?: string; detail?: string; ts?: number }>("staffLog");
+  const bans = useLive<ModItem>("bans", actor.role !== "buildmanager");
+  const warns = useLive<ModItem>("warns", actor.role !== "buildmanager");
+  const notes = useLive<ModItem>("notes", actor.role !== "buildmanager");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("helper");
@@ -87,7 +136,7 @@ export function Accounts({ note, actor }: { note: (text: string) => void; actor:
         </div>
       </section>
 
-      {actor.role === "owner" ? (
+      {actor.role === "owner" || actor.role === "buildmanager" ? (
         <section className="space-y-2" aria-label="Weitere Account-Verwaltung">
           <details className="card card-still overflow-hidden">
             <summary className="cursor-pointer p-4">
@@ -99,8 +148,13 @@ export function Accounts({ note, actor }: { note: (text: string) => void; actor:
               onSubmit={(event) => {
                 event.preventDefault();
                 setFormError("");
-                if (actor.role !== "owner") return setFormError("Nur der Owner vergibt Rollen");
-                void createStaffAccount({ username, email, role, createdBy: actor.username })
+                void createStaffAccount({
+                  username,
+                  email,
+                  role: actor.role === "buildmanager" ? "builder" : role,
+                  createdBy: actor.username,
+                  actorRole: actor.role,
+                })
                   .then(() => {
                     setUsername("");
                     setEmail("");
@@ -121,17 +175,22 @@ export function Accounts({ note, actor }: { note: (text: string) => void; actor:
                 Persönliche E-Mail-Adresse
                 <input className="field mt-1" type="email" placeholder="name@example.com" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" />
               </label>
-              <label className="block text-sm font-medium">
-                Rolle
-                <select className="field mt-1" value={role} onChange={(event) => setRole(event.target.value)}>
-                  <option value="helper">Helper</option>
-                  <option value="supporter">Supporter</option>
-                  <option value="builder">Builder</option>
-                  <option value="streamer">Streamer</option>
-                  <option value="admin">Admin</option>
-                  <option value="owner">Owner</option>
-                </select>
-              </label>
+              {actor.role === "owner" ? (
+                <label className="block text-sm font-medium">
+                  Rolle
+                  <select className="field mt-1" value={role} onChange={(event) => setRole(event.target.value)}>
+                    <option value="helper">Helper</option>
+                    <option value="supporter">Supporter</option>
+                    <option value="builder">Builder</option>
+                    <option value="buildmanager">Buildmanager</option>
+                    <option value="streamer">Streamer</option>
+                    <option value="admin">Admin</option>
+                    <option value="owner">Owner</option>
+                  </select>
+                </label>
+              ) : (
+                <p className="rounded-md border border-line p-3 text-sm text-muted">Rolle: Builder. Buildmanager können ausschließlich Builder-Konten anlegen.</p>
+              )}
               {formError ? <p className="text-sm text-ember" role="alert">{formError}</p> : null}
               <button className="btn-brand w-full sm:w-auto" type="submit">Team-Account anlegen</button>
             </form>
@@ -187,7 +246,7 @@ export function Accounts({ note, actor }: { note: (text: string) => void; actor:
               lastSeen={presence[name]?.lastSeen}
               events={[
                 ...entries(logs)
-                  .filter(([, row]) => row.by === name)
+                  .filter(([, row]) => row.by === name || row.target === name)
                   .map(([, row]) => ({ ts: row.ts || 0, text: `${row.action || "Aktion"}${row.detail ? ` · ${row.detail}` : ""}` })),
                 ...entries(bans)
                   .filter(([, row]) => row.by === name)
@@ -223,7 +282,7 @@ function StreamerAccount({ note, actor }: { note: (text: string) => void; actor:
       onSubmit={(event) => {
         event.preventDefault();
         setError("");
-        void createStaffAccount({ username, email, role: "streamer", createdBy: actor.username })
+        void createStaffAccount({ username, email, role: "streamer", createdBy: actor.username, actorRole: actor.role })
           .then(async () => {
             const name = username.trim().toLowerCase().replace(/\s+/g, "");
             try {
@@ -279,10 +338,14 @@ function AccountCard({
   const [manageOpen, setManageOpen] = useState(false);
   const [role, setRole] = useState(item.role || "helper");
   const [email, setEmail] = useState(item.email || "");
+  const canManage = !mine && (
+    actor.role === "owner" ||
+    (actor.role === "buildmanager" && item.role === "builder")
+  );
 
   async function changePausedState() {
     try {
-      await setStaffPaused(name, !item.disabled, actor.username);
+      await setStaffPaused(name, !item.disabled, actor.username, actor.role);
     } catch (error) {
       note(error instanceof Error ? error.message : "Pausenstatus konnte nicht gespeichert werden.");
       return;
@@ -298,7 +361,7 @@ function AccountCard({
   async function deleteAccount() {
     if (!window.confirm("Account löschen? Gespeicherte Bans bleiben.")) return;
     try {
-      await removeStaffAccount(name, actor.username);
+      await removeStaffAccount(name, actor.username, actor.role);
     } catch (error) {
       note(error instanceof Error ? error.message : "Löschen fehlgeschlagen.");
       return;
@@ -333,7 +396,7 @@ function AccountCard({
           >
             {open ? "Aktivität ausblenden" : "Aktivität anzeigen"}
           </button>
-          {actor.role === "owner" && !mine ? (
+          {canManage ? (
             <button
               type="button"
               className="btn-ghost"
@@ -345,29 +408,39 @@ function AccountCard({
           ) : null}
         </div>
       </div>
-      {manageOpen && actor.role === "owner" && !mine ? (
+      {manageOpen && canManage ? (
         <section className="mt-4 space-y-4 border-t border-line pt-4" aria-label={`${name} verwalten`}>
           <h4 className="font-semibold">Account bearbeiten</h4>
           <div className="grid gap-3 lg:grid-cols-2">
-            <div className="space-y-3 rounded-lg border border-line p-3">
+            {actor.role === "owner" ? (
+              <div className="space-y-3 rounded-lg border border-line p-3">
               <h5 className="font-medium">Rolle</h5>
               <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
                 <select className="field" aria-label={`Rolle für ${name}`} value={role} onChange={(event) => setRole(event.target.value)}>
                   <option value="helper">Helper</option>
                   <option value="supporter">Supporter</option>
                   <option value="builder">Builder</option>
+                  <option value="buildmanager">Buildmanager</option>
                   <option value="streamer">Streamer</option>
                   <option value="admin">Admin</option>
                   <option value="owner">Owner</option>
                 </select>
                 <button type="button" className="btn-ghost" onClick={() => {
                   if (role === "owner" && !window.confirm("Diese Person wird Owner und darf alles.")) return;
-                  void setStaffRole(name, role, actor.username).then(() => note("Rolle gespeichert")).catch((err) => note(err instanceof Error ? err.message : "Fehlgeschlagen"));
+                  void setStaffRole(name, role, actor.username, actor.role).then(async () => {
+                    try {
+                      await syncMinecraftStaffActivity();
+                      note("Rolle gespeichert; Minecraft-Zuordnung synchronisiert.");
+                    } catch (error) {
+                      note(`Rolle gespeichert, aber Minecraft-Zuordnung nicht synchronisiert: ${error instanceof Error ? error.message : "unbekannter Fehler"}`);
+                    }
+                  }).catch((err) => note(err instanceof Error ? err.message : "Fehlgeschlagen"));
                 }}>
                   Rolle speichern
                 </button>
               </div>
             </div>
+            ) : null}
             <div className="space-y-3 rounded-lg border border-line p-3">
               <h5 className="font-medium">E-Mail und Zugang</h5>
               <label className="block text-sm font-medium">
@@ -378,7 +451,7 @@ function AccountCard({
                 type="button"
                 className="btn-ghost w-full"
                 onClick={() =>
-                  void setStaffEmail(name, email, actor.username)
+                  void setStaffEmail(name, email, actor.username, actor.role)
                     .then(() => {
                       note(email.trim().toLowerCase() === item.email?.trim().toLowerCase() ? "Passwort-Link gesendet" : "E-Mail gespeichert. Passwort-Link wurde gesendet.");
                     })
@@ -388,7 +461,7 @@ function AccountCard({
                 E-Mail speichern und Passwort-Link senden
               </button>
               {item.email ? (
-                <button type="button" className="btn-ghost w-full" onClick={() => void resetStaffPassword(name, actor.username).then(() => note("Falls die Adresse zum Account gehört, wurde ein Passwort-Link gesendet.")).catch((err) => note(err instanceof Error ? err.message : "Passwort-Link konnte nicht gesendet werden"))}>
+                <button type="button" className="btn-ghost w-full" onClick={() => void resetStaffPassword(name, actor.username, actor.role).then(() => note("Falls die Adresse zum Account gehört, wurde ein Passwort-Link gesendet.")).catch((err) => note(err instanceof Error ? err.message : "Passwort-Link konnte nicht gesendet werden"))}>
                   Passwort-Link erneut senden
                 </button>
               ) : null}

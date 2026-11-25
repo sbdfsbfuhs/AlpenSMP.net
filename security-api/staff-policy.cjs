@@ -1,9 +1,30 @@
-const STAFF_ROLES = new Set(["owner", "admin", "helper", "supporter", "builder", "streamer"]);
+const STAFF_ROLES = new Set(["owner", "admin", "helper", "supporter", "buildmanager", "builder", "streamer"]);
 const STAFF_NAME = /^[a-z0-9._-]{2,24}$/;
 
 function canAccessStaffLog(method, role) {
-  if (method === "GET") return role === "owner";
+  if (method === "GET") return role === "owner" || role === "buildmanager";
   return method === "POST" && STAFF_ROLES.has(role);
+}
+
+function filterBuilderEntries(value, usernames, fields) {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return {};
+  const allowed = usernames instanceof Set ? usernames : new Set(usernames);
+  return Object.fromEntries(
+    Object.entries(value).filter(([, entry]) =>
+      entry !== null &&
+      typeof entry === "object" &&
+      !Array.isArray(entry) &&
+      fields.some((field) => allowed.has(entry[field])),
+    ),
+  );
+}
+
+function filterBuilderStaffLog(value, usernames) {
+  return filterBuilderEntries(value, usernames, ["by", "target"]);
+}
+
+function filterBuilderAbsences(value, usernames) {
+  return filterBuilderEntries(value, usernames, ["by"]);
 }
 
 function isActiveStaffIdentity(mapping, profile, uid) {
@@ -30,4 +51,9 @@ function isActiveStaffIdentity(mapping, profile, uid) {
   );
 }
 
-module.exports = { canAccessStaffLog, isActiveStaffIdentity };
+module.exports = {
+  canAccessStaffLog,
+  filterBuilderAbsences,
+  filterBuilderStaffLog,
+  isActiveStaffIdentity,
+};

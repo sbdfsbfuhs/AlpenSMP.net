@@ -6,6 +6,7 @@ import { useLive } from "@/components/site/staff-live";
 import { entries, fbGet, fbPush, fbRemove, fbSet, fbUpdate, formatWhen, freshStamp } from "@/lib/alpen/staff";
 
 type Note = (text: string) => void;
+const BUILDER_DIRECTORY_QUERY = { orderBy: "role", equalTo: "builder" } as const;
 
 function guard(real: string, area: Area, note: Note) {
   if (can(real, area)) return true;
@@ -532,7 +533,11 @@ function TaskReply({ id, note }: { id: string; note: Note }) {
 
 export function AbsenceBoard({ real, view, note, username }: { real: string; view: string; note: Note; username: string }) {
   const rows = useLive<{ by?: string; from?: string; until?: string; reason?: string; ts?: number; updatedAt?: number }>("absences");
-  const people = useLive<{ role?: string }>("staffDirectory");
+  const people = useLive<{ role?: string }>(
+    "staffDirectory",
+    true,
+    real === "builder" || real === "buildmanager" ? BUILDER_DIRECTORY_QUERY : undefined,
+  );
   const edit = can(view, "absence");
   const owner = real === "owner";
   const today = localDateKey();

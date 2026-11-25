@@ -239,6 +239,44 @@ test("staff log identity and timestamp come from the server actor", () => {
   );
 });
 
+test("buildmanager staff logs require a valid target account", () => {
+  assert.deepEqual(
+    policy.createStaffLogEntry(
+      { action: "Account angelegt", detail: "builderone · builder", target: "BuilderOne" },
+      { username: "manager", role: "buildmanager" },
+      900,
+    ),
+    {
+      by: "manager",
+      action: "Account angelegt",
+      detail: "builderone · builder",
+      target: "builderone",
+      ts: 900,
+    },
+  );
+  assert.throws(
+    () => policy.createStaffLogEntry(
+      { action: "Account gelöscht" },
+      { username: "manager", role: "buildmanager" },
+    ),
+    /invalid_staff_log/,
+  );
+  assert.throws(
+    () => policy.createStaffLogEntry(
+      { action: "Ban", target: "builder" },
+      { username: "manager", role: "buildmanager" },
+    ),
+    /invalid_staff_log/,
+  );
+  assert.throws(
+    () => policy.createStaffLogEntry(
+      { action: "Login", target: "builder" },
+      { username: "manager", role: "buildmanager" },
+    ),
+    /invalid_staff_log/,
+  );
+});
+
 test("staff log actions are restricted to roles that can perform them", () => {
   assert.doesNotThrow(() =>
     policy.createStaffLogEntry(

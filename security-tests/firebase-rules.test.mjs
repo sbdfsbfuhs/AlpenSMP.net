@@ -6,7 +6,7 @@ import {
   assertSucceeds,
   initializeTestEnvironment,
 } from "@firebase/rules-unit-testing";
-import { get, ref, remove, set, update } from "firebase/database";
+import { equalTo, get, orderByChild, query, ref, remove, set, update } from "firebase/database";
 
 const projectId = "demo-alpensmp-security";
 let environment;
@@ -33,6 +33,8 @@ before(async () => {
         "admin-uid": { username: "admin", role: "admin", disabled: false, email: "admin@example.test" },
         "helper-uid": { username: "helper", role: "helper", disabled: false, email: "helper@example.test" },
         "builder-uid": { username: "builder", role: "builder", disabled: false, email: "builder@example.test" },
+        "buildmanager-uid": { username: "buildmanager", role: "buildmanager", disabled: false, email: "buildmanager@example.test" },
+        "builder-two-uid": { username: "buildertwo", role: "builder", disabled: false, email: "builder-two@example.test" },
         "paused-owner-uid": { username: "pausedowner", role: "owner", disabled: true, email: "paused@example.test" },
         "paused-helper-uid": { username: "pausedhelper", role: "helper", disabled: true, email: "paused-helper@example.test" },
         "streamer-uid": { username: "streamer", role: "streamer", disabled: false, email: "streamer@example.test" },
@@ -45,6 +47,8 @@ before(async () => {
         admin: { uid: "admin-uid", role: "admin", disabled: false, email: "admin@example.test", activityConsent },
         helper: { uid: "helper-uid", role: "helper", disabled: false, email: "helper@example.test", activityConsent },
         builder: { uid: "builder-uid", role: "builder", disabled: false, email: "builder@example.test", activityConsent },
+        buildmanager: { uid: "buildmanager-uid", role: "buildmanager", disabled: false, email: "buildmanager@example.test", activityConsent },
+        buildertwo: { uid: "builder-two-uid", role: "builder", disabled: false, email: "builder-two@example.test", activityConsent },
         pausedowner: { uid: "paused-owner-uid", role: "owner", disabled: true, email: "paused@example.test" },
         pausedhelper: { uid: "paused-helper-uid", role: "helper", disabled: true, email: "paused-helper@example.test" },
         streamer: { uid: "streamer-uid", role: "streamer", disabled: false, email: "streamer@example.test", activityConsent },
@@ -55,15 +59,28 @@ before(async () => {
       minecraftKnownPlayers: { TestPlayer: true },
       staffDirectory: {
         owner: { role: "owner", disabled: false, lateDays: 3 },
+        admin: { role: "admin", disabled: false, lateDays: 3 },
         helper: { role: "helper", disabled: false, lateDays: 3 },
+        builder: { role: "builder", disabled: false, lateDays: 3 },
+        buildertwo: { role: "builder", disabled: false, lateDays: 3 },
+        buildmanager: { role: "buildmanager", disabled: false, lateDays: 3 },
       },
       staffOpen: {
         owner: { open: true, role: "owner" },
         helper: { open: true, role: "owner" },
       },
-      staffGate: { owner: { open: true }, helper: { open: true } },
+      staffGate: {
+        owner: { open: true },
+        helper: { open: true },
+        builder: { open: true },
+        buildertwo: { open: true },
+      },
       staffLog: {},
-      presence: {},
+      presence: {
+        admin: { lastSeen: 200 },
+        builder: { lastSeen: 100 },
+        buildertwo: { lastSeen: 110 },
+      },
     });
   });
 });
@@ -207,6 +224,112 @@ test("only an active owner can maintain staff accounts and the sanitized directo
   );
 });
 
+test("buildmanager access is limited to queried Builder accounts and Builder management", async () => {
+  const manager = db("buildmanager-uid");
+  const builderQuery = query(ref(manager, "staffUsers"), orderByChild("role"), equalTo("builder"));
+  const builderUsers = await assertSucceeds(get(builderQuery));
+  assert.deepEqual(Object.keys(builderUsers.val()).sort(), ["builder", "buildertwo"]);
+  assert.equal(builderUsers.child("builder/email").val(), "builder@example.test");
+  const builderMappings = await assertSucceeds(get(
+    query(ref(manager, "staffByUid"), orderByChild("role"), equalTo("builder")),
+  ));
+  assert.deepEqual(Object.keys(builderMappings.val()).sort(), ["builder-two-uid", "builder-uid"]);
+  await assertFails(get(ref(manager, "staffLog")));
+  await assertFails(get(ref(manager, "staffUsers")));
+  await assertFails(get(ref(manager, "staffUsers/admin")));
+  await assertFails(get(ref(manager, "staffUsers/owner")));
+  await assertSucceeds(get(ref(manager, "staffUsers/builder")));
+  await assertSucceeds(get(ref(manager, "staffByUid/builder-uid")));
+  await assertFails(get(ref(manager, "staffByUid/admin-uid")));
+  await assertFails(get(ref(manager, "staffByUid")));
+  await assertFails(get(ref(manager, "staffGate/builder")));
+  await assertSucceeds(remove(ref(manager, "staffGate/builder")));
+  await assertFails(set(ref(manager, "staffGate/builder"), { open: true }));
+  await assertFails(remove(ref(manager, "staffGate/admin")));
+
+  const builderDirectoryQuery = query(
+    ref(manager, "staffDirectory"),
+    orderByChild("role"),
+    equalTo("builder"),
+  );
+  const directory = await assertSucceeds(get(builderDirectoryQuery));
+  assert.deepEqual(Object.keys(directory.val()).sort(), ["builder", "buildertwo"]);
+  await assertFails(get(ref(manager, "staffDirectory")));
+  await assertSucceeds(get(ref(manager, "staffDirectory/builder")));
+  await assertFails(get(ref(manager, "staffDirectory/admin")));
+
+  await assertSucceeds(update(ref(manager, "staffUsers/builder"), { email: "updated@example.test" }));
+  await assertFails(update(ref(manager, "staffUsers/builder"), { role: "admin" }));
+  await assertFails(update(ref(manager, "staffUsers/builder"), {
+    activityConsent: { ...activityConsent, acceptedAt: 1_800_000_000_001 },
+  }));
+  await assertFails(update(ref(manager, "staffUsers/admin"), { disabled: true }));
+  await assertSucceeds(update(ref(manager, "staffByUid/builder-uid"), { email: "updated@example.test" }));
+  await assertFails(update(ref(manager, "staffByUid/builder-uid"), { role: "admin" }));
+  await assertSucceeds(update(ref(manager, "staffDirectory/builder"), { disabled: true }));
+  await assertFails(update(ref(manager, "staffDirectory/admin"), { disabled: true }));
+
+  await assertSucceeds(set(ref(manager, "staffByUid/newbuilder-uid"), {
+    username: "newbuilder",
+    email: "newbuilder@example.test",
+    role: "builder",
+    disabled: false,
+  }));
+  await assertSucceeds(set(ref(manager, "staffUsers/newbuilder"), {
+    uid: "newbuilder-uid",
+    email: "newbuilder@example.test",
+    role: "builder",
+    disabled: false,
+  }));
+  await assertSucceeds(set(ref(manager, "staffDirectory/newbuilder"), {
+    role: "builder",
+    disabled: false,
+    lateDays: 3,
+  }));
+  await assertFails(set(ref(manager, "staffUsers/escalated"), {
+    uid: "escalated-uid",
+    email: "escalated@example.test",
+    role: "admin",
+    disabled: false,
+  }));
+  await assertSucceeds(update(ref(manager, "staffDirectory/buildertwo"), { disabled: true }));
+  await assertSucceeds(remove(ref(manager, "staffGate/buildertwo")));
+  await assertSucceeds(update(ref(manager, "staffByUid/builder-two-uid"), { disabled: true, removed: true }));
+  await assertSucceeds(remove(ref(manager, "staffUsers/buildertwo")));
+  await environment.withSecurityRulesDisabled(async (context) => {
+    await remove(ref(context.database(), "staffByUid/newbuilder-uid"));
+    await remove(ref(context.database(), "staffUsers/newbuilder"));
+    await remove(ref(context.database(), "staffDirectory/newbuilder"));
+    await update(ref(context.database(), "staffUsers/builder"), { email: "builder@example.test" });
+    await update(ref(context.database(), "staffByUid/builder-uid"), { email: "builder@example.test" });
+    await update(ref(context.database(), "staffDirectory/builder"), { disabled: false });
+    await set(ref(context.database(), "staffUsers/buildertwo"), {
+      uid: "builder-two-uid",
+      email: "builder-two@example.test",
+      role: "builder",
+      disabled: false,
+      activityConsent,
+    });
+    await set(ref(context.database(), "staffByUid/builder-two-uid"), {
+      username: "buildertwo",
+      role: "builder",
+      disabled: false,
+      email: "builder-two@example.test",
+    });
+    await set(ref(context.database(), "staffDirectory/buildertwo"), {
+      role: "builder",
+      disabled: false,
+      lateDays: 3,
+    });
+    await set(ref(context.database(), "staffGate/buildertwo"), { open: true });
+    await update(ref(context.database(), "staffUsers/buildmanager"), { role: "builder" });
+  });
+  await assertFails(get(builderQuery));
+  await environment.withSecurityRulesDisabled(async (context) => {
+    await update(ref(context.database(), "staffUsers/buildmanager"), { role: "buildmanager" });
+  });
+});
+
 test("owner bootstrap is limited to a pre-provisioned active owner identity", async () => {
   const originalOwner = {
     uid: "owner-uid",
@@ -285,6 +408,10 @@ test("presence is writable only by the staff member whose username owns the reco
   const owner = db("owner-uid");
   await assertSucceeds(set(ref(owner, "presence/owner"), { lastSeen: 200 }));
   await assertFails(set(ref(owner, "presence/helper"), { lastSeen: 200 }));
+  const manager = db("buildmanager-uid");
+  await assertFails(get(ref(manager, "presence")));
+  assert.equal((await assertSucceeds(get(ref(manager, "presence/builder")))).child("lastSeen").val(), 100);
+  await assertFails(get(ref(manager, "presence/admin")));
 });
 
 test("staff can change only their own public profile fields", async () => {
@@ -330,11 +457,25 @@ test("staff chat authors must match the authenticated staff identity", async () 
   );
 
   const builder = db("builder-uid");
+  await assertFails(get(ref(builder, "chats/team")));
+  await assertFails(get(ref(builder, "staffUsers")));
+  await assertFails(get(ref(builder, "staffDirectory")));
   await assertSucceeds(
     set(ref(builder, "chats/builder/builder-message"), { by: "builder", text: "Hallo" }),
   );
   await assertFails(
+    set(ref(builder, "chats/team/builder-message"), { by: "builder", text: "Nicht erlaubt" }),
+  );
+  await assertFails(
     set(ref(builder, "chats/builder/forged-message"), { by: "owner", text: "Gefälscht" }),
+  );
+
+  const manager = db("buildmanager-uid");
+  await assertFails(
+    set(ref(manager, "chats/team/manager-message"), { by: "buildmanager", text: "Nicht erlaubt" }),
+  );
+  await assertSucceeds(
+    set(ref(manager, "chats/builder/manager-message"), { by: "buildmanager", text: "Hallo" }),
   );
   await assertFails(
     set(ref(db("paused-helper-uid"), "chats/team/paused-message"), {

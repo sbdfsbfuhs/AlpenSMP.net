@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { isMoved } from "@/lib/alpen/security";
 import { normalizeTicketCode } from "@/lib/alpen/ticket-access";
-import { fbGet, fbRemove, fbUpdate, type StaffSession } from "@/lib/alpen/staff";
+import { fbGet, fbRemove, fbUpdate, type FirebaseQuery, type StaffSession } from "@/lib/alpen/staff";
 
 const liveFailurePaths = new Set<string>();
 
@@ -10,7 +10,9 @@ function liveErrorCode(path: string) {
   return `LIVE-${slug || "DATA"}-001`;
 }
 
-export function useLive<T>(path: string, enabled = true) {
+export function useLive<T>(path: string, enabled = true, query?: FirebaseQuery) {
+  const orderBy = query?.orderBy;
+  const equalTo = query?.equalTo;
   const [data, setData] = useState<Record<string, T>>({});
   useEffect(() => {
     if (!enabled) {
@@ -21,7 +23,7 @@ export function useLive<T>(path: string, enabled = true) {
     const wait = isMoved(path) ? 8000 : 30000;
     const pull = () => {
       if (document.hidden) return;
-      fbGet<Record<string, T>>(path)
+      fbGet<Record<string, T>>(path, orderBy && equalTo ? { orderBy, equalTo } : undefined)
         .then((value) => {
           if (stop) return;
           setData(value ?? {});
@@ -53,7 +55,7 @@ export function useLive<T>(path: string, enabled = true) {
       window.clearInterval(id);
       document.removeEventListener("visibilitychange", onShow);
     };
-  }, [path, enabled]);
+  }, [path, enabled, orderBy, equalTo]);
   return data;
 }
 

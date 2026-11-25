@@ -1,4 +1,4 @@
-export const ROLES = ["owner", "admin", "helper", "supporter", "builder", "streamer"] as const;
+export const ROLES = ["owner", "admin", "helper", "supporter", "buildmanager", "builder", "streamer"] as const;
 export type Role = (typeof ROLES)[number];
 
 export type Area =
@@ -137,7 +137,8 @@ const MAP: Record<Role, Area[]> = {
     "chat",
     "search",
   ],
-  builder: ["guide", "tasks", "absence", "settings", "roster", "chat", "builderChat", "search"],
+  buildmanager: ["absence", "roles", "settings", "chat", "builderChat"],
+  builder: ["absence", "settings", "chat", "builderChat"],
   streamer: ["stream"],
 };
 
@@ -147,6 +148,7 @@ export function asRole(value: string | undefined): Role {
     value === "admin" ||
     value === "helper" ||
     value === "supporter" ||
+    value === "buildmanager" ||
     value === "builder" ||
     value === "streamer"
   ) {

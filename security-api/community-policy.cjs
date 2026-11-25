@@ -34,14 +34,14 @@ const MODERATION_STAFF_LOG_ACTIONS = new Set([
   "Minecraft-Bann",
   "Minecraft-Entbann",
 ]);
-const STAFF_LOG_ROLES = new Set(["owner", "admin", "helper", "supporter", "builder", "streamer"]);
+const STAFF_LOG_ROLES = new Set(["owner", "admin", "helper", "supporter", "buildmanager", "builder", "streamer"]);
 const MODERATION_STAFF_LOG_ROLES = new Set(["owner", "admin", "helper"]);
 const NOTE_STAFF_LOG_ROLES = new Set(["owner", "admin", "helper", "supporter"]);
 
 function canWriteStaffLogAction(action, role) {
   if (!STAFF_LOG_ACTIONS.has(action)) return false;
   if (role === "owner") return true;
-  if (OWNER_ONLY_STAFF_LOG_ACTIONS.has(action)) return false;
+  if (OWNER_ONLY_STAFF_LOG_ACTIONS.has(action)) return role === "buildmanager";
   if (action === "Login") return STAFF_LOG_ROLES.has(role);
   if (action === "Notiz") return NOTE_STAFF_LOG_ROLES.has(role);
   return MODERATION_STAFF_LOG_ACTIONS.has(action) && MODERATION_STAFF_LOG_ROLES.has(role);
@@ -198,12 +198,16 @@ function moderateCommunityItem(root, current, body, actor, now = Date.now()) {
 function createStaffLogEntry(body, actor, now = Date.now()) {
   if (
     !isRecord(body) ||
-    Object.keys(body).some((key) => key !== "action" && key !== "detail") ||
+    Object.keys(body).some((key) => !["action", "detail", "target"].includes(key)) ||
     typeof body.action !== "string" ||
     !canWriteStaffLogAction(body.action, actor?.role) ||
     body.action.length > 80 ||
     (body.detail !== undefined && typeof body.detail !== "string") ||
     (typeof body.detail === "string" && body.detail.length > 180) ||
+    (body.target !== undefined && (typeof body.target !== "string" || !/^[a-z0-9._-]{2,24}$/i.test(body.target))) ||
+    (body.target !== undefined && !["owner", "buildmanager"].includes(actor?.role)) ||
+    (actor?.role === "buildmanager" && body.target !== undefined && !OWNER_ONLY_STAFF_LOG_ACTIONS.has(body.action)) ||
+    (actor?.role === "buildmanager" && OWNER_ONLY_STAFF_LOG_ACTIONS.has(body.action) && typeof body.target !== "string") ||
     !actor ||
     actor.disabled === true ||
     typeof actor.username !== "string" ||
@@ -215,6 +219,7 @@ function createStaffLogEntry(body, actor, now = Date.now()) {
     by: actor.username,
     action: body.action.trim(),
     detail: typeof body.detail === "string" ? body.detail : "",
+    ...(typeof body.target === "string" ? { target: body.target.toLowerCase() } : {}),
     ts: now,
   };
 }

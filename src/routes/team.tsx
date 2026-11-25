@@ -802,8 +802,8 @@ function Desk({
 
   const showChat = can(shown, "chat") && can(real, "chat");
   const dockChat = showChat;
-  const seeTeamChat = showChat && shown !== "builder";
-  const seeBuilderChat = showChat && (shown === "builder" || shown === "owner" || shown === "admin" || shown === "helper" || shown === "supporter");
+  const seeTeamChat = showChat && shown !== "builder" && shown !== "buildmanager";
+  const seeBuilderChat = showChat && (shown === "builder" || shown === "buildmanager" || shown === "owner" || shown === "admin" || shown === "helper" || shown === "supporter");
 
   function layoutItems(list: keyof StaffLayout) {
     const ids = staffLayout[list].filter((id) => tabs.some((item) => item.id === id));
