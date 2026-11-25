@@ -246,7 +246,7 @@ function StaffPage() {
         wide
         kicker="Nur fürs Team"
         title="Staff-Center"
-        lede="Moderation zuerst. Team und Abwesenheiten sind direkt erreichbar; alle weiteren Werkzeuge bleiben unter „Weitere Bereiche“."
+        lede="Lege häufig genutzte Bereiche in deinen Schnellzugriff. Alle weiteren Werkzeuge findest du sortiert unter „Weitere Bereiche“."
       />
       <SiteMascot home="team" bias="sit" align="end" line="Öffentliche Fragen beantworte ich auf den anderen Seiten." />
       <div className="shell-staff py-10">
