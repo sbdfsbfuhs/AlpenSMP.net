@@ -346,7 +346,6 @@ function ModForm({
           </ul>
         ) : null}
       </div>
-      <p className="mt-1 text-xs text-faint">Vorschläge aus Spielerliste, aktiven Banns und bisherigen Moderationseinträgen.</p>
       {bansNeedingReason.length ? (
         <section className="mt-4 rounded-lg border border-amber-500/30 bg-amber-950/15 p-3" aria-labelledby="bans-needing-reason-title">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -375,9 +374,6 @@ function ModForm({
             ? `${hasMinecraftBanReason(selectedBan.reason) ? "Aktiver Ingame-Bann gefunden." : "Aktiver Ingame-Bann gefunden – bitte einen konkreten Grund ergänzen."} Ohne neue Dauer änderst du nur den Staff-Center-Grund. ${selectedBanPermanent ? "Ein permanenter Bann hat keine Laufzeit, die verlängert werden kann." : "Eine eingetragene Restdauer verlängert den Bann ab jetzt und muss über dem bisherigen Ablaufdatum liegen."}`
             : "Noch nicht ingame gebannt – beim Eintragen kannst du den Ingame-Bann bestätigen. Dein Staffname wird im Minecraft-Banngrund ergänzt; als Quelle zeigt Minecraft weiterhin Console (RCON)."}
         </p>
-      ) : null}
-      {path === "bans" && !selectedBan && !hasMinecraftBanReason(displayedReason) ? (
-        <p className="mt-2 text-xs text-muted">Bei einem Bann über die Website wird dein angemeldeter Staffname automatisch im Minecraft-Grund vermerkt. Minecraft führt den RCON-Befehl technisch weiterhin als Console.</p>
       ) : null}
       <label className="mt-3 block text-sm font-medium">
         {path === "bans" ? "Konkreter Grund" : "Grund der Verwarnung"}
@@ -610,17 +606,65 @@ function List({
           const perm = path === "bans" && isPermanentBan(item) && !item.archived;
           const waiting = Boolean(perm && item.pending);
           const banName = item.name || "";
+          const expiry = item.endsAt
+            ? formatWhen(item.endsAt)
+            : item.duration && !/^(?:perm|permanent|∞)$/i.test(item.duration.trim())
+              ? item.duration.replace(/^bis\s+/i, "")
+              : "";
+          const expiryLabel = item.endsAt || /^bis\s+/i.test(item.duration || "") ? "Endet" : "Dauer";
           return (
           <li key={key} className={`cmd-in rounded-md border bg-bg px-3 py-2 text-sm${perm && !waiting ? " border-red-500 bg-red-950/40" : waiting ? " border-amber-500" : freshStamp(item.ts, item.updatedAt) ? " mark-new border-line" : " border-line"}`}>
             <p className={`font-semibold${perm && !waiting ? " text-red-200" : ""}`}>{notes ? item.name || item.text : item.name}<Neu ts={item.ts} updatedAt={item.updatedAt} /></p>
             {!notes ? <p className="text-muted">{item.reason}</p> : <p className="text-muted">{item.text}</p>}
-            <p className="text-xs text-faint">
-              {timed && !waiting ? formatRemaining(item.endsAt) : ""} {item.duration ? `· ${item.duration}` : ""} · Erfasst von {item.by || "unbekannt"} · {formatWhen(item.ts)}
-              {item.minecraftSource ? ` · Minecraft-Quelle: ${item.minecraftSource}` : ""}
-              {item.reasonAddedBy ? ` · Grund zuletzt aktualisiert von ${item.reasonAddedBy}` : ""}
-              {item.unbannedBy ? ` · Entbannt von ${item.unbannedBy} am ${formatWhen(item.unbannedAt)}` : ""}
-              {item.pendingMinecraftSync ? " · Minecraft-Abgleich ausstehend" : ""}
-            </p>
+            {path === "bans" ? (
+              <>
+                <dl className="mt-2 grid grid-cols-1 gap-x-4 gap-y-2 text-xs sm:grid-cols-2">
+                  {timed && !waiting ? (
+                    <div className="min-w-0">
+                      <dt className="font-medium text-muted">Restzeit</dt>
+                      <dd className="font-semibold text-faint">{formatRemaining(item.endsAt)}</dd>
+                    </div>
+                  ) : null}
+                  {expiry ? (
+                    <div className="min-w-0">
+                      <dt className="font-medium text-muted">{expiryLabel}</dt>
+                      <dd className="text-faint">{expiry}</dd>
+                    </div>
+                  ) : null}
+                  <div className="min-w-0">
+                    <dt className="font-medium text-muted">Erfasst</dt>
+                    <dd className="text-faint">{item.by || "unbekannt"} · {formatWhen(item.ts)}</dd>
+                  </div>
+                  {item.minecraftSource ? (
+                    <div className="min-w-0">
+                      <dt className="font-medium text-muted">Minecraft-Quelle</dt>
+                      <dd className="text-faint">{item.minecraftSource}</dd>
+                    </div>
+                  ) : null}
+                  {item.reasonAddedBy ? (
+                    <div className="min-w-0">
+                      <dt className="font-medium text-muted">Grund geändert von</dt>
+                      <dd className="text-faint">{item.reasonAddedBy}</dd>
+                    </div>
+                  ) : null}
+                  {item.unbannedBy ? (
+                    <div className="min-w-0">
+                      <dt className="font-medium text-muted">Entbannt</dt>
+                      <dd className="text-faint">{item.unbannedBy} · {formatWhen(item.unbannedAt)}</dd>
+                    </div>
+                  ) : null}
+                </dl>
+                {item.pendingMinecraftSync ? <p className="mt-2 text-xs font-medium text-amber-300">Minecraft-Abgleich ausstehend</p> : null}
+              </>
+            ) : (
+              <p className="text-xs text-faint">
+                {timed ? formatRemaining(item.endsAt) : ""} {item.duration ? `· ${item.duration}` : ""} · Erfasst von {item.by || "unbekannt"} · {formatWhen(item.ts)}
+                {item.minecraftSource ? ` · Minecraft-Quelle: ${item.minecraftSource}` : ""}
+                {item.reasonAddedBy ? ` · Grund zuletzt aktualisiert von ${item.reasonAddedBy}` : ""}
+                {item.unbannedBy ? ` · Entbannt von ${item.unbannedBy} am ${formatWhen(item.unbannedAt)}` : ""}
+                {item.pendingMinecraftSync ? " · Minecraft-Abgleich ausstehend" : ""}
+              </p>
+            )}
             {editingReasonKey === key ? (
               <div className="mt-3 space-y-2 rounded-md border border-line p-3">
                 <label className="block text-xs font-medium">
