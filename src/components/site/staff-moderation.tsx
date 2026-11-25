@@ -372,7 +372,7 @@ function ModForm({
         <p className="mt-2 text-sm text-muted">
           {selectedBan
             ? `${hasMinecraftBanReason(selectedBan.reason) ? "Aktiver Ingame-Bann gefunden." : "Aktiver Ingame-Bann gefunden – bitte einen konkreten Grund ergänzen."} Ohne neue Dauer änderst du nur den Staff-Center-Grund. ${selectedBanPermanent ? "Ein permanenter Bann hat keine Laufzeit, die verlängert werden kann." : "Eine eingetragene Restdauer verlängert den Bann ab jetzt und muss über dem bisherigen Ablaufdatum liegen."}`
-            : "Noch nicht ingame gebannt – beim Eintragen kannst du den Ingame-Bann bestätigen. Dein Staffname wird im Minecraft-Banngrund ergänzt; als Quelle zeigt Minecraft weiterhin Console (RCON)."}
+            : "Noch nicht ingame gebannt – vor dem Eintragen erscheint eine Bestätigung."}
         </p>
       ) : null}
       <label className="mt-3 block text-sm font-medium">
