@@ -116,10 +116,10 @@ type TabArea =
   | "console";
 
 const TABS: { id: Tab; label: string; group: TabGroup; area: TabArea }[] = [
-  { id: "moderation", label: "Moderation", group: "Moderation & Support", area: "moderation" },
   { id: "roster", label: "Team", group: "Team", area: "roster" },
   { id: "absence", label: "Abwesenheit", group: "Team", area: "absence" },
   { id: "tasks", label: "Aufgaben", group: "Team", area: "tasks" },
+  { id: "moderation", label: "Moderation", group: "Moderation & Support", area: "moderation" },
   { id: "help", label: "Support-Anfragen", group: "Moderation & Support", area: "help" },
   { id: "community", label: "Community", group: "Moderation & Support", area: "community" },
   { id: "ban", label: "Ban-Leitfaden", group: "Moderation & Support", area: "banGuide" },
@@ -135,6 +135,12 @@ const TABS: { id: Tab; label: string; group: TabGroup; area: TabArea }[] = [
   { id: "settings", label: "Mein Konto", group: "Verwaltung", area: "settings" },
   { id: "website", label: "Website", group: "Verwaltung", area: "website" },
   { id: "users", label: "Accounts", group: "Verwaltung", area: "roles" },
+];
+const TAB_GROUP_ORDER: TabGroup[] = [
+  "Team",
+  "Moderation & Support",
+  "Inhalte & Kommunikation",
+  "Verwaltung",
 ];
 
 const DEFAULT_LAYOUT = normalizeStaffLayout(
@@ -690,7 +696,9 @@ function Desk({
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-  const otherGroups = [...new Set(otherTabs.map((item) => item.group))];
+  const otherGroups = TAB_GROUP_ORDER.filter((group) =>
+    otherTabs.some((item) => item.group === group),
+  );
   const helpRows = useLive<ModItem>("helpRequests");
   const absenceRows = useLive<ModItem>("absences");
   const canReadCommunity = can(shown, "community") && can(real, "community");
@@ -854,31 +862,36 @@ function Desk({
         </div>
       </section>
       {real === "owner" ? (
-        <div className="mt-4 flex flex-col gap-3 rounded-md border border-line/70 bg-surface/60 p-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-semibold text-fg">Rollen-Vorschau</p>
-            <p className="text-xs text-muted">Nur für dich – deine echte Rolle bleibt unverändert. {previewing ? `Vorschau als ${roleLabel(shown)}, schreibgeschützt.` : ""}</p>
+        <details className="staff-utility-search mt-4">
+          <summary>Owner-Werkzeuge</summary>
+          <div className="space-y-3 p-3">
+            <div className="flex flex-col gap-3 rounded-md border border-line/70 bg-surface/60 p-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-fg">Rollen-Vorschau</p>
+                <p className="text-xs text-muted">Nur für dich – deine echte Rolle bleibt unverändert. {previewing ? `Vorschau als ${roleLabel(shown)}, schreibgeschützt.` : ""}</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {ROLES.map((role) => (
+                  <button
+                    key={role}
+                    type="button"
+                    aria-pressed={shown === role}
+                    className={
+                      shown === role
+                        ? "btn-brand min-h-9 px-3 py-1 text-xs"
+                        : "btn-ghost min-h-9 px-3 py-1 text-xs"
+                    }
+                    onClick={() => setView(role)}
+                  >
+                    {roleLabel(role)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {shown === "owner" ? <div inert={previewing}><StaffBackup /></div> : null}
           </div>
-          <div className="flex flex-wrap gap-2">
-            {ROLES.map((role) => (
-              <button
-                key={role}
-                type="button"
-                aria-pressed={shown === role}
-                className={
-                  shown === role
-                    ? "btn-brand min-h-9 px-3 py-1 text-xs"
-                    : "btn-ghost min-h-9 px-3 py-1 text-xs"
-                }
-                onClick={() => setView(role)}
-              >
-                {roleLabel(role)}
-              </button>
-            ))}
-          </div>
-        </div>
+        </details>
       ) : null}
-        {shown === "owner" ? <div inert={previewing}><StaffBackup /></div> : null}
         {shown === "owner" || shown === "admin" ? (
           <Suspense fallback={null}>
             <div inert={previewing}><LiveNotices note={note} /></div>
@@ -1414,16 +1427,20 @@ function readSeen(
 
 function StaffBackup() {
   const [snap, setSnap] = useState<StaffBackup | null>(null);
-  const [state, setState] = useState("Sicherung läuft…");
+  const [state, setState] = useState("Sicherung wird erstellt…");
   useEffect(() => {
     let stop = false;
     void rememberStaffBackup()
       .then((next) => {
         if (stop) return;
         setSnap(next);
-        setState(`Gesichert ${new Date(next.at).toLocaleTimeString("de-CH", { hour: "2-digit", minute: "2-digit" })}`);
+        const time = new Date(next.at).toLocaleTimeString("de-CH", { hour: "2-digit", minute: "2-digit" });
+        setState(next.failedPaths?.length
+          ? `Teilweise gesichert ${time} · ${next.failedPaths.length} Bereiche nicht lesbar`
+          : `Gesichert ${time}`);
       })
-      .catch(() => {
+      .catch((error: unknown) => {
+        console.error("[Staff Center] BACKUP-002: Sicherung konnte nicht erstellt werden.", error);
         if (!stop) setState("Sicherung fehlgeschlagen");
       });
     return () => {
@@ -1434,10 +1451,10 @@ function StaffBackup() {
     <section className="card card-still mb-4 flex flex-wrap items-center justify-between gap-3 p-4">
       <div>
         <h2 className="font-semibold">Sicherung</h2>
-        <p className="mt-1 text-sm text-muted">Beim Öffnen wird eine Kopie in diesem Browser behalten. Lade sie zusätzlich als Datei herunter, damit sie nicht nur hier liegt.</p>
+        <p className="mt-1 text-sm text-muted">Website-Daten werden hier im Browser gespeichert. Für eine Datei auf deinem Gerät lade die JSON-Kopie herunter. Minecraft-Dateien sind nicht enthalten.</p>
       </div>
       <div className="flex items-center gap-2">
-        <p className="text-xs text-faint">{state}</p>
+        <p className="text-xs text-faint" role="status" aria-live="polite">{state}</p>
         <button
           type="button"
           className="btn-ghost"
@@ -1445,10 +1462,14 @@ function StaffBackup() {
             const run = snap ? Promise.resolve(snap) : latestStaffBackup();
             void run.then((row) => {
               if (row) downloadStaffBackup(row);
+              else setState("Keine Sicherung gefunden");
+            }).catch((error: unknown) => {
+              console.error("[Staff Center] BACKUP-003: Datei konnte nicht gespeichert werden.", error);
+              setState("Download fehlgeschlagen");
             });
           }}
         >
-          Datei speichern
+          JSON herunterladen
         </button>
       </div>
     </section>

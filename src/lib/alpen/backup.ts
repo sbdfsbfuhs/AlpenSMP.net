@@ -24,7 +24,11 @@ const PATHS = [
   "community_images",
 ];
 
-export type StaffBackup = { at: number; data: Record<string, unknown> };
+export type StaffBackup = {
+  at: number;
+  data: Record<string, unknown>;
+  failedPaths?: string[];
+};
 
 function openDb() {
   return new Promise<IDBDatabase>((resolve, reject) => {
@@ -39,16 +43,25 @@ function openDb() {
 }
 
 export async function rememberStaffBackup() {
-  const pairs = await Promise.all(
+  const results = await Promise.all(
     PATHS.map(async (path) => {
       try {
-        return [path, await fbGet(path)] as const;
-      } catch {
-        return [path, null] as const;
+        return { path, data: await fbGet(path), failed: false };
+      } catch (error) {
+        console.error(`[Staff Center] BACKUP-001: Bereich ${path} konnte nicht gesichert werden.`, error);
+        return { path, data: null, failed: true };
       }
     }),
   );
-  const snap: StaffBackup = { at: Date.now(), data: Object.fromEntries(pairs) };
+  const failedPaths = results.filter((result) => result.failed).map((result) => result.path);
+  if (failedPaths.length === PATHS.length) {
+    throw new Error("Kein Datenbereich konnte gesichert werden.");
+  }
+  const snap: StaffBackup = {
+    at: Date.now(),
+    data: Object.fromEntries(results.map(({ path, data }) => [path, data])),
+    ...(failedPaths.length ? { failedPaths } : {}),
+  };
   const db = await openDb();
   await new Promise<void>((resolve, reject) => {
     const tx = db.transaction("snaps", "readwrite");

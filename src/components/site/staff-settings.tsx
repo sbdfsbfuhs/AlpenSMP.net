@@ -10,9 +10,6 @@ import {
   writeSession,
 } from "@/lib/alpen/staff";
 import {
-  beginStaffTotpEnrollment,
-  disableStaffTotp,
-  finishStaffTotpEnrollment,
   requestOwnEmailVerification,
 } from "@/lib/alpen/fb-auth";
 import { securityJson } from "@/lib/alpen/security";
@@ -30,12 +27,6 @@ export function Settings({
   const [a, setA] = useState("");
   const [b, setB] = useState("");
   const [oldMfaCode, setOldMfaCode] = useState("");
-  const [mfaPassword, setMfaPassword] = useState("");
-  const [mfaCode, setMfaCode] = useState("");
-  const [mfaEnabled, setMfaEnabled] = useState(Boolean(user.mfaEnabled));
-  const [totp, setTotp] = useState<{ secret: string; uri: string } | null>(null);
-  const [mfaBusy, setMfaBusy] = useState(false);
-  const [mfaError, setMfaError] = useState("");
   const [accountEmail, setAccountEmail] = useState(
     user.email.toLowerCase().endsWith("@staff.alpensmp.net") ? "" : user.email,
   );
@@ -54,11 +45,10 @@ export function Settings({
   useEffect(() => {
     setDisplayName(user.displayName || "");
     setProfileColor(user.profileColor || STAFF_PROFILE_COLORS[0].value);
-    setMfaEnabled(Boolean(user.mfaEnabled));
     setAccountEmail(
       user.email.toLowerCase().endsWith("@staff.alpensmp.net") ? "" : user.email,
     );
-  }, [user.displayName, user.profileColor, user.mfaEnabled, user.email]);
+  }, [user.displayName, user.profileColor, user.email]);
 
   async function saveProfile(event: FormEvent) {
     event.preventDefault();
@@ -92,21 +82,6 @@ export function Settings({
     );
   }
 
-  async function startTotp(event: FormEvent) {
-    event.preventDefault();
-    setMfaBusy(true);
-    setMfaError("");
-    try {
-      const setup = await beginStaffTotpEnrollment(user.email, mfaPassword);
-      setTotp(setup);
-      setMfaPassword("");
-    } catch (error) {
-      setMfaError(error instanceof Error ? error.message : "2FA-Einrichtung fehlgeschlagen.");
-    } finally {
-      setMfaBusy(false);
-    }
-  }
-
   async function verifyAccountEmail(event: FormEvent) {
     event.preventDefault();
     setEmailBusy(true);
@@ -124,49 +99,13 @@ export function Settings({
       setEmailMfaCode("");
       setEmailMessage(
         result.alreadyVerified
-          ? "Diese E-Mail-Adresse ist bereits verifiziert. Du kannst jetzt 2FA einrichten."
+          ? "Diese E-Mail-Adresse ist bereits verifiziert und kann für Anmeldung und Wiederherstellung verwendet werden."
           : `Verifizierungslink an ${result.email} gesendet. Bitte bestätige die Adresse und melde dich danach mit der neuen E-Mail-Adresse erneut an.`,
       );
     } catch (error) {
       setEmailError(error instanceof Error ? error.message : "E-Mail konnte nicht verifiziert werden.");
     } finally {
       setEmailBusy(false);
-    }
-  }
-
-  async function confirmTotp(event: FormEvent) {
-    event.preventDefault();
-    setMfaBusy(true);
-    setMfaError("");
-    try {
-      const login = await finishStaffTotpEnrollment(mfaCode);
-      setMfaEnabled(login.mfaEnabled);
-      writeSession({ ...user, mfaEnabled: login.mfaEnabled });
-      setTotp(null);
-      setMfaCode("");
-      note("Zwei-Faktor-Authentifizierung aktiviert.");
-    } catch (error) {
-      setMfaError(error instanceof Error ? error.message : "Authenticator-Code konnte nicht bestätigt werden.");
-    } finally {
-      setMfaBusy(false);
-    }
-  }
-
-  async function removeTotp(event: FormEvent) {
-    event.preventDefault();
-    setMfaBusy(true);
-    setMfaError("");
-    try {
-      const login = await disableStaffTotp(user.email, mfaPassword, mfaCode);
-      setMfaEnabled(login.mfaEnabled);
-      writeSession({ ...user, mfaEnabled: login.mfaEnabled });
-      setMfaPassword("");
-      setMfaCode("");
-      note("Zwei-Faktor-Authentifizierung deaktiviert.");
-    } catch (error) {
-      setMfaError(error instanceof Error ? error.message : "2FA konnte nicht deaktiviert werden.");
-    } finally {
-      setMfaBusy(false);
     }
   }
 
@@ -281,46 +220,6 @@ export function Settings({
         </form>
         {emailMessage ? <p className="mt-3 text-sm text-emerald-200" role="status">{emailMessage}</p> : null}
         {emailError ? <p className="mt-3 text-sm text-red-300" role="alert">{emailError}</p> : null}
-      </section>
-      <section className="card card-still max-w-md p-5">
-        <h2 className="text-lg font-semibold">Zwei-Faktor-Authentifizierung</h2>
-        <p className="mt-1 text-sm text-muted">
-          Status: <strong>{mfaEnabled ? "aktiv" : "nicht aktiviert"}</strong>. Beim Anmelden wird zusätzlich ein aktueller Code aus einer Authenticator-App benötigt.
-        </p>
-        {mfaEnabled ? (
-          <form className="mt-4 space-y-2" onSubmit={removeTotp}>
-            <label className="block text-sm">
-              Konto-Passwort
-              <input className="field mt-1" type="password" autoComplete="current-password" value={mfaPassword} onChange={(event) => setMfaPassword(event.target.value)} required />
-            </label>
-            <label className="block text-sm">
-              Aktueller Authenticator-Code
-              <input className="field mt-1" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" value={mfaCode} onChange={(event) => setMfaCode(event.target.value)} required />
-            </label>
-            <button className="btn-brand" type="submit" disabled={mfaBusy}>{mfaBusy ? "Bitte warten…" : "2FA deaktivieren"}</button>
-          </form>
-        ) : totp ? (
-          <form className="mt-4 space-y-3" onSubmit={confirmTotp}>
-            <p className="text-sm text-muted">Füge diesen Schlüssel manuell in deiner Authenticator-App hinzu. Teile ihn mit niemandem.</p>
-            <code className="block break-all rounded-lg bg-black/20 p-3 text-sm">{totp.secret}</code>
-            <a className="text-sm text-brand underline" href={totp.uri}>Authenticator-App öffnen</a>
-            <label className="block text-sm">
-              Sechsstelliger Code aus der App
-              <input className="field mt-1" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" value={mfaCode} onChange={(event) => setMfaCode(event.target.value)} required />
-            </label>
-            <button className="btn-brand" type="submit" disabled={mfaBusy}>{mfaBusy ? "Bitte warten…" : "2FA aktivieren"}</button>
-          </form>
-        ) : (
-          <form className="mt-4 space-y-2" onSubmit={startTotp}>
-            <label className="block text-sm">
-              Konto-Passwort zur Bestätigung
-              <input className="field mt-1" type="password" autoComplete="current-password" value={mfaPassword} onChange={(event) => setMfaPassword(event.target.value)} required />
-            </label>
-            <button className="btn-brand" type="submit" disabled={mfaBusy}>{mfaBusy ? "Bitte warten…" : "2FA einrichten"}</button>
-            <p className="text-xs text-muted">Eine verifizierte E-Mail-Adresse ist erforderlich. Richte vor der Aktivierung ein Verfahren zum Wiederherstellen des Zugangs ein.</p>
-          </form>
-        )}
-        {mfaError ? <p className="mt-3 text-sm text-red-300" role="alert">{mfaError}</p> : null}
       </section>
       <section className="card card-still max-w-md p-5">
         <h2 className="text-lg font-semibold">Aktivitäts-Einwilligung</h2>

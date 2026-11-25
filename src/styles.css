@@ -403,7 +403,7 @@
     animation: staff-content-in 240ms ease-out both;
   }
 
-  @media (max-width: 40rem) {
+  @media (max-width: 64rem) {
     .staff-nav {
       flex-wrap: wrap;
     }
@@ -411,6 +411,8 @@
     .staff-primary-nav {
       order: 0;
       flex-basis: 100%;
+      flex-wrap: wrap;
+      overflow: visible;
     }
 
     .staff-more,

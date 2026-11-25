@@ -14,7 +14,6 @@ import {
   type Auth,
   type MultiFactorError,
   type MultiFactorResolver,
-  type TotpSecret,
   type User,
   verifyBeforeUpdateEmail,
 } from "firebase/auth";
@@ -48,7 +47,6 @@ const STAFF_AUTH_APP = "alpen-staff-center";
 let staffAuthInstance: Auth | null = null;
 let pendingMfaResolver: MultiFactorResolver | null = null;
 let pendingMfaEmail = "";
-let pendingTotpSecret: TotpSecret | null = null;
 
 function getStaffAuth() {
   if (staffAuthInstance) return staffAuthInstance;
@@ -206,7 +204,6 @@ export function clearFirebaseLogin() {
   writeStored(null);
   pendingMfaResolver = null;
   pendingMfaEmail = "";
-  pendingTotpSecret = null;
   if (staffAuthInstance) {
     void signOut(staffAuthInstance).catch((error: unknown) => {
       console.error("[Staff Center] Auth-Sitzung konnte nicht vollständig beendet werden.", error);
@@ -266,34 +263,6 @@ export async function signInEmail(email: string, password: string, totpCode = ""
   }
 }
 
-export async function beginStaffTotpEnrollment(email: string, password: string) {
-  let credential;
-  try {
-    credential = await signInWithEmailAndPassword(getStaffAuth(), email.trim().toLowerCase(), password);
-  } catch (error) {
-    throw new Error(authErrorMessage(error));
-  }
-  if (!credential.user.emailVerified)
-    throw new Error("Bitte verifiziere zuerst deine Konto-E-Mail-Adresse, bevor du 2FA einrichtest.");
-  if (
-    multiFactor(credential.user).enrolledFactors.some(
-      (factor) => factor.factorId === TotpMultiFactorGenerator.FACTOR_ID,
-    )
-  ) {
-    throw new Error("Für dieses Konto ist bereits ein Authenticator eingerichtet.");
-  }
-  try {
-    const session = await multiFactor(credential.user).getSession();
-    pendingTotpSecret = await TotpMultiFactorGenerator.generateSecret(session);
-    return {
-      secret: pendingTotpSecret.secretKey,
-      uri: pendingTotpSecret.generateQrCodeUrl(email.trim().toLowerCase(), "AlpenSMP Staff Center"),
-    };
-  } catch (error) {
-    throw new Error(authErrorMessage(error));
-  }
-}
-
 export async function requestOwnEmailVerification(
   currentEmail: string,
   nextEmailValue: string,
@@ -328,36 +297,6 @@ export async function requestOwnEmailVerification(
     throw new Error(authErrorMessage(error));
   }
   return { email: nextEmail, alreadyVerified: false };
-}
-
-export async function finishStaffTotpEnrollment(code: string) {
-  const user = getStaffAuth().currentUser;
-  if (!user || !pendingTotpSecret) throw new Error("Starte zuerst die 2FA-Einrichtung erneut.");
-  if (!/^\d{6}$/.test(code.trim())) throw new Error("Bitte gib einen sechsstelligen Authenticator-Code ein.");
-  try {
-    const assertion = TotpMultiFactorGenerator.assertionForEnrollment(pendingTotpSecret, code.trim());
-    await multiFactor(user).enroll(assertion, "AlpenSMP Staff Center");
-    pendingTotpSecret = null;
-    return saveSdkUser(user);
-  } catch (error) {
-    throw new Error(authErrorMessage(error));
-  }
-}
-
-export async function disableStaffTotp(email: string, password: string, code: string) {
-  await signInEmail(email, password, code);
-  const user = getStaffAuth().currentUser;
-  if (!user) throw new Error("Bitte melde dich erneut an.");
-  const factor = multiFactor(user).enrolledFactors.find(
-    (candidate) => candidate.factorId === TotpMultiFactorGenerator.FACTOR_ID,
-  );
-  if (!factor) throw new Error("Für dieses Konto ist kein Authenticator eingerichtet.");
-  try {
-    await multiFactor(user).unenroll(factor.uid);
-    return saveSdkUser(user);
-  } catch (error) {
-    throw new Error(authErrorMessage(error));
-  }
 }
 
 export async function changeOwnPassword(password: string) {
