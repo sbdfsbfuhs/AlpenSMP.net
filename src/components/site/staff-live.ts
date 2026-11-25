@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { isMoved } from "@/lib/alpen/security";
+import { normalizeTicketCode } from "@/lib/alpen/ticket-access";
 import { fbGet, fbRemove, fbUpdate, type StaffSession } from "@/lib/alpen/staff";
 
 const liveFailurePaths = new Set<string>();
@@ -73,12 +74,41 @@ export async function archive(path: string, key: string, user: StaffSession, not
   }
 }
 
-export async function wipe(path: string, key: string, note: (text: string) => void) {
-  if (!window.confirm("Endgültig löschen?")) return;
+export async function wipe(
+  path: string,
+  key: string,
+  note: (text: string) => void,
+  ticketCode?: string | null,
+): Promise<boolean> {
+  const normalizedTicketCode = path === "helpRequests" && ticketCode
+    ? normalizeTicketCode(ticketCode)
+    : null;
+  if (path === "helpRequests" && ticketCode && !normalizedTicketCode) {
+    note("Ungültige Ticketnummer; die Anfrage wurde nicht gelöscht.");
+    return false;
+  }
+  const confirmation = path === "helpRequests"
+    ? `Support-Anfrage${normalizedTicketCode ? ` ${normalizedTicketCode}` : ""} endgültig löschen?${normalizedTicketCode ? " Der Spieler kann das Ticket danach nicht mehr abrufen." : ""} Diese Aktion kann nicht rückgängig gemacht werden.`
+    : "Endgültig löschen?";
+  if (!window.confirm(confirmation)) return false;
+  let ticketAccessDeleted = false;
   try {
+    if (normalizedTicketCode) {
+      await fbRemove(`tickets/${encodeURIComponent(normalizedTicketCode)}`);
+      ticketAccessDeleted = true;
+    }
     await fbRemove(`${path}/${key}`);
-    note("Gelöscht");
+    note(path !== "helpRequests"
+      ? "Gelöscht"
+      : normalizedTicketCode
+        ? "Support-Anfrage und Ticketzugriff endgültig gelöscht."
+        : "Support-Anfrage endgültig gelöscht.");
+    return true;
   } catch (err) {
-    note(err instanceof Error ? err.message : "Löschen fehlgeschlagen");
+    const message = err instanceof Error ? err.message : "Löschen fehlgeschlagen";
+    note(ticketAccessDeleted
+      ? `Der Spielerzugriff wurde widerrufen, aber die Support-Anfrage konnte nicht gelöscht werden: ${message}`
+      : message);
+    return false;
   }
 }

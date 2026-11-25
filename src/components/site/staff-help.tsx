@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from "react";
-import { useLive } from "@/components/site/staff-live";
+import { useLive, wipe } from "@/components/site/staff-live";
 import { Neu } from "@/components/site/staff-shared";
 import { entries, fbPush, fbUpdate, formatWhen, freshStamp, type ModItem, type StaffSession } from "@/lib/alpen/staff";
 
@@ -50,6 +50,7 @@ export function HelpDesk({ user, note, act }: { user: StaffSession; note: (text:
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState<string | null>(null);
   const [savingStatus, setSavingStatus] = useState(false);
+  const [deletingTicket, setDeletingTicket] = useState(false);
 
   const rows = useMemo(
     () => entries(data)
@@ -94,6 +95,15 @@ export function HelpDesk({ user, note, act }: { user: StaffSession; note: (text:
       note(err instanceof Error ? err.message : "Status fehlgeschlagen");
     } finally {
       setSavingStatus(false);
+    }
+  }
+
+  async function deleteTicket(key: string, item: HelpRequest) {
+    setDeletingTicket(true);
+    try {
+      if (await wipe("helpRequests", key, note, item.ticketCode)) setOpen(null);
+    } finally {
+      setDeletingTicket(false);
     }
   }
 
@@ -191,6 +201,20 @@ export function HelpDesk({ user, note, act }: { user: StaffSession; note: (text:
             </ul>
             {act ? <InternalBox id={key} user={user} note={note} /> : null}
           </section>
+
+          {user.role === "owner" ? (
+            <section className="border-t border-line pt-4" aria-label="Support-Anfrage löschen">
+              <p className="text-sm text-muted">Die Anfrage und ihr öffentlicher Ticketzugriff werden endgültig entfernt.</p>
+              <button
+                type="button"
+                className="btn-ghost mt-3 px-3 text-rose-300"
+                disabled={deletingTicket}
+                onClick={() => void deleteTicket(key, item)}
+              >
+                {deletingTicket ? "Wird endgültig gelöscht …" : "Ticket endgültig löschen"}
+              </button>
+            </section>
+          ) : null}
         </article>
       </div>
     );

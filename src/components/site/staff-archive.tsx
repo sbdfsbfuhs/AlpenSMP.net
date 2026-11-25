@@ -159,7 +159,13 @@ export function Archive({ user, note }: { user: StaffSession; note: (text: strin
                   ) : null}
                   {user.role === "owner" ? (
                     <div className="border-t border-line pt-3">
-                      <button type="button" className="btn-ghost px-3" onClick={() => void wipe(row.path, row.key, note)}>Endgültig löschen</button>
+                      <button
+                        type="button"
+                        className="btn-ghost px-3"
+                        onClick={() => void wipe(row.path, row.key, note, row.path === "helpRequests" ? row.item.ticketCode : undefined)}
+                      >
+                        Endgültig löschen
+                      </button>
                     </div>
                   ) : null}
                 </article>
