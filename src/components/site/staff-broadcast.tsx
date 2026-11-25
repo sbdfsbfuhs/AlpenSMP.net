@@ -4,6 +4,7 @@ import { fbGet, fbPush, fbRemove, fbSet, fbUpdate, formatWhen, type StaffSession
 import { currentLogin } from "@/lib/alpen/fb-auth";
 import { autoSeason, SEASONS } from "@/lib/alpen/seasons";
 import { groupLiveNotices } from "@/lib/alpen/live-notices";
+import { liveStreamDestinations, normalizeStreamPlatforms, STREAM_PLATFORMS } from "@/lib/alpen/live-platforms";
 import { MascotView } from "@/components/site/mascot-art";
 
 const CATS: NewsCategory[] = ["Update", "Regel", "Command", "Event", "Wartung", "Neu"];
@@ -171,14 +172,6 @@ export function StatusDesk({ user, note }: { user: StaffSession; note: (text: st
   );
 }
 
-const PLATFORMS = [
-  { id: "twitch", label: "Twitch" },
-  { id: "youtube", label: "YouTube" },
-  { id: "tiktok", label: "TikTok Live" },
-  { id: "kick", label: "Kick" },
-  { id: "other", label: "Sonstige" },
-];
-
 function streamLink(raw: string) {
   const value = raw.trim().replace(/\s+/g, "");
   if (!value) return "";
@@ -187,9 +180,9 @@ function streamLink(raw: string) {
 
 export function StreamDesk({ user, note }: { user: StaffSession; note: (text: string) => void }) {
   const live = useFbValue<LiveStream>("live_streams/active");
-  const [platform, setPlatform] = useState("twitch");
+  const [platforms, setPlatforms] = useState<string[]>(["twitch"]);
   const [title, setTitle] = useState("");
-  const [url, setUrl] = useState("");
+  const [platformLinks, setPlatformLinks] = useState<Record<string, string>>({});
   const [name, setName] = useState(user.username);
   const [when, setWhen] = useState("now");
   const [start, setStart] = useState("");
@@ -201,26 +194,40 @@ export function StreamDesk({ user, note }: { user: StaffSession; note: (text: st
   useEffect(() => {
     void fbGet<LiveStream>(`live_streams/profiles/${user.uid}`).then((row) => {
       if (!row) return;
-      if (row.platform) setPlatform(row.platform);
-      if (row.url) setUrl(row.url);
+      setPlatforms(normalizeStreamPlatforms(row.platforms, row.platform));
+      setPlatformLinks({
+        ...(row.platform && row.url ? { [row.platform]: row.url } : {}),
+        ...(row.platformLinks || {}),
+      });
       if (row.streamer_name) setName(row.streamer_name);
     }).catch(() => {});
   }, [user.uid]);
 
   async function goLive(event: FormEvent) {
     event.preventDefault();
-    const link = streamLink(url);
-    let host = "";
-    try {
-      host = new URL(link).hostname;
-    } catch {
-      host = "";
-    }
-    if (!host || host === "https" || !host.includes(".")) {
-      const text = "Bitte einen vollständigen Link eintragen";
+    const selectedPlatforms = STREAM_PLATFORMS.filter(({ id }) => platforms.includes(id));
+    if (!selectedPlatforms.length) {
+      const text = "Bitte mindestens eine Plattform auswählen.";
       setMsg({ ok: false, text });
       note(text);
       return;
+    }
+    const normalizedLinks: Record<string, string> = {};
+    for (const item of selectedPlatforms) {
+      const link = streamLink(platformLinks[item.id] || "");
+      let host = "";
+      try {
+        host = new URL(link).hostname;
+      } catch {
+        host = "";
+      }
+      if (!host || !host.includes(".")) {
+        const text = `Bitte einen vollständigen Link für ${item.label} eintragen.`;
+        setMsg({ ok: false, text });
+        note(text);
+        return;
+      }
+      normalizedLinks[item.id] = link;
     }
     if (title.length > 80) {
       const text = "Titel max. 80 Zeichen";
@@ -237,11 +244,14 @@ export function StreamDesk({ user, note }: { user: StaffSession; note: (text: st
     }
     const started = when === "now" || !start ? Date.now() : new Date(start).getTime();
     const ends = end ? new Date(end).getTime() : 0;
+    const primaryPlatform = selectedPlatforms[0]!;
     const body: LiveStream = {
       streamer_name: name.trim() || user.username,
-      platform,
+      platform: primaryPlatform.id,
+      platforms: selectedPlatforms.map(({ id }) => id),
       title: title.trim().slice(0, 80),
-      url: link,
+      url: normalizedLinks[primaryPlatform.id],
+      platformLinks: normalizedLinks,
       started_at: started,
       is_live: true,
       created_by: user.username,
@@ -254,8 +264,10 @@ export function StreamDesk({ user, note }: { user: StaffSession; note: (text: st
       await fbSet("live_streams/active", body);
       await fbSet(`live_streams/profiles/${uid}`, {
         streamer_name: body.streamer_name,
-        platform,
+        platform: body.platform,
+        platforms: body.platforms,
         url: body.url,
+        platformLinks: body.platformLinks,
       }).catch(() => undefined);
       const self = await fbGet<{ notifyLive?: boolean }>(`staffUsers/${user.username}`).catch(() => null);
       if (self?.notifyLive !== false) {
@@ -263,8 +275,10 @@ export function StreamDesk({ user, note }: { user: StaffSession; note: (text: st
           by: user.username,
           name: body.streamer_name,
           title: body.title,
-          platform,
+          platform: body.platform,
+          platforms: body.platforms,
           url: body.url,
+          platformLinks: body.platformLinks,
           ts: Date.now(),
         }).catch(() => undefined);
       }
@@ -299,7 +313,17 @@ export function StreamDesk({ user, note }: { user: StaffSession; note: (text: st
   }
 
   const onAir = Boolean(live?.is_live);
-  const platformLabel = PLATFORMS.find((item) => item.id === (live?.platform || platform))?.label || live?.platform || "Stream";
+  const selectedPlatforms = STREAM_PLATFORMS.filter(({ id }) => platforms.includes(id));
+  const previewPlatforms = onAir
+    ? liveStreamDestinations(live).map(({ label }) => label)
+    : selectedPlatforms.map(({ label }) => label);
+  const platformLabel = previewPlatforms.join(" + ") || live?.platform || "Stream";
+
+  function togglePlatform(id: string) {
+    setPlatforms((current) =>
+      current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
+    );
+  }
 
   return (
     <div className="stream-desk space-y-4">
@@ -408,24 +432,51 @@ export function StreamDesk({ user, note }: { user: StaffSession; note: (text: st
             <span>Anzeigename</span>
             <input className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder={user.username} />
           </label>
-          <label className="stream-field">
-            <span>Plattform</span>
-            <select className="field" value={platform} onChange={(e) => setPlatform(e.target.value)}>
-              {PLATFORMS.map((item) => (
-                <option key={item.id} value={item.id}>{item.label}</option>
-              ))}
-            </select>
-          </label>
+          <fieldset className="stream-platform-picker stream-field-wide">
+            <legend>Plattformen <span>Mehrfachauswahl möglich</span></legend>
+            <p className="stream-platform-copy">Wähle alle Orte aus, auf denen du gleichzeitig live bist. Besucher können auf der Website ihre Plattform öffnen.</p>
+            <div className="stream-platform-options">
+              {STREAM_PLATFORMS.map((item) => {
+                const checked = platforms.includes(item.id);
+                return (
+                  <label
+                    key={item.id}
+                    className="stream-platform-choice"
+                    data-selected={checked ? "true" : "false"}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => togglePlatform(item.id)}
+                    />
+                    <span>{item.label}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+          <div className="stream-platform-links stream-field-wide">
+            {selectedPlatforms.map((item) => (
+              <label key={item.id} className="stream-field">
+                <span>{item.label}-Link</span>
+                <input
+                  className="field"
+                  placeholder={item.placeholder}
+                  value={platformLinks[item.id] || ""}
+                  onChange={(event) => setPlatformLinks((current) => ({
+                    ...current,
+                    [item.id]: event.target.value,
+                  }))}
+                />
+              </label>
+            ))}
+          </div>
           <label className="stream-field stream-field-wide">
             <span className="stream-field-row">
               <span>Streamtitel</span>
               <span className="stream-char-count">{title.length}/80</span>
             </span>
             <input className="field" maxLength={80} value={title} onChange={(e) => setTitle(e.target.value.slice(0, 80))} placeholder="Woran arbeitest du heute?" />
-          </label>
-          <label className="stream-field stream-field-wide">
-            <span>Stream-Link</span>
-            <input className="field" placeholder="https://twitch.tv/deinname" value={url} onChange={(e) => setUrl(e.target.value)} />
           </label>
         </div>
 

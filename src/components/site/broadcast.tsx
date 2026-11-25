@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ArrowUpRight, Play } from "lucide-react";
 import { countdown, useFbValue, type LiveStream, type ServerStatus } from "@/lib/alpen/broadcast";
+import { liveStreamDestinations } from "@/lib/alpen/live-platforms";
 
 const STATUS_COPY: Record<string, { icon: string; fallback: string; tone: string }> = {
   restarting: { icon: "🔄", fallback: "Server startet neu – bitte kurz warten.", tone: "restart" },
@@ -67,14 +68,6 @@ export function ServerStatusBanner() {
   );
 }
 
-const PLATFORMS: Record<string, string> = {
-  twitch: "Twitch",
-  youtube: "YouTube",
-  tiktok: "TikTok",
-  kick: "Kick",
-  other: "Stream",
-};
-
 export function HomeLiveCard() {
   const live = useFbValue<LiveStream>("live_streams/active");
   const [, setTick] = useState(0);
@@ -82,16 +75,17 @@ export function HomeLiveCard() {
     const timer = window.setInterval(() => setTick((n) => n + 1), 30000);
     return () => window.clearInterval(timer);
   }, []);
-  if (!live?.is_live || !live.url) return null;
+  const destinations = liveStreamDestinations(live);
+  if (!live?.is_live || !destinations.length) return null;
   const left = countdown(live.ends_at);
   return (
-    <section className="home-live-card" aria-label="Community-Livestream, jetzt live">
+    <section id="home-live-card" className="home-live-card" aria-label="Community-Livestream, jetzt live">
       <div className="home-live-card-head">
         <p className="home-live-kicker">
           <i className="live-dot" aria-hidden="true" /> Jetzt live
         </p>
         <span className="home-live-platform">
-          {PLATFORMS[live.platform || "other"] || live.platform}
+          {destinations.length === 1 ? destinations[0]!.label : `${destinations.length} Plattformen`}
           {left ? ` · ${left}` : ""}
         </span>
       </div>
@@ -103,15 +97,38 @@ export function HomeLiveCard() {
           <p className="home-live-title">{live.title ? `„${live.title}“` : "Schau live beim Abenteuer zu."}</p>
         </div>
       </div>
-      <a className="btn-brand home-live-cta" href={live.url} target="_blank" rel="noopener noreferrer">
-        Stream ansehen <ArrowUpRight className="size-4" />
-      </a>
+      {destinations.length === 1 ? (
+        <a
+          className="btn-brand home-live-cta"
+          href={destinations[0]!.url}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Stream auf {destinations[0]!.label} ansehen <ArrowUpRight className="size-4" />
+        </a>
+      ) : (
+        <nav className="home-live-cta home-live-cta-multiple" aria-label="Stream-Plattform auswählen">
+          {destinations.map((destination) => (
+            <a
+              key={destination.id}
+              className="btn-brand home-live-platform-cta"
+              href={destination.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Stream auf ${destination.label} ansehen`}
+            >
+              {destination.label} <ArrowUpRight className="size-4" />
+            </a>
+          ))}
+        </nav>
+      )}
     </section>
   );
 }
 
 export function LiveDock() {
   const live = useFbValue<LiveStream>("live_streams/active");
+  const destinations = liveStreamDestinations(live);
   const [ready, setReady] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [short, setShort] = useState(false);
@@ -130,16 +147,23 @@ export function LiveDock() {
       window.removeEventListener("resize", measure);
     };
   }, []);
-  if (!ready || hidden || !live?.is_live || !live.url) return null;
+  if (!ready || hidden || !live?.is_live || !destinations.length) return null;
+  const primaryDestination = destinations[0]!;
+  const platformChoice = destinations.length > 1;
   return (
     <aside className={short ? "live-strip" : "live-dock"} aria-label="Livestream">
       <i className="live-dot" aria-hidden="true" />
       <div className="min-w-0">
-        <p className="truncate text-sm font-semibold">{live.streamer_name || "Live"} streamt</p>
+        <p className="truncate text-sm font-semibold">{live.streamer_name || "Live"} streamt auf {primaryDestination.label}</p>
         {live.title ? <p className="truncate text-xs text-muted">{live.title}</p> : null}
       </div>
-      <a className="btn-brand shrink-0 px-3" href={live.url} target="_blank" rel="noopener noreferrer">
-        Ansehen
+      <a
+        className="btn-brand shrink-0 px-3"
+        href={platformChoice ? "/#home-live-card" : primaryDestination.url}
+        target={platformChoice ? undefined : "_blank"}
+        rel={platformChoice ? undefined : "noopener noreferrer"}
+      >
+        {platformChoice ? "Plattform wählen" : "Ansehen"}
       </a>
       <button
         type="button"

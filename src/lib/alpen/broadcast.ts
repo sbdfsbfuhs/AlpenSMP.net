@@ -34,8 +34,10 @@ export type ServerStatus = {
 export type LiveStream = {
   streamer_name?: string;
   platform?: string;
+  platforms?: string[];
   title?: string;
   url?: string;
+  platformLinks?: Record<string, string>;
   started_at?: number;
   ends_at?: number | null;
   is_live?: boolean;
