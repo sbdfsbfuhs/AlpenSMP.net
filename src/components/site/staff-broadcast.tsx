@@ -3,6 +3,7 @@ import { countdown, useFbValue, type LiveStream, type NewsCategory, type NewsIte
 import { fbGet, fbPush, fbRemove, fbSet, fbUpdate, formatWhen, type StaffSession } from "@/lib/alpen/staff";
 import { currentLogin } from "@/lib/alpen/fb-auth";
 import { autoSeason, SEASONS } from "@/lib/alpen/seasons";
+import { groupLiveNotices } from "@/lib/alpen/live-notices";
 import { MascotView } from "@/components/site/mascot-art";
 
 const CATS: NewsCategory[] = ["Update", "Regel", "Command", "Event", "Wartung", "Neu"];
@@ -258,7 +259,7 @@ export function StreamDesk({ user, note }: { user: StaffSession; note: (text: st
       }).catch(() => undefined);
       const self = await fbGet<{ notifyLive?: boolean }>(`staffUsers/${user.username}`).catch(() => null);
       if (self?.notifyLive !== false) {
-        await fbPush("live_streams/notices", {
+        await fbSet(`live_streams/notices/${uid}`, {
           by: user.username,
           name: body.streamer_name,
           title: body.title,
@@ -472,14 +473,24 @@ export function StreamDesk({ user, note }: { user: StaffSession; note: (text: st
 
 export function LiveNotices({ note }: { note: (text: string) => void }) {
   const rows = useFbValue<Record<string, { by?: string; name?: string; title?: string; ts?: number }>>("live_streams/notices");
-  const list = Object.entries(rows ?? {}).sort((a, b) => (b[1].ts || 0) - (a[1].ts || 0)).slice(0, 5);
+  const list = groupLiveNotices(rows).slice(0, 5);
   if (!list.length) return null;
+
+  async function removeNotice(ids: string[]) {
+    try {
+      await Promise.all(ids.map((id) => fbRemove(`live_streams/notices/${id}`)));
+      note(ids.length > 1 ? "Doppelte Live-Hinweise entfernt" : "Hinweis weg");
+    } catch (err) {
+      note(err instanceof Error ? err.message : "Hinweis konnte nicht entfernt werden");
+    }
+  }
+
   return (
     <div className="mt-4 space-y-2">
-      {list.map(([id, item]) => (
-        <p key={id} className="rounded-md border border-line px-3 py-2 text-sm">
-          {item.name || item.by} ist live{item.title ? `: ${item.title}` : ""} · {formatWhen(item.ts)}
-          <button type="button" className="ml-2 text-faint" onClick={() => void fbRemove(`live_streams/notices/${id}`).then(() => note("Hinweis weg"))}>
+      {list.map(({ key, ids, item }) => (
+        <p key={key} className="flex items-center gap-2 rounded-md border border-line px-3 py-2 text-sm">
+          <span className="min-w-0 flex-1">{item.name || item.by} ist live{item.title ? `: ${item.title}` : ""} · {formatWhen(item.ts)}</span>
+          <button type="button" className="text-faint" aria-label="Live-Hinweis entfernen" onClick={() => void removeNotice(ids)}>
             ×
           </button>
         </p>
