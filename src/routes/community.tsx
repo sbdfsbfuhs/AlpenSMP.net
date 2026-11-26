@@ -26,6 +26,10 @@ function CommunityPage() {
   const [reviews, setReviews] = useState<LiveReview[] | null>(null);
   const [shots, setShots] = useState<Shot[] | null>(null);
   const [active, setActive] = useState<Shot | null>(null);
+  const averageRating = reviews?.length
+    ? reviews.reduce((sum, row) => sum + row.rating, 0) / reviews.length
+    : 0;
+  const roundedRating = Math.round(averageRating);
 
   useEffect(() => {
     if (!active) return;
@@ -133,25 +137,54 @@ function CommunityPage() {
         </div>
       </section>
 
-      <section className="shell grid gap-8 py-14 lg:grid-cols-[1fr_0.9fr]">
-        <div>
-          <p className="kicker">Stimmen</p>
-          <h2 className="display mt-3 text-4xl">Was die Community sagt</h2>
-          <p className="mt-3 text-muted">
-            {reviews === null
-              ? "Freigegebene Stimmen werden geladen."
-              : reviews.length === 0
-                ? "Noch keine freigegebene Stimme. Erst einreichen, dann gibt das Team sie frei."
-                : `${reviews.length} Stimmen · Schnitt ${(reviews.reduce((sum, row) => sum + row.rating, 0) / reviews.length).toFixed(1)}`}
-            {reviews && reviews.length > 0 ? <span className="text-star"> ★</span> : null}
-          </p>
-          <div className="mt-6 grid gap-3">
-            {(reviews ?? []).map((review) => (
+      <section className="shell py-14" aria-labelledby="community-reviews-title">
+        <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="kicker">Stimmen</p>
+            <h2 id="community-reviews-title" className="display mt-3 text-4xl">Was die Community sagt</h2>
+            <p className="mt-3 max-w-2xl text-muted">
+              Echte Bewertungen von Spielern – geprüft, bevor sie hier erscheinen.
+            </p>
+          </div>
+          {reviews && reviews.length > 0 ? (
+            <div className="card flex items-center gap-4 px-5 py-4">
+              <span className="display text-4xl text-fg">{averageRating.toFixed(1)}</span>
+              <span>
+                <span className="block text-xl leading-none text-star" aria-hidden="true">
+                  {"★".repeat(roundedRating)}
+                  <span className="text-faint">
+                    {"☆".repeat(5 - roundedRating)}
+                  </span>
+                </span>
+                <span className="mt-1 block text-sm text-muted">
+                  {reviews.length} {reviews.length === 1 ? "Stimme" : "Stimmen"}
+                </span>
+              </span>
+            </div>
+          ) : null}
+        </div>
+
+        {reviews === null ? (
+          <p className="mt-6 text-sm text-muted" role="status">Freigegebene Stimmen werden geladen…</p>
+        ) : reviews.length === 0 ? (
+          <div className="card mt-6 flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-semibold text-fg">Noch keine freigegebenen Stimmen</p>
+              <p className="mt-1 text-sm text-muted">Deine Bewertung kann die erste sein. Das Team prüft jeden Beitrag vor der Veröffentlichung.</p>
+            </div>
+            <a className="btn-brand shrink-0" href="#community-review-form">Bewertung abgeben</a>
+          </div>
+        ) : (
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {reviews.map((review) => (
               <ReviewCard key={review.name + review.ts} review={review} />
             ))}
           </div>
+        )}
+
+        <div id="community-review-form" className="mx-auto mt-10 max-w-3xl scroll-mt-24">
+          <ReviewForm />
         </div>
-        <ReviewForm />
       </section>
 
       {active && typeof document !== "undefined"
