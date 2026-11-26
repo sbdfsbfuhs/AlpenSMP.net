@@ -250,8 +250,8 @@ export function PlayerLeaderboards() {
 
   useEffect(() => {
     let stop = false;
-    const load = () => {
-      if (document.hidden) return;
+    const load = (force = false) => {
+      if (document.hidden && !force) return;
       fetchPlayerLeaderboards()
         .then((data) => {
           if (!stop) {
@@ -267,13 +267,14 @@ export function PlayerLeaderboards() {
           }
         });
     };
-    load();
-    const id = window.setInterval(load, 60_000);
-    document.addEventListener("visibilitychange", load);
+    load(true);
+    const id = window.setInterval(() => load(), 60_000);
+    const onVisibilityChange = () => load();
+    document.addEventListener("visibilitychange", onVisibilityChange);
     return () => {
       stop = true;
       window.clearInterval(id);
-      document.removeEventListener("visibilitychange", load);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, []);
 
