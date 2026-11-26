@@ -437,7 +437,7 @@ export function PlayerChart() {
   const { status } = useServerStatus();
   const [range, setRange] = useState<"1h" | "5h" | "24h" | "7d">("24h");
   const [points, setPoints] = useState<HistoryPoint[]>([]);
-  const [chartRows, setChartRows] = useState<{ label: string; spieler: number }[]>([]);
+  const [chartRows, setChartRows] = useState<{ t: number; spieler: number }[]>([]);
   const [reducedMotion, setReducedMotion] = useState(false);
   const chartRowsRef = useRef(chartRows);
   const chartInitialized = useRef(false);
@@ -477,10 +477,7 @@ export function PlayerChart() {
     if (status && Number.isFinite(status.players)) series.push({ t: now, n: status.players });
     return series
       .filter((p) => p.t <= now + 60000 && now - p.t <= span)
-      .map((p) => ({
-        label: new Date(p.t).toLocaleString("de-CH", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }),
-        spieler: p.n,
-      }));
+      .map((p) => ({ t: p.t, spieler: p.n }));
   }, [points, range, status]);
 
   const targetRows = useMemo(() => {
@@ -494,7 +491,7 @@ export function PlayerChart() {
       const current = rows[before];
       const next = rows[after];
       return {
-        label: next?.label ?? current?.label ?? "",
+        t: Math.round((current?.t ?? 0) + ((next?.t ?? 0) - (current?.t ?? 0)) * amount),
         spieler: (current?.spieler ?? 0) + ((next?.spieler ?? 0) - (current?.spieler ?? 0)) * amount,
       };
     });
@@ -523,7 +520,7 @@ export function PlayerChart() {
       const eased = 1 - (1 - progress) ** 3;
       const nextRows = targetRows.map((row, index) => {
         const from = startRows[index]?.spieler ?? row.spieler;
-        return { label: row.label, spieler: from + (row.spieler - from) * eased };
+        return { t: row.t, spieler: from + (row.spieler - from) * eased };
       });
       chartRowsRef.current = nextRows;
       setChartRows(nextRows);
@@ -542,7 +539,7 @@ export function PlayerChart() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold">Spieler online – Verlauf</h3>
-          <p className="text-sm text-muted">Nur der gewählte Zeitraum. Älter als 7 Tage wird gelöscht.</p>
+          <p className="text-sm text-muted">Unten: Uhrzeit · links: Spielerzahl. Älter als 7 Tage wird gelöscht.</p>
         </div>
         <div
           className="player-chart-ranges"
@@ -565,29 +562,63 @@ export function PlayerChart() {
           ))}
         </div>
       </div>
-      <div className="mt-4 h-56 min-w-0">
+      <div className="mt-4 h-72 min-w-0">
         <ChartGuard>
           {chartRows.length > 0 ? (
             <div className="player-chart-canvas">
               <ResponsiveContainer width="100%" height="100%" minWidth={1}>
-                <LineChart data={chartRows}>
+                <LineChart data={chartRows} margin={{ top: 12, right: 16, bottom: 4, left: 0 }}>
                   <CartesianGrid stroke="var(--color-line)" vertical={false} />
-                  <XAxis dataKey="label" hide />
+                  <XAxis
+                    dataKey="t"
+                    type="number"
+                    scale="time"
+                    domain={["dataMin", "dataMax"]}
+                    tickFormatter={(value: number) =>
+                      new Date(value).toLocaleString("de-CH", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    }
+                    tick={{ fill: "var(--color-muted)", fontSize: 14 }}
+                    tickLine={{ stroke: "var(--color-muted)" }}
+                    axisLine={{ stroke: "var(--color-line)" }}
+                    tickCount={6}
+                    minTickGap={28}
+                    tickMargin={10}
+                    height={46}
+                  />
                   <YAxis
                     allowDecimals={false}
                     domain={[0, status && status.max > 0 ? status.max : 30]}
-                    width={28}
-                    stroke="var(--color-faint)"
-                    fontSize={12}
+                    width={42}
+                    stroke="var(--color-muted)"
+                    fontSize={15}
                   />
                   <Tooltip
-                    contentStyle={{
-                      background: "var(--color-surface)",
-                      border: "1px solid var(--color-line)",
-                      borderRadius: 12,
-                      color: "var(--color-fg)",
+                    cursor={{ stroke: "var(--color-muted)", strokeDasharray: "4 4" }}
+                    content={({ active, payload, label }) => {
+                      const value = payload?.[0]?.value;
+                      if (!active || typeof value !== "number" || !Number.isFinite(Number(label))) return null;
+                      return (
+                        <div className="rounded-xl border border-line bg-surface px-4 py-3 shadow-xl">
+                          <p className="text-sm text-muted">
+                            {new Date(Number(label)).toLocaleString("de-CH", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </p>
+                          <p className="mt-1 text-base font-semibold text-fg">
+                            {Math.round(value).toLocaleString("de-CH")} Spieler online
+                          </p>
+                        </div>
+                      );
                     }}
-                    labelStyle={{ color: "var(--color-muted)" }}
                   />
                   <Line
                     type="monotone"
