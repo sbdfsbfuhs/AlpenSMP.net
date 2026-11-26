@@ -5,6 +5,7 @@ import {
   internalStaffEmail,
   isInternalStaffEmail,
   canCompleteFirstStaffPasswordSetup,
+  isNewStaffAccountAwaitingPasswordSetup,
   normalizeRecoveryEmail,
   normalizeStaffEmail,
   requiresPersonalStaffEmail,
@@ -135,6 +136,21 @@ describe("staff account email recovery", () => {
     assert.equal(canCompleteFirstStaffPasswordSetup({ ...account, accountUid: "uid-2" }), false);
     assert.equal(canCompleteFirstStaffPasswordSetup({ ...account, mustChangePw: false }), false);
     assert.equal(canCompleteFirstStaffPasswordSetup({ ...account, disabled: true }), false);
+  });
+
+  it("requires a setup code only for a new, active account awaiting its first password", () => {
+    const account = {
+      uid: "uid-1",
+      accountUid: "uid-1",
+      role: "helper",
+      accountRole: "helper",
+      mustChangePw: true,
+    };
+    assert.equal(isNewStaffAccountAwaitingPasswordSetup(account), true);
+    assert.equal(isNewStaffAccountAwaitingPasswordSetup({ ...account, mustChangePw: false }), false);
+    assert.equal(isNewStaffAccountAwaitingPasswordSetup({ ...account, accountUid: "uid-2" }), false);
+    assert.equal(isNewStaffAccountAwaitingPasswordSetup({ ...account, accountRole: "admin" }), false);
+    assert.equal(isNewStaffAccountAwaitingPasswordSetup({ ...account, disabled: true }), false);
   });
 
   it("generates an unpredictable one-time password without exposing it in the account flow", () => {

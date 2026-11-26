@@ -48,6 +48,24 @@ export function canCompleteFirstStaffPasswordSetup(input: {
     && input.linkedDisabled !== true;
 }
 
+export function isNewStaffAccountAwaitingPasswordSetup(input: {
+  uid: string;
+  accountUid?: string;
+  role?: string;
+  accountRole?: string;
+  mustChangePw?: boolean;
+  disabled?: boolean;
+  linkedDisabled?: boolean;
+}) {
+  return Boolean(input.uid)
+    && input.accountUid === input.uid
+    && Boolean(input.role)
+    && input.accountRole === input.role
+    && input.mustChangePw === true
+    && input.disabled !== true
+    && input.linkedDisabled !== true;
+}
+
 export function temporaryStaffPassword() {
   const bytes = globalThis.crypto.getRandomValues(new Uint8Array(32));
   return `Alpen!${Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;

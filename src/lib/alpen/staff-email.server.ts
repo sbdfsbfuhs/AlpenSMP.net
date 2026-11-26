@@ -4,7 +4,11 @@ import { getRequest } from "@tanstack/react-start/server";
 import { GoogleAuth } from "google-auth-library";
 import { SITE } from "@/lib/alpen/site";
 import { STAFF_PASSWORD_RESET_COOLDOWN_MS } from "./staff-email-cooldown.ts";
-import { normalizeRecoveryEmail, normalizeStaffEmail } from "./staff-account-flow.ts";
+import {
+  isNewStaffAccountAwaitingPasswordSetup,
+  normalizeRecoveryEmail,
+  normalizeStaffEmail,
+} from "./staff-account-flow.ts";
 import { renderStaffEmail, type StaffEmailKind } from "./staff-email-template.ts";
 
 type ServiceAccount = {
@@ -273,6 +277,53 @@ async function lookupFirebaseUser(idToken: string) {
   };
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+async function readStaffSetupRecord(path: string, accessToken: string) {
+  let response: Response;
+  try {
+    response = await fetch(new URL(`${path}.json`, `${SITE.fb}/`), {
+      headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch {
+    throw new Error("Der Einrichtungsstatus des Staff-Kontos konnte nicht sicher geprüft werden.");
+  }
+  if (!response.ok) {
+    console.error("[Staff-E-Mail] Firebase-Einrichtungsstatus konnte nicht gelesen werden.", response.status);
+    throw new Error("Der Einrichtungsstatus des Staff-Kontos konnte nicht sicher geprüft werden.");
+  }
+  try {
+    return await response.json() as unknown;
+  } catch {
+    throw new Error("Firebase lieferte einen ungültigen Einrichtungsstatus.");
+  }
+}
+
+async function isAwaitingFirstPasswordSetup(uid: string) {
+  const accessToken = await getAccessToken();
+  const link = await readStaffSetupRecord(`staffByUid/${encodeURIComponent(uid)}`, accessToken);
+  if (!isRecord(link) || typeof link.username !== "string" || !/^[a-z0-9._-]{2,24}$/i.test(link.username)) {
+    throw new Error("Das Staff-Konto ist keiner aktiven Teamzuordnung zugeordnet.");
+  }
+  const username = encodeURIComponent(link.username);
+  const account = await readStaffSetupRecord(`staffUsers/${username}`, accessToken);
+  if (!isRecord(account) || typeof link.role !== "string" || typeof account.role !== "string") {
+    throw new Error("Der Einrichtungsstatus des Staff-Kontos ist ungültig.");
+  }
+  return isNewStaffAccountAwaitingPasswordSetup({
+    uid,
+    accountUid: typeof account.uid === "string" ? account.uid : undefined,
+    role: link.role,
+    accountRole: account.role,
+    mustChangePw: account.mustChangePw === true,
+    disabled: account.disabled === true,
+    linkedDisabled: link.disabled === true,
+  });
+}
+
 export async function sendStaffEmailVerification(input: {
   idToken: string;
   expectedUid: string;
@@ -287,6 +338,7 @@ export async function sendStaffEmailVerification(input: {
     return { email: targetEmail, alreadyVerified: true };
   }
 
+  const firstPasswordSetupRequired = await isAwaitingFirstPasswordSetup(user.uid);
   const ip = getClientIp();
   if (!allowEmailRequest(targetEmail, ip, user.uid)) {
     throw new Error("Zu viele E-Mail-Anfragen. Bitte warte eine Weile und versuche es erneut.");
@@ -294,7 +346,7 @@ export async function sendStaffEmailVerification(input: {
 
   const requestType = user.email === targetEmail ? "VERIFY_EMAIL" : "VERIFY_AND_CHANGE_EMAIL";
   const continueUrl = new URL(SITE.staff);
-  continueUrl.searchParams.set("staffSetup", "verified");
+  if (firstPasswordSetupRequired) continueUrl.searchParams.set("staffSetup", "verified");
   let actionUrl: string;
   try {
     actionUrl = await requestFirebaseActionLink({

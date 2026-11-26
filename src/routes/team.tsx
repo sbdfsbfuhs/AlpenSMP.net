@@ -764,19 +764,19 @@ function Login({
     <div className="mx-auto max-w-md space-y-4">
       <form className="card card-still panel-in p-6" onSubmit={submit}>
         <h2 className="text-xl font-semibold">Anmelden</h2>
-        <p className="mt-2 text-sm text-muted">Melde dich mit der persönlichen E-Mail-Adresse deines Accounts und deinem Passwort an. Bei älteren Konten funktioniert übergangsweise auch der Teamname. Deine E-Mail-Adresse wird nicht öffentlich für die Teamnamen-Suche bereitgestellt. Der Minecraft-Server muss für die Anmeldung nicht online sein.</p>
+        <p className="mt-2 text-sm text-muted">Bestehende Konten melden sich mit ihrer persönlichen E-Mail-Adresse und dem selbst festgelegten Passwort an. Bei älteren Konten funktioniert übergangsweise auch der Teamname. Deine E-Mail-Adresse wird nicht öffentlich für die Teamnamen-Suche bereitgestellt. Der Minecraft-Server muss für die Anmeldung nicht online sein.</p>
         <label className="mt-5 block text-sm">
-          Persönliche E-Mail-Adresse oder Teamname für die Ersteinrichtung
+          Persönliche E-Mail-Adresse oder Teamname
           <input className="field mt-1" value={name} onChange={(e) => setName(e.target.value)} autoComplete="username" required />
         </label>
         <label className="mt-3 block text-sm">
-          Eigenes Passwort oder Einrichtungscode
+          Passwort
           <input className="field mt-1" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
         </label>
         <p className="mt-2 text-sm text-muted">
-          Neue Konten starten mit Teamname und Einrichtungscode. Nach der E-Mail-Bestätigung legst
-          du auf der zurückkehrenden Seite dein eigenes Passwort fest. Danach meldest du dich neu
-          an und bestätigst die erforderliche Zustimmung sowie deinen Minecraft-Namen.
+          Nur neu angelegte Konten benötigen zur ersten Anmeldung den Einrichtungscode statt eines
+          eigenen Passworts. Nach der E-Mail-Bestätigung legen sie ihr persönliches Passwort fest.
+          Für bestehende Konten ist kein Einrichtungscode nötig.
         </p>
         {mfaRequired ? (
           <label className="mt-3 block text-sm">
