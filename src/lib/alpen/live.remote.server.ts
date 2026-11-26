@@ -1,6 +1,6 @@
 import { SITE } from "@/lib/alpen/site";
 import { assertSameSiteRequest } from "@/lib/auth/isolation.server";
-import type { HistoryPoint, ServerStatus } from "./live";
+import type { HistoryPoint, PlayerLeaderboardEntry, PlayerLeaderboards, ServerStatus } from "./live";
 
 type HistoryRow = { t?: number; n?: number; by?: string; total_players_ever?: number };
 
@@ -67,4 +67,59 @@ export async function fetchHistory(limit: number): Promise<HistoryPoint[]> {
     .filter(isPlayerSample)
     .map((row) => ({ t: Number(row.t) || 0, n: Number(row.n) || 0 }))
     .sort((a, b) => a.t - b.t);
+}
+
+export async function fetchPlayerLeaderboards(): Promise<PlayerLeaderboards> {
+  const url = new URL("/api/public/stats/leaderboards", SITE.panelControlApi);
+  const res = await fetch(url, {
+    headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(8000),
+    redirect: "error",
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Spieler-Ranglisten sind momentan nicht verfügbar.");
+
+  const payload = (await res.json()) as {
+    ok?: unknown;
+    generatedAt?: unknown;
+    boards?: Record<string, unknown>;
+  };
+  const generatedAt = payload?.generatedAt;
+  if (
+    payload?.ok !== true ||
+    typeof generatedAt !== "number" ||
+    !Number.isSafeInteger(generatedAt) ||
+    generatedAt > Date.now() + 60_000 ||
+    Date.now() - generatedAt > 3 * 60_000 ||
+    !payload.boards ||
+    typeof payload.boards !== "object"
+  ) {
+    throw new Error("Die Spieler-Ranglisten enthalten ungültige oder veraltete Daten.");
+  }
+
+  const boardIds = ["playtime", "player_kills", "deaths", "mob_kills"] as const;
+  const boards = {} as PlayerLeaderboards["boards"];
+  for (const id of boardIds) {
+    const entries = payload.boards[id];
+    if (!Array.isArray(entries) || entries.length > 10) {
+      throw new Error("Die Spieler-Ranglisten enthalten ungültige Einträge.");
+    }
+    boards[id] = entries.map((entry: unknown, index: number) => {
+      const row = entry as Partial<PlayerLeaderboardEntry> | null;
+      if (
+        !row ||
+        row.rank !== index + 1 ||
+        typeof row.name !== "string" ||
+        !/^[A-Za-z0-9_]{3,16}$/.test(row.name) ||
+        typeof row.value !== "number" ||
+        !Number.isSafeInteger(row.value) ||
+        row.value < 0
+      ) {
+        throw new Error("Die Spieler-Ranglisten enthalten ungültige Einträge.");
+      }
+      return { rank: row.rank, name: row.name, value: row.value };
+    });
+  }
+
+  return { generatedAt, boards };
 }

@@ -5,7 +5,7 @@ import { DiscordLink, Shell, TikTokLink } from "@/components/site/shell";
 import { ModrinthLink } from "@/components/site/guide/mods";
 import { SiteMascot } from "@/components/site/assistant";
 import { HomeLiveCard } from "@/components/site/broadcast";
-import { CopyIp, MotdNotice, PlayerChart, StatStrip, StatusCard } from "@/components/site/live";
+import { CopyIp, MotdNotice, PlayerChart, PlayerLeaderboards, StatStrip, StatusCard } from "@/components/site/live";
 import { SeasonalDecorations } from "@/components/site/season-decor";
 import { FEATURES, PILLARS } from "@/lib/alpen/content";
 import { SITE } from "@/lib/alpen/site";
@@ -249,7 +249,7 @@ function Home() {
             <div>
               <p className="kicker">Live vom Server</p>
               <h2 className="display mt-3 text-3xl md:text-4xl">AlpenSMP gerade jetzt</h2>
-              <p className="mt-2 text-sm text-muted">Spielerzahlen und Community-Statistiken – nur wenn du sie ansehen möchtest.</p>
+              <p className="mt-2 text-sm text-muted">Spielerzahlen und Community-Statistiken.</p>
             </div>
             <details className="home-stats-disclosure" open={statsOpen} onToggle={(event) => setStatsOpen(event.currentTarget.open)}>
               <summary>{statsOpen ? "Statistiken ausblenden" : "Statistiken anzeigen"}</summary>
@@ -257,6 +257,7 @@ function Home() {
                 <div className="mt-5 space-y-4">
                   <StatStrip />
                   <PlayerChart />
+                  <PlayerLeaderboards />
                 </div>
               ) : null}
             </details>

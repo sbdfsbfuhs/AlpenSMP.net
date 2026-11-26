@@ -2,7 +2,16 @@ import { Copy } from "lucide-react";
 import { CopyTick, useCopyBurst } from "@/components/site/copy-burst";
 import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { fetchDiscordCount, fetchHistory, fetchSiteStats, fetchStatus, type HistoryPoint, type ServerStatus } from "@/lib/alpen/live";
+import {
+  fetchDiscordCount,
+  fetchHistory,
+  fetchPlayerLeaderboards,
+  fetchSiteStats,
+  fetchStatus,
+  type HistoryPoint,
+  type PlayerLeaderboards as PlayerLeaderboardsData,
+  type ServerStatus,
+} from "@/lib/alpen/live";
 import { SITE } from "@/lib/alpen/site";
 
 export function useServerStatus() {
@@ -232,6 +241,101 @@ export function StatStrip() {
         </div>
       ))}
     </div>
+  );
+}
+
+export function PlayerLeaderboards() {
+  const [snapshot, setSnapshot] = useState<PlayerLeaderboardsData | null>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let stop = false;
+    const load = () => {
+      if (document.hidden) return;
+      fetchPlayerLeaderboards()
+        .then((data) => {
+          if (!stop) {
+            setSnapshot(data);
+            setError("");
+          }
+        })
+        .catch((cause: unknown) => {
+          if (!stop) {
+            setError(cause instanceof Error
+              ? cause.message
+              : "Spieler-Ranglisten konnten nicht geladen werden.");
+          }
+        });
+    };
+    load();
+    const id = window.setInterval(load, 60_000);
+    document.addEventListener("visibilitychange", load);
+    return () => {
+      stop = true;
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", load);
+    };
+  }, []);
+
+  const boardTitles = [
+    { id: "playtime", title: "Spielzeit" },
+    { id: "player_kills", title: "Spieler-Kills" },
+    { id: "deaths", title: "Tode" },
+    { id: "mob_kills", title: "Mob-Kills" },
+  ] as const;
+
+  return (
+    <section className="card p-5" aria-labelledby="player-leaderboards-title">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h3 id="player-leaderboards-title" className="text-base font-semibold">Spieler-Ranglisten</h3>
+          <p className="text-sm text-muted">Top-Spieler nach den Statistiken aus der Hauptwelt.</p>
+        </div>
+        {snapshot ? (
+          <p className="text-xs text-faint">
+            Aktualisiert {new Date(snapshot.generatedAt).toLocaleTimeString("de-CH", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </p>
+        ) : null}
+      </div>
+      {!snapshot ? (
+        <p className="mt-4 text-sm text-muted" role={error ? "alert" : "status"}>
+          {error || "Ranglisten werden geladen…"}
+        </p>
+      ) : (
+        <>
+          {error ? <p className="mt-3 text-sm text-ember" role="status">{error}</p> : null}
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {boardTitles.map(({ id, title }) => (
+              <article key={id} className="rounded-xl border border-line bg-bg-raised p-4">
+                <h4 className="font-semibold">{title}</h4>
+                {snapshot.boards[id].length ? (
+                  <ol className="mt-3 space-y-2">
+                    {snapshot.boards[id].map((entry) => (
+                      <li key={`${entry.rank}-${entry.name}`} className="flex items-center justify-between gap-2 text-sm">
+                        <span className="min-w-0 truncate">
+                          <span className="mr-2 text-faint">{entry.rank}.</span>
+                          <span className="font-medium">{entry.name}</span>
+                        </span>
+                        <span className="shrink-0 text-muted">
+                          {id === "playtime"
+                            ? `${new Intl.NumberFormat("de-CH", { maximumFractionDigits: 1 }).format(entry.value / 72_000)} h`
+                            : entry.value.toLocaleString("de-CH")}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p className="mt-3 text-sm text-muted">Noch keine Einträge.</p>
+                )}
+              </article>
+            ))}
+          </div>
+        </>
+      )}
+    </section>
   );
 }
 

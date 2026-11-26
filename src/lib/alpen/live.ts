@@ -19,6 +19,12 @@ export type ServerStatus = {
 
 export type HistoryPoint = { t: number; n: number };
 
+export type PlayerLeaderboardEntry = { rank: number; name: string; value: number };
+export type PlayerLeaderboards = {
+  generatedAt: number;
+  boards: Record<"playtime" | "player_kills" | "deaths" | "mob_kills", PlayerLeaderboardEntry[]>;
+};
+
 export type LiveReview = {
   name: string;
   rating: number;
@@ -71,6 +77,16 @@ const fetchHistoryServer = createServerFn({ method: "POST" })
 
 export function fetchHistory(limit = 120): Promise<HistoryPoint[]> {
   return fetchHistoryServer({ data: limit });
+}
+
+const fetchPlayerLeaderboardsServer = createServerFn({ method: "POST" }).handler(async () => {
+  const server = await import("./live.remote.server.ts");
+  server.assertLiveRequest();
+  return server.fetchPlayerLeaderboards();
+});
+
+export function fetchPlayerLeaderboards(): Promise<PlayerLeaderboards> {
+  return fetchPlayerLeaderboardsServer();
 }
 
 export async function fetchReviews(): Promise<LiveReview[]> {
