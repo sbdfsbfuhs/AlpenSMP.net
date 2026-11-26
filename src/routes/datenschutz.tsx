@@ -224,18 +224,21 @@ function PrivacyPage() {
           Nach ausdrücklicher aktueller Einwilligung werden Staff-Aktivitätswerte getrennt für
           Website und Minecraft erfasst. Website-Zeit wird nur bei sichtbarem Staff-Center und
           kürzlicher Eingabe über begrenzte Zeitintervalle aggregiert; Eingabetexte werden dafür
-          nicht gespeichert. Die optionale Minecraft-Erfassung misst die Server-Verbindungszeit
-          der zugeordneten Staff-Konten einschliesslich verbundener AFK-Zeit, nicht einzelne
-          Spielaktionen. Die Website-Werte
-          liegen in der lokalen Sicherheits-API-Datenbank; Minecraft-Werte in einer lokalen
-          Plugin-Datei auf der geprüften Serverinstanz. Tageswerte werden 30 Tage und anschliessend
-          Wochenwerte bis höchstens 365 Tage gespeichert. Die Erfassung beginnt erst nach
-          Aktivierung und Einwilligung; rückwirkende Werte werden nicht erstellt. Die aktuelle
-          Zustimmungs-Zuordnung für Minecraft wird beim Abruf der Owner-Statistik synchronisiert;
-          ein Pausieren wird deshalb bei der nächsten Owner-Synchronisierung wirksam. Beim
-          Selbst-Widerruf entfernt die Sicherheits-API die Minecraft-Zuordnung und Website-Historie;
-          das Plugin übernimmt die Änderung spätestens bei seiner nächsten Prüfung. Fragen kannst
-          du an die Kontakt-E-Mail richten.
+          nicht gespeichert. AlpenAFK teilt die Minecraft-Verbindungszeit einwilligender Staff-
+          Konten in aktive und AFK-Zeit; einzelne Spielaktionen werden nicht erfasst. Zusätzlich
+          zählen wir öffentliche Nachrichten dieser Staff-Mitglieder und die Nutzung privater
+          Nachrichten-Befehle. Private Befehle sind Versuche und bestätigen keine Zustellung.
+          Nachrichteninhalte, Empfänger und Nachrichten anderer Spieler werden nicht gespeichert.
+          Website-Werte liegen in der lokalen Sicherheits-API-Datenbank; Minecraft-Werte in einer
+          lokalen Plugin-Datei auf der geprüften Serverinstanz. Tages- und Stundenwerte werden
+          30 Tage und anschliessend Wochenwerte bis höchstens 365 Tage gespeichert. Frühere
+          Verbindungswerte enthalten nicht getrennte AFK-Zeit und werden separat ausgewiesen. Die
+          Erfassung beginnt erst nach Aktivierung und Einwilligung; rückwirkende Werte werden nicht
+          erstellt. Die Zustimmungs-Zuordnung wird beim Abruf der Owner-Statistik synchronisiert;
+          ein Pausieren wird bei der nächsten Synchronisierung wirksam. Beim Selbst-Widerruf entfernt
+          die Sicherheits-API die Minecraft-Zuordnung und Website-Historie; das Plugin löscht die
+          Minecraft-Aktivitätsdaten bei der nächsten Prüfung. Fragen kannst du an die Kontakt-E-Mail
+          richten.
         </p>
         <p>
           Vor der ersten Zuordnung prüft das Panel den eingegebenen Minecraft-Namen anhand der

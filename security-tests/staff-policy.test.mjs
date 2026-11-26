@@ -13,7 +13,7 @@ const activeProfile = {
   role: "helper",
   disabled: false,
   activityConsent: {
-    version: "staff-activity-v2",
+    version: "staff-activity-v3",
     acceptedAt: 1_800_000_000_000,
     minecraftName: "TestPlayer",
   },
@@ -21,6 +21,17 @@ const activeProfile = {
 
 test("staff authorization requires an active matching UID mapping and account profile", () => {
   assert.equal(isActiveStaffIdentity(activeMapping, activeProfile, "helper-uid"), true);
+  assert.equal(
+    isActiveStaffIdentity(
+      activeMapping,
+      {
+        ...activeProfile,
+        activityConsent: { ...activeProfile.activityConsent, version: "staff-activity-v2" },
+      },
+      "helper-uid",
+    ),
+    false,
+  );
   assert.equal(
     isActiveStaffIdentity({ ...activeMapping, disabled: true }, activeProfile, "helper-uid"),
     false,

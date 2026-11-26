@@ -789,14 +789,17 @@ function Login({
           <div className="mt-5 space-y-3 rounded-xl border border-brand/40 bg-brand/5 p-4">
             <h3 className="font-semibold">Einwilligung erforderlich</h3>
             <p className="text-sm text-muted">
-              Für den Zugang werden dein letzter Staff-Center-Aktivitätszeitpunkt und dein Minecraft-Name
-              für die interne Teamverwaltung gespeichert. Der Minecraft-Name wird deinem Staff-Konto
-              zugeordnet. Website-Nutzungszeit wird nur bei sichtbarem Tab und kürzlicher Bedienung
-              gezählt. Minecraft-Zeit misst die Serververbindung einschliesslich AFK-Zeit, keine
-              einzelnen Spielaktionen. Beide Werte werden getrennt erfasst und können als
-              Gesamtsumme angezeigt werden; Tagesdetails werden 30 Tage und anschliessend
-              Wochenwerte bis zu einem Jahr aufbewahrt. Ohne
-              Zustimmung kannst du nicht fortfahren; wende dich bei Fragen bitte an den Owner.
+              Für die interne Teamverwaltung werden dein letzter Staff-Center-Aktivitätszeitpunkt
+              und dein zugeordneter Minecraft-Name verarbeitet. Website-Nutzungszeit wird nur bei
+              sichtbarem Tab und kürzlicher Bedienung gezählt. AlpenAFK teilt deine Minecraft-
+              Verbindungszeit in aktive und AFK-Zeit. Zusätzlich werden deine öffentlichen
+              Nachrichten und die Nutzung privater Nachrichten-Befehle stündlich gezählt. Private
+              Befehle sind Versuche; eine erfolgreiche Zustellung wird nicht bestätigt. Texte,
+              Empfänger, einzelne Spielaktionen und Daten anderer Spieler werden nicht gespeichert.
+              Tages- und Stundenwerte bleiben 30 Tage, Wochenwerte bis zu einem Jahr erhalten.
+              Frühere Verbindungswerte enthalten nicht getrennte AFK-Zeit und werden separat
+              ausgewiesen. Ohne Zustimmung kannst du nicht fortfahren; wende dich bei Fragen bitte
+              an den Owner.
             </p>
             <label className="block text-sm">
               Minecraft-Name
@@ -839,10 +842,12 @@ function Login({
                 onChange={(event) => setConsentAccepted(event.target.checked)}
               />
               <span>
-                Ich willige ein, dass meine aktive Nutzung des Staff-Centers sowie meine Spielzeit
-                als Server-Verbindungszeit auf dem Minecraft-Server erfasst, meinem Konto zugeordnet
-                und für die Teamverwaltung ausgewertet werden. Ich kann die Einwilligung für die
-                Zukunft über die Kontakt-E-Mail widerrufen.
+                Ich willige ein, dass meine aktive Nutzung des Staff-Centers, meine aktive und AFK-
+                Minecraft-Zeit sowie Zähler meiner öffentlichen Nachrichten und verwendeten privaten
+                Nachrichten-Befehle erfasst, meinem Konto zugeordnet und für die Teamverwaltung
+                ausgewertet werden. Nachrichteninhalte und Empfänger werden nicht gespeichert.
+                Private Befehle werden als Versuche gezählt, nicht als bestätigte Zustellungen. Ich
+                kann die Einwilligung für die Zukunft über die Kontakt-E-Mail widerrufen.
               </span>
             </label>
           </div>

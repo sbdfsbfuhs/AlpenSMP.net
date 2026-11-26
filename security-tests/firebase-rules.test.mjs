@@ -11,7 +11,7 @@ import { equalTo, get, orderByChild, query, ref, remove, set, update } from "fir
 const projectId = "demo-alpensmp-security";
 let environment;
 const activityConsent = {
-  version: "staff-activity-v2",
+  version: "staff-activity-v3",
   acceptedAt: 1_800_000_000_000,
   minecraftName: "TestPlayer",
 };
@@ -196,6 +196,12 @@ test("staff data stays blocked until the account records valid activity consent"
       version: "wrong-version",
       acceptedAt: 1_800_000_000_000,
       minecraftName: "TestPlayer",
+    }),
+  );
+  await assertFails(
+    set(ref(pending, "staffUsers/pending/activityConsent"), {
+      ...activityConsent,
+      version: "staff-activity-v2",
     }),
   );
   await assertFails(

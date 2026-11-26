@@ -1,4 +1,4 @@
-export const STAFF_ACTIVITY_CONSENT_VERSION = "staff-activity-v2";
+export const STAFF_ACTIVITY_CONSENT_VERSION = "staff-activity-v3";
 
 export class StaffActivityConsentRequired extends Error {
   constructor() {

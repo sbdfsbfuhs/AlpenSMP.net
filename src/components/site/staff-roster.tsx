@@ -52,56 +52,123 @@ function weekStart() {
   return date.getTime();
 }
 
+function dateInZurich() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Zurich",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  return `${parts.find((part) => part.type === "year")?.value}-${parts.find((part) => part.type === "month")?.value}-${parts.find((part) => part.type === "day")?.value}`;
+}
+
+function dateOffset(date: string, days: number) {
+  const result = new Date(`${date}T00:00:00.000Z`);
+  result.setUTCDate(result.getUTCDate() + days);
+  return result.toISOString().slice(0, 10);
+}
+
 function activityWeekStart() {
-  const date = new Date();
-  const day = (date.getUTCDay() + 6) % 7;
-  date.setUTCHours(0, 0, 0, 0);
-  date.setUTCDate(date.getUTCDate() - day);
-  return date.getTime();
+  const today = dateInZurich();
+  const day = new Date(`${today}T00:00:00.000Z`).getUTCDay();
+  return dateOffset(today, -((day + 6) % 7));
+}
+
+function websiteWeekStart() {
+  const today = new Date().toISOString().slice(0, 10);
+  const day = new Date(`${today}T00:00:00.000Z`).getUTCDay();
+  return dateOffset(today, -((day + 6) % 7));
 }
 
 type ActivityBuckets = { daily: Record<string, number>; weekly: Record<string, number> };
+type ActivityHour = { active: number; afk: number; publicMessages: number; privateCommands: number };
+type MinecraftActivity = ActivityBuckets & {
+  active?: ActivityBuckets;
+  afk?: ActivityBuckets;
+  publicMessages?: ActivityBuckets;
+  privateCommands?: ActivityBuckets;
+  legacy?: ActivityBuckets;
+  hourly?: Record<string, Record<string, ActivityHour>>;
+};
 type ActivityReport = {
   ok: true;
   trackingReady?: boolean;
   minecraftNames?: Record<string, string>;
-  members: Record<string, { website?: ActivityBuckets; minecraft?: ActivityBuckets }>;
+  members: Record<string, { website?: ActivityBuckets; minecraft?: MinecraftActivity }>;
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function isNumericRecord(value: unknown) {
+  return isRecord(value) && Object.values(value).every((item) =>
+    typeof item === "number" && Number.isFinite(item) && item >= 0);
+}
+
+function isActivityBuckets(value: unknown): value is ActivityBuckets {
+  return isRecord(value) && isNumericRecord(value.daily) && isNumericRecord(value.weekly);
+}
+
+function isMinecraftActivity(value: unknown): value is MinecraftActivity {
+  if (!isActivityBuckets(value)) return false;
+  const game = value as Record<string, unknown>;
+  if (["active", "afk", "publicMessages", "privateCommands", "legacy"].some((key) =>
+    game[key] !== undefined && !isActivityBuckets(game[key]))) return false;
+  if (game.hourly === undefined) return true;
+  if (!isRecord(game.hourly)) return false;
+  return Object.values(game.hourly).every((hours) =>
+    isRecord(hours) && Object.entries(hours).every(([hour, bucket]) =>
+      /^(?:0|[1-9]|1\d|2[0-3])$/.test(hour) &&
+      isRecord(bucket) &&
+      ["active", "afk", "publicMessages", "privateCommands"].every((key) =>
+        typeof bucket[key] === "number" && Number.isFinite(bucket[key]) && bucket[key] >= 0)));
+}
+
 function isActivityReport(value: unknown): value is ActivityReport {
-  if (!value || typeof value !== "object" || !("ok" in value) || value.ok !== true || !("members" in value)) return false;
-  const members = value.members;
-  if (!members || typeof members !== "object" || Array.isArray(members)) return false;
+  if (!isRecord(value) || value.ok !== true || !isRecord(value.members)) return false;
+  if ("trackingReady" in value && typeof value.trackingReady !== "boolean") return false;
   if ("minecraftNames" in value && (
-    !value.minecraftNames ||
-    typeof value.minecraftNames !== "object" ||
-    Array.isArray(value.minecraftNames) ||
+    !isRecord(value.minecraftNames) ||
     !Object.values(value.minecraftNames).every((name) => typeof name === "string")
   )) return false;
-  return Object.values(members).every((member) => {
-    if (!member || typeof member !== "object") return false;
-    return ["website", "minecraft"].every((source) => {
-      const buckets = (member as Record<string, unknown>)[source];
-      return buckets === undefined || (
-        buckets !== null &&
-        typeof buckets === "object" &&
-        "daily" in buckets &&
-        "weekly" in buckets &&
-        buckets.daily !== null &&
-        typeof buckets.daily === "object" &&
-        !Array.isArray(buckets.daily) &&
-        buckets.weekly !== null &&
-        typeof buckets.weekly === "object" &&
-        !Array.isArray(buckets.weekly)
-      );
-    });
+  return Object.values(value.members).every((member) => {
+    if (!isRecord(member)) return false;
+    if (member.website !== undefined && !isActivityBuckets(member.website)) return false;
+    if (member.minecraft === undefined) return true;
+    return isMinecraftActivity(member.minecraft);
   });
 }
 
 function currentWeekActivity(buckets: ActivityBuckets | undefined, start: string) {
   if (!buckets) return 0;
-  return Object.entries(buckets.daily).reduce((total, [day, seconds]) =>
-    day >= start && Number.isFinite(seconds) ? total + seconds : total, 0);
+  return Object.entries(buckets.daily).reduce((total, [day, amount]) =>
+    day >= start && Number.isFinite(amount) ? total + amount : total, 0);
+}
+
+function totalActivity(buckets: ActivityBuckets | undefined) {
+  if (!buckets) return 0;
+  return [...Object.values(buckets.daily), ...Object.values(buckets.weekly)]
+    .reduce((total, amount) => total + amount, 0);
+}
+
+function dateLabel(date: string) {
+  return new Intl.DateTimeFormat("de-CH", {
+    timeZone: "UTC",
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+  }).format(new Date(`${date}T12:00:00.000Z`));
+}
+
+function busiestHour(activity: MinecraftActivity | undefined) {
+  if (!activity?.hourly) return null;
+  const totals = Array.from({ length: 24 }, () => 0);
+  for (const hours of Object.values(activity.hourly)) {
+    for (const [hour, bucket] of Object.entries(hours)) totals[Number(hour)] += bucket.active;
+  }
+  const peak = Math.max(...totals);
+  return peak > 0 ? totals.indexOf(peak) : null;
 }
 
 function durationLabel(seconds: number) {
@@ -172,17 +239,24 @@ function StaffActivityStats({
     return () => window.clearInterval(timer);
   }, []);
 
-  const start = new Date(activityWeekStart()).toISOString().slice(0, 10);
-  const days = Math.max(1, Math.floor((Date.now() - activityWeekStart()) / 86_400_000) + 1);
+  const today = dateInZurich();
+  const start = activityWeekStart();
+  const siteStart = websiteWeekStart();
+  const days = Math.floor(
+    (Date.parse(`${today}T00:00:00.000Z`) - Date.parse(`${start}T00:00:00.000Z`)) / 86_400_000,
+  ) + 1;
+  const detailDates = Array.from({ length: 7 }, (_, index) => dateOffset(today, index - 6));
   return (
     <section className="card card-still space-y-3 p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-        <h3 className="font-semibold">Aktivität diese Woche</h3>
-        <p className="mt-1 text-xs text-muted">
-          Website-Zeit zählt sichtbare Nutzung mit kürzlicher Eingabe; Minecraft-Zeit misst die Serververbindung, nicht AFK- oder Spielaktionen.
-          Tageswerte: 30 Tage, danach Wochenwerte bis maximal ein Jahr. Die Historie beginnt erst ab Aktivierung.
-        </p>
+          <h3 className="font-semibold">Aktivität diese Woche</h3>
+          <p className="mt-1 text-xs text-muted">
+            Minecraft-Zeit wird mit AlpenAFK in aktive und AFK-Zeit getrennt. Nachrichten werden nur
+            gezählt, nicht gespeichert; private Befehle sind Versuche. Minecraft-Stunden und -Tageswerte nutzen
+            Europe/Zurich: täglich 30 Tage, danach Wochenwerte bis maximal ein Jahr. Historische
+            Onlinezeit vor der Trennung bleibt als AFK-eingeschlossen gekennzeichnet.
+          </p>
         </div>
         <button type="button" className="btn-ghost shrink-0" onClick={() => setRefreshKey((value) => value + 1)} disabled={loading}>
           {loading ? "Lade…" : "Aktualisieren"}
@@ -192,30 +266,40 @@ function StaffActivityStats({
       {errors.website ? <p className="text-sm text-red-300" role="alert">Website: {errors.website}</p> : null}
       {errors.minecraft ? <p className="text-sm text-red-300" role="alert">Minecraft: {errors.minecraft}</p> : null}
       {!loading && minecraft?.trackingReady === false && !errors.minecraft ? (
-        <p className="text-sm text-amber-200">Die Minecraft-Brücke hat die aktuelle Zustimmungs-Zuordnung noch nicht geladen. Aktualisiere nach etwa einer Minute.</p>
+        <p className="text-sm text-amber-200">
+          Die Minecraft-Brücke oder AlpenAFK-Statusverbindung ist noch nicht bereit. Neue aktive/AFK-Werte
+          erscheinen, sobald die aktualisierte Bridge läuft.
+        </p>
       ) : null}
       {!loading && people.length === 0 ? <p className="text-sm text-muted">Keine aktiven Staff-Konten.</p> : null}
       {!loading && people.length > 0 ? (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px] text-left text-sm">
+          <table className="w-full min-w-[920px] text-left text-sm">
             <thead className="text-xs text-muted">
               <tr>
                 <th className="py-2 pr-3">Mitglied</th>
                 <th className="py-2 pr-3">Website</th>
-                <th className="py-2 pr-3">Minecraft</th>
-                <th className="py-2 pr-3">Gesamt</th>
-                <th className="py-2">Ø pro Tag</th>
+                <th className="py-2 pr-3">Minecraft aktiv</th>
+                <th className="py-2 pr-3">AFK</th>
+                <th className="py-2 pr-3">Öffentlich</th>
+                <th className="py-2 pr-3">Private Befehle*</th>
+                <th className="py-2 pr-3">Aktiv gesamt</th>
+                <th className="py-2">Ø/Tag</th>
               </tr>
             </thead>
             <tbody>
               {people.map(({ username, label }) => {
                 const siteMember = website?.members[username];
                 const gameMember = minecraft?.members[username];
-                const siteSeconds = currentWeekActivity(siteMember?.website, start);
-                const gameSeconds = currentWeekActivity(gameMember?.minecraft, start);
+                const game = gameMember?.minecraft;
+                const siteSeconds = currentWeekActivity(siteMember?.website, siteStart);
                 const siteReady = Boolean(siteMember);
                 const gameReady = Boolean(gameMember && minecraft?.trackingReady);
-                const complete = siteReady && gameReady;
+                const metricsReady = Boolean(gameReady && game?.active && game.afk);
+                const activeSeconds = currentWeekActivity(game?.active, start);
+                const afkSeconds = currentWeekActivity(game?.afk, start);
+                const totalActive = siteSeconds + activeSeconds;
+                const complete = siteReady && metricsReady;
                 return (
                   <tr key={username} className="border-t border-white/10">
                     <th scope="row" className="py-2 pr-3 font-medium">
@@ -225,16 +309,75 @@ function StaffActivityStats({
                           Minecraft: {minecraft.minecraftNames[username]}
                         </span>
                       ) : null}
+                      {totalActivity(game?.legacy) > 0 ? (
+                        <span className="block text-xs font-normal text-amber-200">
+                          Historisch inkl. AFK: {durationLabel(totalActivity(game?.legacy))}
+                        </span>
+                      ) : null}
                     </th>
                     <td className="py-2 pr-3">{siteReady ? durationLabel(siteSeconds) : "Nicht erfasst"}</td>
-                    <td className="py-2 pr-3">{gameReady ? durationLabel(gameSeconds) : minecraft?.trackingReady ? "Nicht erfasst" : "—"}</td>
-                    <td className="py-2 pr-3">{complete ? durationLabel(siteSeconds + gameSeconds) : "Unvollständig"}</td>
-                    <td className="py-2">{complete ? `${Math.round((siteSeconds + gameSeconds) / days / 60)} min` : "—"}</td>
+                    <td className="py-2 pr-3">{metricsReady ? durationLabel(activeSeconds) : "—"}</td>
+                    <td className="py-2 pr-3">{metricsReady ? durationLabel(afkSeconds) : "—"}</td>
+                    <td className="py-2 pr-3">
+                      {gameReady ? currentWeekActivity(game?.publicMessages, start).toLocaleString("de-CH") : "—"}
+                    </td>
+                    <td className="py-2 pr-3">
+                      {gameReady ? currentWeekActivity(game?.privateCommands, start).toLocaleString("de-CH") : "—"}
+                    </td>
+                    <td className="py-2 pr-3">{complete ? durationLabel(totalActive) : "Unvollständig"}</td>
+                    <td className="py-2">{complete ? `${Math.round(totalActive / days / 60)} min` : "—"}</td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
+          <p className="mt-2 text-xs text-muted">* Verwendete private Nachrichten-Befehle, keine bestätigten Zustellungen.</p>
+        </div>
+      ) : null}
+      {!loading && people.length > 0 ? (
+        <div className="space-y-2">
+          {people.map(({ username, label }) => {
+            const game = minecraft?.members[username]?.minecraft;
+            const peakHour = busiestHour(game);
+            const detailsReady = Boolean(minecraft?.trackingReady && game?.active && game.afk);
+            const messagesReady = Boolean(minecraft?.trackingReady && game?.publicMessages && game.privateCommands);
+            return (
+              <details key={`${username}-activity`} className="rounded-lg border border-white/10 px-3 py-2">
+                <summary className="cursor-pointer text-sm font-medium">
+                  Tagesdetails: {label} (letzte 7 Tage)
+                </summary>
+                <p className="mt-2 text-xs text-muted">
+                  Aktivste Stunde der letzten 30 Tage: {peakHour === null ? "noch keine aktiven Werte" : `${String(peakHour).padStart(2, "0")}:00–${String((peakHour + 1) % 24).padStart(2, "0")}:00 Uhr`}
+                </p>
+                <div className="mt-2 overflow-x-auto">
+                  <table className="w-full min-w-[650px] text-left text-xs">
+                    <thead className="text-muted">
+                      <tr>
+                        <th className="py-1 pr-3">Tag</th>
+                        <th className="py-1 pr-3">Aktiv</th>
+                        <th className="py-1 pr-3">AFK</th>
+                        <th className="py-1 pr-3">Öffentlich</th>
+                        <th className="py-1 pr-3">Private Befehle*</th>
+                        <th className="py-1">Alt: inkl. AFK</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {detailDates.map((date) => (
+                        <tr key={date} className="border-t border-white/10">
+                          <th scope="row" className="py-1 pr-3 font-medium">{dateLabel(date)}</th>
+                          <td className="py-1 pr-3">{detailsReady ? durationLabel(game?.active?.daily[date] || 0) : "—"}</td>
+                          <td className="py-1 pr-3">{detailsReady ? durationLabel(game?.afk?.daily[date] || 0) : "—"}</td>
+                          <td className="py-1 pr-3">{messagesReady ? (game?.publicMessages?.daily[date] || 0).toLocaleString("de-CH") : "—"}</td>
+                          <td className="py-1 pr-3">{messagesReady ? (game?.privateCommands?.daily[date] || 0).toLocaleString("de-CH") : "—"}</td>
+                          <td className="py-1">{game?.legacy?.daily[date] ? durationLabel(game.legacy.daily[date]) : "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+            );
+          })}
         </div>
       ) : null}
     </section>
