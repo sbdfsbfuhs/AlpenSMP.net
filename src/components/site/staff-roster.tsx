@@ -409,6 +409,18 @@ export function Roster({ owner, note }: { owner: boolean; note: (text: string) =
     if (left !== right) return left - right;
     return a[0].localeCompare(b[0], "de");
   });
+  const hasBuildmanager = people.some(([, item]) => asRole(item.role) === "buildmanager");
+  const buildmanagerRank = rank.get("buildmanager") ?? ROLES.length;
+  const nextRoleIndex = people.findIndex(
+    ([, item]) => (rank.get(asRole(item.role)) ?? ROLES.length) > buildmanagerRank,
+  );
+  const buildmanagerInsertIndex = nextRoleIndex < 0 ? people.length : nextRoleIndex;
+  const emptyBuildmanagerSection = (
+    <section className="py-2" aria-label="Buildmanager">
+      <h3 className="text-sm font-semibold text-muted">Buildmanager</h3>
+      <p className="card card-still mt-2 p-4 text-sm text-muted">Noch keine Buildmanager im Team.</p>
+    </section>
+  );
   const late = people.filter(([name, item]) => {
     if (item.disabled || away.has(name)) return false;
     const seen = presence[name]?.lastSeen || 0;
@@ -467,6 +479,7 @@ export function Roster({ owner, note }: { owner: boolean; note: (text: string) =
         const overdue = !absent && !item.disabled && days >= limit;
         return (
           <div key={name}>
+            {!hasBuildmanager && index === buildmanagerInsertIndex ? emptyBuildmanagerSection : null}
             {role !== previous ? <h3 className="pt-2 text-sm font-semibold text-muted">{roleLabel(role)}</h3> : null}
             <article className={`card card-still mt-2 border-2 p-4 text-sm ${tone}`}>
               <p className={`font-semibold${overdue ? " text-red-200" : ""}`}>
@@ -534,6 +547,7 @@ export function Roster({ owner, note }: { owner: boolean; note: (text: string) =
           </div>
         );
       })}
+      {!hasBuildmanager && buildmanagerInsertIndex === people.length ? emptyBuildmanagerSection : null}
     </div>
   );
 }
