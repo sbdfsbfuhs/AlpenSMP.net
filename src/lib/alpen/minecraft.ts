@@ -12,6 +12,14 @@ export type MinecraftPlayersSnapshot = {
   bans: MinecraftBan[];
 };
 
+export function minecraftNameVerificationErrorMessage(data: unknown, status: number) {
+  if (data && typeof data === "object" && !Array.isArray(data)) {
+    const message = (data as Record<string, unknown>).error;
+    if (typeof message === "string" && message.trim()) return message.trim();
+  }
+  return `Die Minecraft-Serverhistorie konnte nicht geprüft werden (${status}).`;
+}
+
 export function suggestMinecraftPlayers(query: string, candidates: string[], limit = 8): string[] {
   const needle = query.trim().toLocaleLowerCase();
   const uniqueNames = new Map<string, string>();

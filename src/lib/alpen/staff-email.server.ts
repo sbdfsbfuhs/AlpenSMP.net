@@ -293,6 +293,8 @@ export async function sendStaffEmailVerification(input: {
   }
 
   const requestType = user.email === targetEmail ? "VERIFY_EMAIL" : "VERIFY_AND_CHANGE_EMAIL";
+  const continueUrl = new URL(SITE.staff);
+  continueUrl.searchParams.set("staffSetup", "verified");
   let actionUrl: string;
   try {
     actionUrl = await requestFirebaseActionLink({
@@ -300,7 +302,7 @@ export async function sendStaffEmailVerification(input: {
       email: user.email,
       idToken: input.idToken,
       ...(requestType === "VERIFY_AND_CHANGE_EMAIL" ? { newEmail: targetEmail } : {}),
-      continueUrl: SITE.staff,
+      continueUrl: continueUrl.toString(),
     });
   } catch (error) {
     if (error instanceof FirebaseActionError) throw publicFirebaseActionError(error);

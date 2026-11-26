@@ -15,6 +15,7 @@ import {
 import { isMoved, loadPath, relayDetail, SecurityDenied, SecurityDown } from "@/lib/alpen/security";
 import {
   isMinecraftPlayersResponse,
+  minecraftNameVerificationErrorMessage,
   minecraftBanKey,
   minecraftBans,
   minecraftPlayersSnapshot,
@@ -24,9 +25,11 @@ import {
 } from "@/lib/alpen/minecraft";
 import { isPermanentBan, shouldArchivePermanentBan } from "./moderation.ts";
 import {
+  canCompleteFirstStaffPasswordSetup,
   internalStaffEmail,
   isInternalStaffEmail,
   normalizeStaffEmail,
+  normalizeRecoveryEmail,
   requiresPersonalStaffEmail,
   temporaryStaffPassword,
 } from "./staff-account-flow.ts";
@@ -487,6 +490,71 @@ export async function savePassword(username: string, password: string) {
   await fbUpdate(`staffUsers/${name}`, { mustChangePw: false });
 }
 
+export async function completeFirstStaffPasswordSetup(
+  emailValue: string,
+  setupCode: string,
+  password: string,
+) {
+  const email = normalizeRecoveryEmail(emailValue);
+  if (!setupCode) throw new Error("Bitte gib deinen Einrichtungscode ein.");
+  if (password.length < 8) throw new Error("Das eigene Passwort muss mindestens 8 Zeichen haben.");
+
+  try {
+    const signed = await signInEmail(email, setupCode);
+    if (!signed.emailVerified || normalizeStaffEmail(signed.email) !== email) {
+      throw new Error("Bitte bestätige zuerst diese persönliche E-Mail-Adresse.");
+    }
+
+    const link = await fbGet<{
+      username?: string;
+      role?: string;
+      disabled?: boolean;
+    }>(`staffByUid/${signed.uid}`);
+    if (!link?.username) {
+      throw new Error("Dieses Firebase-Konto ist keinem aktiven Staff-Konto zugeordnet.");
+    }
+
+    const username = staffName(link.username);
+    const account = await fbGet<{
+      uid?: string;
+      role?: string;
+      mustChangePw?: boolean;
+      disabled?: boolean;
+    }>(`staffUsers/${username}`);
+    if (
+      !account ||
+      !account.role ||
+      account.role !== link.role ||
+      !canCompleteFirstStaffPasswordSetup({
+        email: signed.email,
+        emailVerified: signed.emailVerified === true,
+        uid: signed.uid,
+        accountUid: account.uid,
+        mustChangePw: account.mustChangePw,
+        disabled: account.disabled,
+        linkedDisabled: link.disabled,
+      })
+    ) {
+      throw new Error(
+        "Dieses Konto benötigt keine Ersteinrichtung mehr oder ist nicht aktiv. Melde dich mit deinem aktuellen Passwort an.",
+      );
+    }
+
+    await changeOwnPassword(password);
+    try {
+      await fbUpdate(`staffUsers/${username}`, { mustChangePw: false });
+    } catch (error) {
+      const detail = error instanceof Error ? ` (${error.message})` : "";
+      throw new Error(
+        `Das Passwort wurde geändert, aber der Einrichtungsstatus konnte nicht gespeichert werden. Melde dich mit dem neuen Passwort an; falls du erneut zur Passwortseite kommst, speichere es dort noch einmal.${detail}`,
+      );
+    }
+    return email;
+  } finally {
+    clearFirebaseLogin();
+  }
+}
+
 export async function syncStaffDirectory(actor: Pick<StaffSession, "role">) {
   if (actor.role !== "owner") throw new Error("Nur der Owner darf das Teamverzeichnis synchronisieren.");
   const [users, directory] = await Promise.all([
@@ -742,15 +810,22 @@ export async function verifyMinecraftNamePlayed(name: string) {
     cache: "no-store",
     signal: AbortSignal.timeout(8000),
   });
-  if (!response.ok) {
-    throw new Error(`Die Minecraft-Serverhistorie konnte nicht geprüft werden (${response.status}).`);
+  let payload: unknown;
+  try {
+    payload = await response.json();
+  } catch {
+    if (!response.ok) {
+      throw new Error(minecraftNameVerificationErrorMessage(null, response.status));
+    }
+    throw new Error("Das Panel hat eine ungültige Prüfantwort geliefert.");
   }
-  const result = await response.json() as {
-    ok?: boolean;
-    verified?: boolean;
-    indexed?: boolean;
-    canonicalName?: string;
-  };
+  if (!response.ok) {
+    throw new Error(minecraftNameVerificationErrorMessage(payload, response.status));
+  }
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("Das Panel hat eine ungültige Prüfantwort geliefert.");
+  }
+  const result = payload as Record<string, unknown>;
   if (result.ok !== true || typeof result.verified !== "boolean" || typeof result.indexed !== "boolean") {
     throw new Error("Das Panel hat eine ungültige Prüfantwort geliefert.");
   }
@@ -891,18 +966,29 @@ export async function removeStaffAccount(username: string, actor: string, actorR
   const row = await fbGet<{ uid?: string; role?: string; lateDays?: number }>(
     `staffUsers/${name}`,
   );
+  if (!row?.uid) throw new Error("Account fehlt oder ist nicht mit Firebase verknüpft.");
   if (actorRole !== "owner" && !(actorRole === "buildmanager" && row?.role === "builder")) {
     throw new Error("Buildmanager dürfen nur Builder-Accounts verwalten.");
   }
   await writeStaffDirectory(name, {
-    role: asRole(row?.role),
+    role: asRole(row.role),
     disabled: true,
-    lateDays: lateDays(row?.lateDays),
+    lateDays: lateDays(row.lateDays),
   });
   await fbRemove(`staffGate/${name}`);
-  if (row?.uid) await fbUpdate(`staffByUid/${row.uid}`, { disabled: true, removed: true });
+  await fbUpdate(`staffByUid/${row.uid}`, { disabled: true, removed: true });
   await fbRemove(`staffUsers/${name}`);
-  await logStaff(actor, "Account gelöscht", name, name);
+  const authWarning = `Das Firebase-Login ${internalStaffEmail(name)} bleibt bestehen. Wenn du denselben Namen erneut anlegst, muss der Owner dieses Login vorher manuell in Firebase Authentication löschen.`;
+  try {
+    await logStaff(actor, "Account gelöscht", name, name);
+    return { authWarning };
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : "unbekannter Fehler";
+    return {
+      authWarning,
+      auditWarning: `Das Sicherheitsprotokoll konnte nicht aktualisiert werden (${detail}).`,
+    };
+  }
 }
 
 export async function loginStaff(

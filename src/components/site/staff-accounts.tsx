@@ -16,7 +16,7 @@ import {
   type ModItem,
   type StaffSession,
 } from "@/lib/alpen/staff";
-import { isInternalStaffEmail } from "@/lib/alpen/staff-account-flow";
+import { internalStaffEmail, isInternalStaffEmail } from "@/lib/alpen/staff-account-flow";
 
 const BUILDER_DIRECTORY_QUERY = { orderBy: "role", equalTo: "builder" } as const;
 
@@ -77,6 +77,7 @@ export function Accounts({ note, actor }: { note: (text: string) => void; actor:
   const [role, setRole] = useState("helper");
   const [setupCredential, setSetupCredential] = useState<{ username: string; role: string; code: string } | null>(null);
   const [formError, setFormError] = useState("");
+  const [duplicateAuthName, setDuplicateAuthName] = useState(false);
   const [syncingDirectory, setSyncingDirectory] = useState(false);
   const [search, setSearch] = useState("");
   const [accountFilter, setAccountFilter] = useState<"all" | "active" | "paused">("all");
@@ -149,6 +150,7 @@ export function Accounts({ note, actor }: { note: (text: string) => void; actor:
               onSubmit={(event) => {
                 event.preventDefault();
                 setFormError("");
+                setDuplicateAuthName(false);
                 setSetupCredential(null);
                 const accountRole = actor.role === "buildmanager" ? "builder" : role;
                 void createStaffAccount({
@@ -163,7 +165,11 @@ export function Accounts({ note, actor }: { note: (text: string) => void; actor:
                     setSetupCredential({ username: username.trim(), role: accountRole, code: setupCode });
                     note(auditWarning || "Account angelegt. Den Einrichtungscode bitte sicher direkt weitergeben.");
                   })
-                  .catch((err) => setFormError(err instanceof Error ? err.message : "Anlegen fehlgeschlagen"));
+                  .catch((err) => {
+                    const message = err instanceof Error ? err.message : "Anlegen fehlgeschlagen";
+                    setFormError(message);
+                    setDuplicateAuthName(/bereits registriert/i.test(message));
+                  });
               }}
             >
               <p className="text-sm text-muted">
@@ -178,7 +184,11 @@ export function Accounts({ note, actor }: { note: (text: string) => void; actor:
               ) : null}
               <label className="block text-sm font-medium">
                 Teamname
-                <input className="field mt-1" placeholder="Name im Team" value={username} onChange={(event) => setUsername(event.target.value)} required autoComplete="off" />
+                <input className="field mt-1" placeholder="Name im Team" value={username} onChange={(event) => {
+                  setUsername(event.target.value);
+                  setFormError("");
+                  setDuplicateAuthName(false);
+                }} required autoComplete="off" />
               </label>
               {actor.role === "owner" ? (
                 <label className="block text-sm font-medium">
@@ -197,6 +207,21 @@ export function Accounts({ note, actor }: { note: (text: string) => void; actor:
                 <p className="rounded-md border border-line p-3 text-sm text-muted">Rolle: Builder. Buildmanager können ausschließlich Builder-Konten anlegen.</p>
               )}
               {formError ? <p className="text-sm text-ember" role="alert">{formError}</p> : null}
+              {duplicateAuthName && actor.role === "owner" ? (
+                <div className="space-y-2 rounded-md border border-line p-3">
+                  <p className="text-sm text-muted">
+                    Wenn dieser Name zuvor gelöscht wurde, ist sein Firebase-Login möglicherweise noch vorhanden. Suche in Firebase Authentication nach <strong>{internalStaffEmail(username)}</strong> und lösche nur den Eintrag, der zu diesem alten Teamkonto gehört. Danach kannst du den Team-Account hier erneut anlegen.
+                  </p>
+                  <a
+                    className="btn-ghost inline-block"
+                    href="https://console.firebase.google.com/project/alpensmp-ad844/authentication/users"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Firebase Authentication öffnen
+                  </a>
+                </div>
+              ) : null}
               <button className="btn-brand w-full sm:w-auto" type="submit">Team-Account anlegen</button>
             </form>
           </details>
@@ -414,18 +439,23 @@ function AccountCard({
   }
 
   async function deleteAccount() {
-    if (!window.confirm("Account löschen? Gespeicherte Bans bleiben.")) return;
+    if (!window.confirm("Teamkonto aus dem Panel entfernen? Das Firebase-Login muss bei Wiederverwendung manuell gelöscht werden. Gespeicherte Bans bleiben.")) return;
+    let result: Awaited<ReturnType<typeof removeStaffAccount>>;
     try {
-      await removeStaffAccount(name, actor.username, actor.role);
+      result = await removeStaffAccount(name, actor.username, actor.role);
     } catch (error) {
       note(error instanceof Error ? error.message : "Löschen fehlgeschlagen.");
       return;
     }
     try {
       await syncMinecraftStaffActivity();
-      note("Account gelöscht; Minecraft-Zuordnung synchronisiert.");
+      const warnings = [result.authWarning, result.auditWarning].filter(Boolean).join(" ");
+      note(
+        `${warnings} Minecraft-Zuordnung synchronisiert.`,
+      );
     } catch (error) {
-      note(`Account gelöscht, aber Minecraft-Zuordnung nicht synchronisiert: ${error instanceof Error ? error.message : "unbekannter Fehler"}`);
+      const syncWarning = `Minecraft-Zuordnung nicht synchronisiert: ${error instanceof Error ? error.message : "unbekannter Fehler"}`;
+      note(`${[result.authWarning, result.auditWarning].filter(Boolean).join(" ")} ${syncWarning}`);
     }
   }
 

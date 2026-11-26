@@ -30,6 +30,24 @@ export function requiresPersonalStaffEmail(email: string, emailVerified: boolean
   return !emailVerified || isInternalStaffEmail(email);
 }
 
+export function canCompleteFirstStaffPasswordSetup(input: {
+  email: string;
+  emailVerified: boolean;
+  uid: string;
+  accountUid?: string;
+  mustChangePw?: boolean;
+  disabled?: boolean;
+  linkedDisabled?: boolean;
+}) {
+  return input.emailVerified
+    && !isInternalStaffEmail(input.email)
+    && Boolean(input.uid)
+    && input.accountUid === input.uid
+    && input.mustChangePw === true
+    && input.disabled !== true
+    && input.linkedDisabled !== true;
+}
+
 export function temporaryStaffPassword() {
   const bytes = globalThis.crypto.getRandomValues(new Uint8Array(32));
   return `Alpen!${Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;

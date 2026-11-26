@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { isMinecraftPlayersResponse, minecraftPlayersSnapshot, suggestMinecraftPlayers } from "./minecraft.ts";
+import {
+  isMinecraftPlayersResponse,
+  minecraftNameVerificationErrorMessage,
+  minecraftPlayersSnapshot,
+  suggestMinecraftPlayers,
+} from "./minecraft.ts";
 
 describe("Minecraft-Spieler- und Bannlisten", () => {
   it("behält permanente Banns ohne Grund als aktive Banns", () => {
@@ -56,5 +61,19 @@ describe("Minecraft-Spieler- und Bannlisten", () => {
     ]) {
       assert.equal(isMinecraftPlayersResponse(response), false);
     }
+  });
+
+  it("zeigt den erklärenden Fehler der Minecraft-Prüf-API statt nur einen Statuscode", () => {
+    assert.equal(
+      minecraftNameVerificationErrorMessage(
+        { error: "Der Minecraft-Nachweisindex konnte nicht gelesen werden." },
+        503,
+      ),
+      "Der Minecraft-Nachweisindex konnte nicht gelesen werden.",
+    );
+    assert.equal(
+      minecraftNameVerificationErrorMessage({ error: "  " }, 503),
+      "Die Minecraft-Serverhistorie konnte nicht geprüft werden (503).",
+    );
   });
 });

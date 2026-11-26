@@ -15,6 +15,8 @@ test("staff email templates include a matching subject, call to action, and text
 
   assert.match(verification.subject, /E-Mail/);
   assert.match(verification.html, /E-Mail bestätigen/);
+  assert.match(verification.text, /eigenes Passwort festlegen/);
+  assert.match(verification.text, /meldest dich anschließend neu an/);
   assert.match(verification.text, /https:\/\/alpensmp-ad844\.firebaseapp\.com/);
   assert.match(reset.subject, /Passwort/);
   assert.match(reset.html, /Neues Passwort festlegen/);

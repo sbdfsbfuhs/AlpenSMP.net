@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import {
   internalStaffEmail,
   isInternalStaffEmail,
+  canCompleteFirstStaffPasswordSetup,
   normalizeRecoveryEmail,
   normalizeStaffEmail,
   requiresPersonalStaffEmail,
@@ -118,6 +119,22 @@ describe("staff account email recovery", () => {
     assert.equal(requiresPersonalStaffEmail("member@example.com", true), false);
     assert.equal(requiresPersonalStaffEmail("member@example.com", false), true);
     assert.equal(requiresPersonalStaffEmail("member@staff.alpensmp.net", true), true);
+  });
+
+  it("allows first-password setup only for the verified, active account that still requires it", () => {
+    const account = {
+      email: "member@example.com",
+      emailVerified: true,
+      uid: "uid-1",
+      accountUid: "uid-1",
+      mustChangePw: true,
+    };
+    assert.equal(canCompleteFirstStaffPasswordSetup(account), true);
+    assert.equal(canCompleteFirstStaffPasswordSetup({ ...account, emailVerified: false }), false);
+    assert.equal(canCompleteFirstStaffPasswordSetup({ ...account, email: "member@staff.alpensmp.net" }), false);
+    assert.equal(canCompleteFirstStaffPasswordSetup({ ...account, accountUid: "uid-2" }), false);
+    assert.equal(canCompleteFirstStaffPasswordSetup({ ...account, mustChangePw: false }), false);
+    assert.equal(canCompleteFirstStaffPasswordSetup({ ...account, disabled: true }), false);
   });
 
   it("generates an unpredictable one-time password without exposing it in the account flow", () => {

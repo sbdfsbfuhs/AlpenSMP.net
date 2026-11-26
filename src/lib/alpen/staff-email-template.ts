@@ -24,10 +24,10 @@ export function renderStaffEmail({ kind, actionUrl }: StaffEmailTemplateInput) {
   const escapedActionUrl = escapeHtml(actionUrl);
   const intro = isPasswordReset
     ? "Für dein AlpenSMP-Teamkonto wurde ein neues Passwort angefordert."
-    : "Bestätige deine persönliche E-Mail-Adresse, damit du dein AlpenSMP-Teamkonto verwenden kannst.";
+    : "Bestätige deine persönliche E-Mail-Adresse, damit du dein AlpenSMP-Teamkonto verwenden kannst. Bei der Ersteinrichtung kannst du danach direkt dein eigenes Passwort festlegen.";
   const expiry = isPasswordReset
     ? "Der Link ist nur kurze Zeit gültig. Wenn du das Zurücksetzen nicht angefordert hast, kannst du diese E-Mail ignorieren."
-    : "Der Link ist nur kurze Zeit gültig. Erst nach der Bestätigung wird deine persönliche Adresse für das Teamkonto verwendet.";
+    : "Der Link ist nur kurze Zeit gültig. Nach der Bestätigung wirst du zum Staff-Center zurückgeleitet. Bei der Ersteinrichtung legst du dort dein eigenes Passwort fest und meldest dich anschließend neu an.";
 
   return {
     subject,

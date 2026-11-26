@@ -55,6 +55,7 @@ import {
   isValidMinecraftUsername,
   shouldArchivePermanentBan,
   loginStaff,
+  completeFirstStaffPasswordSetup,
   StaffPersonalEmailRequired,
   StaffActivityConsentRequired,
   executeMinecraftUnban,
@@ -161,13 +162,32 @@ const DEFAULT_LAYOUT = normalizeStaffLayout(
   ["moderation", "roster", "absence"],
 );
 
+function clearStaffSetupReturnMarker() {
+  const url = new URL(window.location.href);
+  if (url.searchParams.get("staffSetup") !== "verified") return;
+  url.searchParams.delete("staffSetup");
+  window.history.replaceState(
+    window.history.state,
+    "",
+    `${url.pathname}${url.search}${url.hash}`,
+  );
+}
+
 function StaffPage() {
   const [user, setUser] = useState<StaffSession | null>(null);
   const [ready, setReady] = useState(false);
+  const [firstPasswordSetupRequested, setFirstPasswordSetupRequested] = useState(false);
+  const [setupLoginEmail, setSetupLoginEmail] = useState("");
   const [toast, setToast] = useState("");
   const [liveErrors, setLiveErrors] = useState<Array<{ code: string; message: string }>>([]);
   const [bootstrapError, setBootstrapError] = useState("");
   const toastTimer = useRef<number | null>(null);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("staffSetup") !== "verified") return;
+    setFirstPasswordSetupRequested(true);
+  }, []);
 
   useEffect(() => {
     const saved = readSession();
@@ -282,10 +302,32 @@ function StaffPage() {
           </p>
         ) : null}
         {!ready ? <p className="text-muted">Lade Zugang…</p> : null}
-        {ready && !user ? <Login note={note} onIn={(next) => {
-          setBootstrapError("");
-          setUser(next);
-        }} /> : null}
+        {ready && !user ? (
+          firstPasswordSetupRequested ? (
+            <FirstPasswordSetup
+              onComplete={(email) => {
+                clearStaffSetupReturnMarker();
+                setSetupLoginEmail(email);
+                setFirstPasswordSetupRequested(false);
+              }}
+              onLogin={(email) => {
+                clearStaffSetupReturnMarker();
+                setSetupLoginEmail(email);
+                setFirstPasswordSetupRequested(false);
+              }}
+            />
+          ) : (
+            <Login
+              key={setupLoginEmail || "team-login"}
+              initialName={setupLoginEmail}
+              note={note}
+              onIn={(next) => {
+                setBootstrapError("");
+                setUser(next);
+              }}
+            />
+          )
+        ) : null}
         {user?.mustChangePw ? (
           <ForcePassword user={user} onDone={setUser} note={note} />
         ) : user ? (
@@ -297,14 +339,121 @@ function StaffPage() {
   );
 }
 
+function FirstPasswordSetup({
+  onComplete,
+  onLogin,
+}: {
+  onComplete: (email: string) => void;
+  onLogin: (email: string) => void;
+}) {
+  const [email, setEmail] = useState("");
+  const [setupCode, setSetupCode] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordConfirmation, setPasswordConfirmation] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    setError("");
+    if (password !== passwordConfirmation) {
+      setError("Die Passwörter stimmen nicht überein.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const verifiedEmail = await completeFirstStaffPasswordSetup(email, setupCode, password);
+      onComplete(verifiedEmail);
+    } catch (setupError) {
+      setError(setupError instanceof Error ? setupError.message : "Das Passwort konnte nicht eingerichtet werden.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mx-auto max-w-md space-y-4">
+      <form className="card card-still panel-in p-6" onSubmit={submit}>
+        <p className="kicker">E-Mail bestätigt</p>
+        <h2 className="display mt-2 text-2xl">Eigenes Passwort festlegen</h2>
+        <p className="mt-3 text-sm text-muted">
+          Wenn du dein Konto zum ersten Mal einrichtest, gib deine persönliche E-Mail und den
+          Einrichtungscode erneut ein. Danach kannst du dich mit deinem neuen Passwort anmelden
+          und die Einwilligung sowie deinen Minecraft-Namen bestätigen.
+        </p>
+        <label className="mt-5 block text-sm">
+          Bestätigte persönliche E-Mail-Adresse
+          <input
+            className="field mt-1"
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            autoComplete="username"
+            required
+          />
+        </label>
+        <label className="mt-3 block text-sm">
+          Einrichtungscode
+          <input
+            className="field mt-1"
+            type="password"
+            value={setupCode}
+            onChange={(event) => setSetupCode(event.target.value)}
+            autoComplete="current-password"
+            required
+          />
+        </label>
+        <label className="mt-3 block text-sm">
+          Neues Passwort (mindestens 8 Zeichen)
+          <input
+            className="field mt-1"
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            autoComplete="new-password"
+            minLength={8}
+            required
+          />
+        </label>
+        <label className="mt-3 block text-sm">
+          Neues Passwort wiederholen
+          <input
+            className="field mt-1"
+            type="password"
+            value={passwordConfirmation}
+            onChange={(event) => setPasswordConfirmation(event.target.value)}
+            autoComplete="new-password"
+            minLength={8}
+            required
+          />
+        </label>
+        {error ? <p className="mt-3 text-sm text-ember" role="alert">{error}</p> : null}
+        <button className="btn-brand mt-5 w-full" type="submit" disabled={busy}>
+          {busy ? "Passwort wird eingerichtet…" : "Passwort festlegen"}
+        </button>
+        <button
+          className="btn-ghost mt-3 w-full"
+          type="button"
+          onClick={() => onLogin(email.trim().toLowerCase())}
+          disabled={busy}
+        >
+          Konto bereits eingerichtet? Zur Anmeldung
+        </button>
+      </form>
+    </div>
+  );
+}
+
 function Login({
+  initialName,
   onIn,
   note,
 }: {
+  initialName?: string;
   onIn: (user: StaffSession) => void;
   note: (text: string) => void;
 }) {
-  const [name, setName] = useState("");
+  const [name, setName] = useState(initialName || "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -328,6 +477,7 @@ function Login({
   const [emailSetupMfaCode, setEmailSetupMfaCode] = useState("");
   const [emailSetupBusy, setEmailSetupBusy] = useState(false);
   const [emailSetupSentTo, setEmailSetupSentTo] = useState("");
+  const [emailSetupAlreadyVerified, setEmailSetupAlreadyVerified] = useState(false);
   const [emailSetupMessage, setEmailSetupMessage] = useState("");
   const [emailSetupError, setEmailSetupError] = useState("");
 
@@ -427,10 +577,11 @@ function Login({
         emailSetupMfaCode,
       );
       setEmailSetupSentTo(result.email);
+      setEmailSetupAlreadyVerified(result.alreadyVerified);
       setEmailSetupMessage(
         result.alreadyVerified
           ? "Diese Adresse ist bereits bestätigt. Du kannst dich jetzt damit anmelden."
-          : `Bestätigungslink an ${result.email} gesendet. Öffne den Link und melde dich danach mit dieser Adresse erneut an.`,
+          : `Bestätigungslink an ${result.email} gesendet. Öffne den Link: Bei der Ersteinrichtung kannst du danach direkt dein eigenes Passwort festlegen; anschließend meldest du dich neu an.`,
       );
       setEmailSetupPassword("");
       setEmailSetupMfaCode("");
@@ -451,6 +602,7 @@ function Login({
     setPassword("");
     setEmailSetup(null);
     setEmailSetupSentTo("");
+    setEmailSetupAlreadyVerified(false);
     setEmailSetupMessage("");
     setEmailSetupError("");
     setMfaRequired(false);
@@ -534,21 +686,29 @@ function Login({
           {emailSetupSentTo ? (
             <div className="mt-5 space-y-3 rounded-xl border border-brand/40 bg-brand/5 p-4">
               <p className="font-semibold" role="status">{emailSetupMessage}</p>
-              <ol className="list-inside list-decimal space-y-1 text-sm text-muted">
-                <li>Öffne den Link in deinem Posteingang.</li>
-                <li>Melde dich danach mit der bestätigten E-Mail-Adresse an.</li>
-              </ol>
+              {emailSetupAlreadyVerified ? null : (
+                <ol className="list-inside list-decimal space-y-1 text-sm text-muted">
+                  <li>Öffne den Link in deinem Posteingang.</li>
+                  <li>Lege auf der zurückkehrenden Seite dein eigenes Passwort fest.</li>
+                  <li>Melde dich mit deiner bestätigten E-Mail und dem neuen Passwort an.</li>
+                </ol>
+              )}
               {emailSetupError ? <p className="text-sm text-ember" role="alert">{emailSetupError}</p> : null}
               <button className="btn-brand w-full" type="button" onClick={returnToEmailLogin}>
                 Zur Anmeldung
               </button>
-              <button
-                className="btn-ghost w-full"
-                type="button"
-                onClick={() => setEmailSetupSentTo("")}
-              >
-                Keinen Link erhalten? Erneut senden
-              </button>
+              {!emailSetupAlreadyVerified ? (
+                <button
+                  className="btn-ghost w-full"
+                  type="button"
+                  onClick={() => {
+                    setEmailSetupSentTo("");
+                    setEmailSetupAlreadyVerified(false);
+                  }}
+                >
+                  Keinen Link erhalten? Erneut senden
+                </button>
+              ) : null}
             </div>
           ) : (
             <>
@@ -614,7 +774,9 @@ function Login({
           <input className="field mt-1" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
         </label>
         <p className="mt-2 text-sm text-muted">
-          Neue Konten starten mit Teamname und Einrichtungscode. Nach der E-Mail-Bestätigung meldest du dich mit deiner persönlichen Adresse und dem Einrichtungscode an. Anschließend bestätigst du die erforderliche Zustimmung und setzt dein eigenes Passwort.
+          Neue Konten starten mit Teamname und Einrichtungscode. Nach der E-Mail-Bestätigung legst
+          du auf der zurückkehrenden Seite dein eigenes Passwort fest. Danach meldest du dich neu
+          an und bestätigst die erforderliche Zustimmung sowie deinen Minecraft-Namen.
         </p>
         {mfaRequired ? (
           <label className="mt-3 block text-sm">

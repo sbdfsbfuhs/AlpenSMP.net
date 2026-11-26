@@ -19,6 +19,17 @@ Der Staff-Login verschickt Bestätigungs- und Passwort-Reset-E-Mails über Resen
 
 Erstelle keinen Schlüssel für einen bereits überprivilegierten persönlichen Account. Falls die Organisation das Erstellen von Service-Account-Schlüsseln blockiert, nicht versuchen, die Richtlinie zu umgehen; dann muss eine geeignete serverseitige Workload-Identity-Lösung eingerichtet werden.
 
+## Firebase-Login nach dem Löschen wiederverwenden
+
+Das Entfernen eines Teamkontos aus dem Panel löscht nicht den Firebase-Authentication-Account. Es wird kein zusätzlicher Service-Account benötigt. Wenn Firebase beim erneuten Anlegen meldet, dass die interne E-Mail schon registriert ist:
+
+1. Öffne [Firebase Authentication → Users](https://console.firebase.google.com/project/alpensmp-ad844/authentication/users).
+2. Suche nach der internen Adresse `teamname@staff.alpensmp.net` (Teamname kleingeschrieben, Leerzeichen entfernt).
+3. Prüfe sorgfältig, dass es das alte, bereits aus dem Staff-Center entfernte Teamkonto ist, und lösche nur diesen Auth-Eintrag.
+4. Lege den Team-Account danach im Staff-Center erneut an.
+
+Bei vollständig eingerichteten Konten kann Firebase statt der internen Adresse die persönliche E-Mail gespeichert haben. Lösche in diesem Fall keinen Eintrag, wenn du ihn nicht eindeutig dem entfernten Teamkonto zuordnen kannst.
+
 ## 3. Vercel konfigurieren und deployen
 
 Im Vercel-Projekt unter **Settings → Environment Variables** für Production eintragen:
@@ -39,6 +50,6 @@ Nach einer Anfrage zeigt der Button einen Countdown von 60 Sekunden und blockier
 
 Im Staff-Center legt der Owner neue Konten mit Teamname und Rolle an. Buildmanager können ausschließlich Builder-Konten erstellen. Es gibt keine öffentliche Registrierung und der Teamname allein ist kein Zugang.
 
-Nach dem Anlegen wird ein zufälliger Einrichtungscode einmalig im Staff-Center angezeigt; er wird weder gespeichert noch per E-Mail verschickt. Gib ihn nur direkt an die vorgesehene Person weiter. Diese meldet sich unter `/team` mit Teamname und Code an, trägt ihre persönliche E-Mail-Adresse ein und bestätigt den zugesandten Link. Danach meldet sie sich mit der bestätigten E-Mail-Adresse und dem Einrichtungscode an, erteilt die erforderliche Aktivitätseinwilligung und setzt ein eigenes Passwort mit mindestens acht Zeichen. Erst dann wird das Staff-Center freigeschaltet.
+Nach dem Anlegen wird ein zufälliger Einrichtungscode einmalig im Staff-Center angezeigt; er wird weder gespeichert noch per E-Mail verschickt. Gib ihn nur direkt an die vorgesehene Person weiter. Diese meldet sich unter `/team` mit Teamname und Code an, trägt ihre persönliche E-Mail-Adresse ein und bestätigt den zugesandten Link. Nach der Bestätigung führt der Link zurück zu einer Einrichtungsseite. Dort gibt sie die bestätigte E-Mail-Adresse und den Einrichtungscode erneut ein und legt ein eigenes Passwort mit mindestens acht Zeichen fest. Anschließend meldet sie sich mit der persönlichen E-Mail und dem neuen Passwort an, erteilt die erforderliche Aktivitätseinwilligung und lässt den Minecraft-Namen gegen die Serverhistorie prüfen. Erst dann wird das Staff-Center freigeschaltet.
 
 Wird der Einrichtungscode verloren, kann ein berechtigter Owner oder Buildmanager im Konto unter „E-Mail und Zugang“ die persönliche E-Mail-Adresse hinterlegen und einen Passwort-Link senden.
