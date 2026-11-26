@@ -6,7 +6,7 @@ import { StaffChat } from "@/components/site/staff-chat";
 import { PlayerSearch } from "@/components/site/staff-search";
 import { useLive } from "@/components/site/staff-live";
 import { can, roleLabel, ROLES, asRole, type Role } from "@/lib/alpen/roles";
-import { moveStaffLayoutTab, normalizeStaffLayout, reorderStaffLayoutTab, type StaffLayout } from "@/lib/alpen/staff-layout";
+import { moveStaffLayoutTab, normalizeStaffLayout, reorderStaffLayoutTab, staffLayoutForView, type StaffLayout } from "@/lib/alpen/staff-layout";
 import {
   clearFirebaseAccessToken,
   FirebaseMfaChallengeRequired,
@@ -794,13 +794,19 @@ function Desk({
     if (item.id === "rules") return can(shown, "rulesRead") || can(shown, "rulesEdit");
     return can(shown, item.area);
   });
-  const orderedTabs = [...staffLayout.quickTabs, ...staffLayout.moreTabs]
+  const viewLayout = staffLayoutForView(
+    staffLayout,
+    previewing,
+    tabs.map((item) => item.id),
+    DEFAULT_LAYOUT.quickTabs,
+  );
+  const orderedTabs = [...viewLayout.quickTabs, ...viewLayout.moreTabs]
     .map((id) => tabs.find((item) => item.id === id))
     .filter((item): item is (typeof tabs)[number] => Boolean(item));
-  const quickTabs = staffLayout.quickTabs
+  const quickTabs = viewLayout.quickTabs
     .map((id) => tabs.find((item) => item.id === id))
     .filter((item): item is (typeof tabs)[number] => Boolean(item));
-  const otherTabs = staffLayout.moreTabs
+  const otherTabs = viewLayout.moreTabs
     .map((id) => tabs.find((item) => item.id === id))
     .filter((item): item is (typeof tabs)[number] => Boolean(item));
   const canReadMinecraft = can(shown, "moderationRead") && can(real, "moderationRead");
@@ -1064,7 +1070,7 @@ function Desk({
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:justify-end">
           {can(shown, "help") ? (
-            <button type="button" className="btn-ghost" disabled={previewing} onClick={() => void askHelp(user, note)}>
+            <button type="button" className="btn-ghost" onClick={() => void askHelp(user, note)}>
               Teamhilfe anfordern
             </button>
           ) : null}
@@ -1080,7 +1086,7 @@ function Desk({
             <div className="flex flex-col gap-3 rounded-md border border-line/70 bg-surface/60 p-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-semibold text-fg">Rollen-Vorschau</p>
-                <p className="text-xs text-muted">Nur für dich – deine echte Rolle bleibt unverändert. {previewing ? `Vorschau als ${roleLabel(shown)}, schreibgeschützt.` : ""}</p>
+                <p className="text-xs text-muted">Nur für dich – deine echte Rolle bleibt unverändert. {previewing ? `Interaktive Vorschau als ${roleLabel(shown)}; Aktionen ändern echte Live-Daten.` : ""}</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 {ROLES.map((role) => (
@@ -1104,9 +1110,20 @@ function Desk({
           </div>
         </details>
       ) : null}
+      {previewing ? (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-400/50 bg-amber-950/30 px-4 py-3" role="status">
+          <div>
+            <p className="font-semibold text-amber-100">Interaktive Vorschau: {roleLabel(shown)}</p>
+            <p className="text-sm text-amber-100/80">Die sichtbaren Aktionen richten sich nach dieser Rolle, speichern aber echte Änderungen. Deine Anmeldung bleibt Owner.</p>
+          </div>
+          <button type="button" className="btn-ghost" onClick={() => setView(asRole(real))}>
+            Vorschau beenden
+          </button>
+        </div>
+      ) : null}
         {shown === "owner" || shown === "admin" ? (
           <Suspense fallback={null}>
-            <div inert={previewing}><LiveNotices note={note} /></div>
+            <LiveNotices note={note} />
           </Suspense>
         ) : null}
       <div className={`staff-layout mt-5 min-w-0${dockChat ? " has-chat" : ""}`}>
@@ -1199,7 +1216,7 @@ function Desk({
           ) : null}
         </nav>
         {layoutError ? <p className="mt-2 rounded-lg border border-red-500/60 bg-red-950/50 px-3 py-2 text-sm text-red-100" role="alert">{layoutError}</p> : null}
-        <section inert={previewing} className="staff-content min-w-0">
+        <section className="staff-content min-w-0">
           {activeTab ? (
             <header className="mb-4 flex items-end justify-between gap-3 px-1">
               <div>
@@ -1287,7 +1304,7 @@ function Desk({
           </Suspense>
         </section>
         {dockChat ? (
-          <div id="staff-chat-sidebar" inert={previewing} className="staff-chat-dock sticky top-20 hidden h-[calc(100vh-6rem)] min-w-0 xl:block">
+          <div id="staff-chat-sidebar" className="staff-chat-dock sticky top-20 hidden h-[calc(100vh-6rem)] min-w-0 xl:block">
             <StaffChat user={displayedUser} team={seeTeamChat} builder={seeBuilderChat} dock />
           </div>
         ) : null}
@@ -1296,7 +1313,6 @@ function Desk({
         <>
           <button
             type="button"
-            inert={previewing}
             className="btn-brand fixed bottom-24 right-3 z-40 xl:hidden"
             aria-expanded={chatOpen}
             onClick={() => setChatOpen(true)}
@@ -1314,7 +1330,7 @@ function Desk({
                 <button type="button" className="btn-ghost mb-2 self-end" onClick={() => setChatOpen(false)}>
                   Chat schließen
                 </button>
-                <div inert={previewing} className="min-h-0 flex-1">
+                <div className="min-h-0 flex-1">
                   <StaffChat user={displayedUser} team={seeTeamChat} builder={seeBuilderChat} dock />
                 </div>
               </div>

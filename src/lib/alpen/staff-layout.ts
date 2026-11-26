@@ -31,6 +31,15 @@ export function normalizeStaffLayout(value: unknown, tabIds: readonly string[], 
   };
 }
 
+export function staffLayoutForView(
+  savedLayout: unknown,
+  previewing: boolean,
+  visibleTabIds: readonly string[],
+  defaultQuickTabs: readonly string[],
+): StaffLayout {
+  return normalizeStaffLayout(previewing ? null : savedLayout, visibleTabIds, defaultQuickTabs);
+}
+
 export function moveStaffLayoutTab(layout: StaffLayout, tab: string, destination: keyof StaffLayout): StaffLayout {
   const source: keyof StaffLayout = destination === "quickTabs" ? "moreTabs" : "quickTabs";
   if (!layout[source].includes(tab)) return layout;
