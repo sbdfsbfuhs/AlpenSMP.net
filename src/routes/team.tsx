@@ -606,13 +606,16 @@ function Login({
         <h2 className="text-xl font-semibold">Anmelden</h2>
         <p className="mt-2 text-sm text-muted">Melde dich mit der persönlichen E-Mail-Adresse deines Accounts und deinem Passwort an. Bei älteren Konten funktioniert übergangsweise auch der Teamname. Deine E-Mail-Adresse wird nicht öffentlich für die Teamnamen-Suche bereitgestellt. Der Minecraft-Server muss für die Anmeldung nicht online sein.</p>
         <label className="mt-5 block text-sm">
-          Persönliche E-Mail-Adresse oder älterer Teamname
+          Persönliche E-Mail-Adresse oder Teamname für die Ersteinrichtung
           <input className="field mt-1" value={name} onChange={(e) => setName(e.target.value)} autoComplete="username" required />
         </label>
         <label className="mt-3 block text-sm">
-          Passwort
+          Eigenes Passwort oder Einrichtungscode
           <input className="field mt-1" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
         </label>
+        <p className="mt-2 text-sm text-muted">
+          Neue Konten starten mit Teamname und Einrichtungscode. Nach der E-Mail-Bestätigung meldest du dich mit deiner persönlichen Adresse und dem Einrichtungscode an. Anschließend bestätigst du die erforderliche Zustimmung und setzt dein eigenes Passwort.
+        </p>
         {mfaRequired ? (
           <label className="mt-3 block text-sm">
             Authenticator-Code
@@ -722,7 +725,7 @@ function ForcePassword({ user, onDone, note }: { user: StaffSession; onDone: (us
     setError("");
     if (!a) return setError("Passwort fehlt");
     if (a !== b) return setError("Stimmt nicht überein");
-    if (a.length < 6) return setError("Mindestens 6 Zeichen");
+    if (a.length < 8) return setError("Das eigene Passwort muss mindestens 8 Zeichen haben.");
     try {
       await savePassword(user.username, a);
     } catch (err) {
@@ -737,9 +740,9 @@ function ForcePassword({ user, onDone, note }: { user: StaffSession; onDone: (us
   return (
     <form className="card card-still mx-auto max-w-md p-6" onSubmit={save}>
       <h2 className="text-xl font-semibold">Anmeldung hat geklappt</h2>
-      <p className="mt-2 text-sm text-muted">Das Startpasswort gilt nur für diesen Schritt. Danach ein eigenes Passwort setzen, mindestens 6 Zeichen. Erst dann geht das Team-Panel auf.</p>
-      <input className="field mt-4" type="password" value={a} onChange={(e) => setA(e.target.value)} placeholder="Neues Passwort" />
-      <input className="field mt-3" type="password" value={b} onChange={(e) => setB(e.target.value)} placeholder="Wiederholen" />
+      <p className="mt-2 text-sm text-muted">Der Einrichtungscode gilt nur bis zu diesem Schritt. Setze jetzt dein eigenes Passwort mit mindestens 8 Zeichen. Erst danach öffnet sich das Staff-Center.</p>
+      <input className="field mt-4" type="password" value={a} onChange={(e) => setA(e.target.value)} placeholder="Eigenes Passwort (mindestens 8 Zeichen)" autoComplete="new-password" minLength={8} required />
+      <input className="field mt-3" type="password" value={b} onChange={(e) => setB(e.target.value)} placeholder="Eigenes Passwort wiederholen" autoComplete="new-password" minLength={8} required />
       {error ? <p className="mt-3 text-sm text-ember">{error}</p> : null}
       <button className="btn-brand mt-4" type="submit">Speichern</button>
     </form>

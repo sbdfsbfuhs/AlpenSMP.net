@@ -34,3 +34,11 @@ Der Service-Account-Schlüssel und Resend-API-Key sind Secrets: niemals in Git, 
 ## Passwort-Reset
 
 Nach einer Anfrage zeigt der Button einen Countdown von 60 Sekunden und blockiert weitere Klicks. Der Server begrenzt zusätzliche Anfragen ebenfalls. Nach erfolgreichem Passwort-Reset führt Firebase zurück zur Team-Anmeldung unter `/team`.
+
+## Neue Teamkonten einrichten
+
+Im Staff-Center legt der Owner neue Konten mit Teamname und Rolle an. Buildmanager können ausschließlich Builder-Konten erstellen. Es gibt keine öffentliche Registrierung und der Teamname allein ist kein Zugang.
+
+Nach dem Anlegen wird ein zufälliger Einrichtungscode einmalig im Staff-Center angezeigt; er wird weder gespeichert noch per E-Mail verschickt. Gib ihn nur direkt an die vorgesehene Person weiter. Diese meldet sich unter `/team` mit Teamname und Code an, trägt ihre persönliche E-Mail-Adresse ein und bestätigt den zugesandten Link. Danach meldet sie sich mit der bestätigten E-Mail-Adresse und dem Einrichtungscode an, erteilt die erforderliche Aktivitätseinwilligung und setzt ein eigenes Passwort mit mindestens acht Zeichen. Erst dann wird das Staff-Center freigeschaltet.
+
+Wird der Einrichtungscode verloren, kann ein berechtigter Owner oder Buildmanager im Konto unter „E-Mail und Zugang“ die persönliche E-Mail-Adresse hinterlegen und einen Passwort-Link senden.

@@ -16,6 +16,7 @@ import {
   type ModItem,
   type StaffSession,
 } from "@/lib/alpen/staff";
+import { isInternalStaffEmail } from "@/lib/alpen/staff-account-flow";
 
 const BUILDER_DIRECTORY_QUERY = { orderBy: "role", equalTo: "builder" } as const;
 
@@ -73,8 +74,8 @@ export function Accounts({ note, actor }: { note: (text: string) => void; actor:
   const warns = useLive<ModItem>("warns", actor.role !== "buildmanager");
   const notes = useLive<ModItem>("notes", actor.role !== "buildmanager");
   const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
   const [role, setRole] = useState("helper");
+  const [setupCredential, setSetupCredential] = useState<{ username: string; role: string; code: string } | null>(null);
   const [formError, setFormError] = useState("");
   const [syncingDirectory, setSyncingDirectory] = useState(false);
   const [search, setSearch] = useState("");
@@ -141,39 +142,43 @@ export function Accounts({ note, actor }: { note: (text: string) => void; actor:
           <details className="card card-still overflow-hidden">
             <summary className="cursor-pointer p-4">
               <span className="block font-semibold">Team-Account anlegen</span>
-              <span className="mt-1 block text-sm text-muted">Teamname, persönliche E-Mail-Adresse und Rolle festlegen.</span>
+              <span className="mt-1 block text-sm text-muted">Teamname und Rolle festlegen; die Person richtet E-Mail und Passwort selbst ein.</span>
             </summary>
             <form
               className="space-y-4 border-t border-line p-4 sm:p-5"
               onSubmit={(event) => {
                 event.preventDefault();
                 setFormError("");
+                setSetupCredential(null);
+                const accountRole = actor.role === "buildmanager" ? "builder" : role;
                 void createStaffAccount({
                   username,
-                  email,
-                  role: actor.role === "buildmanager" ? "builder" : role,
+                  role: accountRole,
                   createdBy: actor.username,
                   actorRole: actor.role,
                 })
-                  .then(() => {
+                  .then(({ setupCode, auditWarning }) => {
                     setUsername("");
-                    setEmail("");
                     setFormError("");
-                    note("Account angelegt. Passwort-Link an die persönliche E-Mail-Adresse gesendet.");
+                    setSetupCredential({ username: username.trim(), role: accountRole, code: setupCode });
+                    note(auditWarning || "Account angelegt. Den Einrichtungscode bitte sicher direkt weitergeben.");
                   })
                   .catch((err) => setFormError(err instanceof Error ? err.message : "Anlegen fehlgeschlagen"));
               }}
             >
               <p className="text-sm text-muted">
-                Die Person legt ihr Passwort über einen sicheren Link selbst fest. E-Mail-Adressen werden nicht öffentlich über Teamnamen aufgelöst.
+                Die Person meldet sich zuerst mit Teamname und Einrichtungscode an. Danach hinterlegt und bestätigt sie ihre persönliche E-Mail-Adresse, stimmt der erforderlichen Staff-Aktivitätserfassung zu und setzt ein eigenes Passwort. Der Teamname allein gewährt keinen Zugang.
               </p>
+              {setupCredential ? (
+                <SetupCodeNotice
+                  credential={setupCredential}
+                  onDismiss={() => setSetupCredential(null)}
+                  note={note}
+                />
+              ) : null}
               <label className="block text-sm font-medium">
                 Teamname
                 <input className="field mt-1" placeholder="Name im Team" value={username} onChange={(event) => setUsername(event.target.value)} required autoComplete="off" />
-              </label>
-              <label className="block text-sm font-medium">
-                Persönliche E-Mail-Adresse
-                <input className="field mt-1" type="email" placeholder="name@example.com" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" />
               </label>
               {actor.role === "owner" ? (
                 <label className="block text-sm font-medium">
@@ -272,9 +277,9 @@ export function Accounts({ note, actor }: { note: (text: string) => void; actor:
 
 function StreamerAccount({ note, actor }: { note: (text: string) => void; actor: StaffSession }) {
   const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
   const [notify, setNotify] = useState(true);
   const [error, setError] = useState("");
+  const [setupCredential, setSetupCredential] = useState<{ username: string; role: string; code: string } | null>(null);
   if (actor.role !== "owner") return null;
   return (
     <form
@@ -282,8 +287,9 @@ function StreamerAccount({ note, actor }: { note: (text: string) => void; actor:
       onSubmit={(event) => {
         event.preventDefault();
         setError("");
-        void createStaffAccount({ username, email, role: "streamer", createdBy: actor.username, actorRole: actor.role })
-          .then(async () => {
+        setSetupCredential(null);
+        void createStaffAccount({ username, role: "streamer", createdBy: actor.username, actorRole: actor.role })
+          .then(async ({ setupCode, auditWarning }) => {
             const name = username.trim().toLowerCase().replace(/\s+/g, "");
             try {
               await fbUpdate(`staffUsers/${name}`, { notifyLive: notify });
@@ -291,22 +297,25 @@ function StreamerAccount({ note, actor }: { note: (text: string) => void; actor:
               /* Hinweis-Flag ist optional, der Account steht. */
             }
             setUsername("");
-            setEmail("");
-            note("Streamer-Account angelegt. Passwort-Link wurde versendet.");
+            setSetupCredential({ username: username.trim(), role: "streamer", code: setupCode });
+            note(auditWarning || "Streamer-Account angelegt. Den Einrichtungscode bitte sicher direkt weitergeben.");
           })
           .catch((err) => setError(err instanceof Error ? err.message : "Anlegen fehlgeschlagen"));
       }}
     >
       <p className="text-sm text-muted">
-        Die Rolle ist fest auf Streamer gesetzt. Die Person sieht nur „Mein Stream“ und erhält den Passwort-Link per E-Mail.
+        Die Rolle ist fest auf Streamer gesetzt. Die Person meldet sich mit Teamname und Einrichtungscode an und richtet danach ihre persönliche E-Mail-Adresse und ihr eigenes Passwort ein.
       </p>
+      {setupCredential ? (
+        <SetupCodeNotice
+          credential={setupCredential}
+          onDismiss={() => setSetupCredential(null)}
+          note={note}
+        />
+      ) : null}
       <label className="block text-sm font-medium">
         Teamname
         <input className="field mt-1" placeholder="Name im Team" value={username} onChange={(event) => setUsername(event.target.value)} required autoComplete="off" />
-      </label>
-      <label className="block text-sm font-medium">
-        Persönliche E-Mail-Adresse
-        <input className="field mt-1" type="email" placeholder="name@example.com" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" />
       </label>
       <label className="flex items-start gap-2 text-sm">
         <input className="mt-1" type="checkbox" checked={notify} onChange={(event) => setNotify(event.target.checked)} />
@@ -315,6 +324,48 @@ function StreamerAccount({ note, actor }: { note: (text: string) => void; actor:
       {error ? <p className="text-sm text-ember" role="alert">{error}</p> : null}
       <button className="btn-brand w-full sm:w-auto" type="submit">Streamer-Account anlegen</button>
     </form>
+  );
+}
+
+function SetupCodeNotice({
+  credential,
+  onDismiss,
+  note,
+}: {
+  credential: { username: string; role: string; code: string };
+  onDismiss: () => void;
+  note: (text: string) => void;
+}) {
+  const [copyError, setCopyError] = useState("");
+
+  async function copyCode() {
+    setCopyError("");
+    try {
+      await navigator.clipboard.writeText(credential.code);
+      note("Einrichtungscode kopiert. Bitte sicher direkt weitergeben.");
+    } catch {
+      setCopyError("Kopieren nicht möglich. Markiere den Code und kopiere ihn manuell.");
+    }
+  }
+
+  return (
+    <section className="space-y-3 rounded-xl border border-brand/40 bg-brand/5 p-4" aria-labelledby="setup-code-heading">
+      <div>
+        <h3 id="setup-code-heading" className="font-semibold">Einrichtungscode für {credential.username} ({credential.role})</h3>
+        <p className="mt-1 text-sm text-muted">
+          Nur jetzt sichtbar und nicht per E-Mail versendet. Teile ihn direkt mit der richtigen Person. Nach dem eigenen Passwort ist dieser Code ungültig.
+        </p>
+      </div>
+      <label className="block text-sm font-medium">
+        Einmaliger Startcode
+        <input className="field mt-1 font-mono" value={credential.code} readOnly autoComplete="off" onFocus={(event) => event.currentTarget.select()} />
+      </label>
+      {copyError ? <p className="text-sm text-ember" role="alert">{copyError}</p> : null}
+      <div className="flex flex-wrap gap-2">
+        <button className="btn-ghost" type="button" onClick={() => void copyCode()}>Code kopieren</button>
+        <button className="btn-ghost" type="button" onClick={onDismiss}>Code ausblenden</button>
+      </div>
+    </section>
   );
 }
 
@@ -337,7 +388,11 @@ function AccountCard({
   const [open, setOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const [role, setRole] = useState(item.role || "helper");
-  const [email, setEmail] = useState(item.email || "");
+  const [email, setEmail] = useState(item.email && !isInternalStaffEmail(item.email) ? item.email : "");
+  const personalEmail = item.email && !isInternalStaffEmail(item.email) ? item.email : "";
+  useEffect(() => {
+    setEmail(item.email && !isInternalStaffEmail(item.email) ? item.email : "");
+  }, [item.email]);
   const canManage = !mine && (
     actor.role === "owner" ||
     (actor.role === "buildmanager" && item.role === "builder")
@@ -382,10 +437,9 @@ function AccountCard({
             <h3 className={`font-semibold${item.disabled ? " text-red-300" : ""}`}>{name}</h3>
             <span className="rounded-full border border-line px-2 py-0.5 text-xs capitalize">{item.role || "helper"}</span>
             {item.disabled ? <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-xs text-red-300">Pausiert</span> : null}
-            {item.mustChangePw ? <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs text-amber-200">Passwort ändern</span> : null}
-            {!item.uid ? <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs text-amber-200">Einrichtung offen</span> : null}
+            {item.mustChangePw || !personalEmail ? <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs text-amber-200">Einrichtung offen</span> : null}
           </div>
-          <p className="mt-1 break-all text-muted">{item.email || "Keine E-Mail-Adresse hinterlegt"}</p>
+          <p className="mt-1 break-all text-muted">{personalEmail || "Persönliche E-Mail noch nicht eingerichtet"}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
@@ -460,7 +514,7 @@ function AccountCard({
               >
                 E-Mail speichern und Passwort-Link senden
               </button>
-              {item.email ? (
+              {personalEmail ? (
                 <button type="button" className="btn-ghost w-full" onClick={() => void resetStaffPassword(name, actor.username, actor.role).then(() => note("Falls die Adresse zum Account gehört, wurde ein Passwort-Link gesendet.")).catch((err) => note(err instanceof Error ? err.message : "Passwort-Link konnte nicht gesendet werden"))}>
                   Passwort-Link erneut senden
                 </button>

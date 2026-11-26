@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { describe, it } from "node:test";
 import {
+  internalStaffEmail,
   isInternalStaffEmail,
   normalizeRecoveryEmail,
   normalizeStaffEmail,
@@ -104,6 +105,11 @@ describe("staff account email recovery", () => {
   it("requires a personal address for account recovery", () => {
     assert.equal(normalizeRecoveryEmail("  Owner@example.com "), "owner@example.com");
     assert.throws(() => normalizeRecoveryEmail("owner@staff.alpensmp.net"), /persönliche E-Mail/);
+  });
+
+  it("uses the team name as the private first-login email until a personal email is verified", () => {
+    assert.equal(internalStaffEmail(" Builder Name "), "buildername@staff.alpensmp.net");
+    assert.throws(() => internalStaffEmail("x"), /2–24 Zeichen/);
   });
 
   it("requires a verified personal address before staff access", () => {

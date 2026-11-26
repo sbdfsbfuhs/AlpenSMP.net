@@ -18,6 +18,14 @@ export function isInternalStaffEmail(value: string) {
   return value.trim().toLowerCase().endsWith("@staff.alpensmp.net");
 }
 
+export function internalStaffEmail(username: string) {
+  const name = username.trim().toLowerCase().replace(/\s+/g, "");
+  if (!/^[a-z0-9._-]{2,24}$/.test(name)) {
+    throw new Error("Name: 2–24 Zeichen, nur Buchstaben, Zahlen, . _ -");
+  }
+  return `${name}@staff.alpensmp.net`;
+}
+
 export function requiresPersonalStaffEmail(email: string, emailVerified: boolean) {
   return !emailVerified || isInternalStaffEmail(email);
 }

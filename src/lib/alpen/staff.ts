@@ -24,6 +24,7 @@ import {
 } from "@/lib/alpen/minecraft";
 import { isPermanentBan, shouldArchivePermanentBan } from "./moderation.ts";
 import {
+  internalStaffEmail,
   isInternalStaffEmail,
   normalizeStaffEmail,
   requiresPersonalStaffEmail,
@@ -450,7 +451,6 @@ export function writeSession(user: StaffSession | null) {
 }
 
 const NAME = /^[a-z0-9._-]{2,24}$/;
-const STAFF_MAIL = "@staff.alpensmp.net";
 
 export function staffName(value: string) {
   const name = value.trim().toLowerCase().replace(/\s+/g, "");
@@ -477,7 +477,7 @@ export function staffLoginId(value: string) {
   const raw = value.trim().toLowerCase();
   if (!raw) throw new Error("Name und Passwort");
   if (raw.includes("@")) return raw;
-  return `${staffName(raw)}${STAFF_MAIL}`;
+  return internalStaffEmail(raw);
 }
 
 export async function savePassword(username: string, password: string) {
@@ -532,17 +532,17 @@ export async function saveStaffProfile(
 
 export async function createStaffAccount(input: {
   username: string;
-  email: string;
   role: string;
   createdBy: string;
   actorRole: string;
 }) {
   const name = staffName(input.username);
-  const email = normalizeStaffEmail(input.email);
+  const email = internalStaffEmail(name);
   const role = asRole(input.role);
   if (input.actorRole !== "owner" && !(input.actorRole === "buildmanager" && role === "builder")) {
     throw new Error("Buildmanager dürfen nur Builder-Accounts anlegen.");
   }
+  const setupCode = temporaryStaffPassword();
   const token = await ensureIdToken();
   if (!token) throw new Error("Bitte neu anmelden. Die Sitzung ist abgelaufen.");
   const keep = window.sessionStorage.getItem("alpen-fb-token");
@@ -552,7 +552,7 @@ export async function createStaffAccount(input: {
   try {
     const existing = await fbGet<{ uid?: string }>(`staffUsers/${name}`);
     if (existing) throw new Error("Existiert schon");
-    created = await createFirebaseUser(email, temporaryStaffPassword());
+    created = await createFirebaseUser(email, setupCode);
     if (keep) window.sessionStorage.setItem("alpen-fb-token", keep);
     await fbSet(`staffByUid/${created.uid}`, {
       username: name,
@@ -564,7 +564,7 @@ export async function createStaffAccount(input: {
       role,
       email,
       uid: created.uid,
-      mustChangePw: false,
+      mustChangePw: true,
       disabled: false,
       createdAt: Date.now(),
       createdBy: input.createdBy,
@@ -619,15 +619,14 @@ export async function createStaffAccount(input: {
   }
   if (!accountLinked || !created)
     throw new Error("Account konnte nicht vollständig verknüpft werden.");
+  let auditWarning: string | undefined;
   try {
-    await sendPasswordResetEmail(email);
+    await logStaff(input.createdBy, "Account angelegt", `${name} · ${role}`, name);
   } catch (error) {
-    const detail = error instanceof Error ? error.message : "Unbekannter Fehler";
-    throw new Error(
-      `Account ist angelegt, aber der Passwort-Link konnte nicht gesendet werden: ${detail}`,
-    );
+    const detail = error instanceof Error ? error.message : "unbekannter Fehler";
+    auditWarning = `Account ist angelegt, aber der Audit-Eintrag konnte nicht gespeichert werden: ${detail}`;
   }
-  await logStaff(input.createdBy, "Account angelegt", `${name} · ${role}`, name);
+  return { setupCode, ...(auditWarning ? { auditWarning } : {}) };
 }
 
 async function describeLogin(token: string) {
@@ -770,7 +769,7 @@ export async function resetStaffPassword(username: string, actor: string, actorR
     throw new Error("Buildmanager dürfen nur Builder-Accounts verwalten.");
   }
   const email = row.email?.trim();
-  if (!email || email.endsWith(STAFF_MAIL))
+  if (!email || isInternalStaffEmail(email))
     throw new Error(
       "Für diesen Account muss zuerst die persönliche E-Mail-Adresse hinterlegt werden.",
     );
@@ -877,7 +876,14 @@ export async function setStaffEmail(username: string, value: string, actor: stri
         : "E-Mail ist gespeichert, aber der Passwort-Link konnte nicht gesendet werden.",
     );
   }
-  await logStaff(actor, "E-Mail-Adresse aktualisiert", name, name);
+  try {
+    await logStaff(actor, "E-Mail-Adresse aktualisiert", name, name);
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : "unbekannter Fehler";
+    throw new Error(
+      `E-Mail ist gespeichert und der Passwort-Link wurde angefordert. Das Sicherheitsprotokoll konnte nicht aktualisiert werden (${detail}). Bitte die Sicherheits-API aktualisieren; speichere die E-Mail nicht erneut.`,
+    );
+  }
 }
 
 export async function removeStaffAccount(username: string, actor: string, actorRole: string) {
@@ -1002,6 +1008,15 @@ export async function loginStaff(
         `Minecraft-Name konnte nicht gespeichert werden. Bitte prüfe die Serverprüfung und die aktuellen Firebase-Regeln; der Owner kann den Nachweisindex über die Aktivitätsstatistik aktualisieren.${detail}`,
       );
     }
+  }
+  try {
+    await fbSet(`staffByUid/${signed.uid}/email`, signed.email);
+  } catch (error) {
+    clearFirebaseLogin();
+    const detail = error instanceof Error ? error.message : "unbekannter Fehler";
+    throw new Error(
+      `Die bestätigte E-Mail-Adresse konnte nicht mit dem Staff-Konto abgeglichen werden. Bitte prüfe die aktuellen Firebase-Regeln und melde dich erneut an. (${detail})`,
+    );
   }
   const loginWarnings = [
     await captureStaffLoginSideEffect(

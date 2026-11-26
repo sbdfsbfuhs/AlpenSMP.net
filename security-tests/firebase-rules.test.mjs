@@ -130,6 +130,20 @@ test("unverified accounts cannot access staff data", async () => {
   await assertFails(get(ref(internalEmail, "tickets")));
 });
 
+test("staff can update only their own mapped email to their verified auth email", async () => {
+  const helper = db("helper-uid", true, "new-helper@example.test");
+  await assertSucceeds(set(ref(helper, "staffByUid/helper-uid/email"), "new-helper@example.test"));
+  await assertFails(set(ref(helper, "staffByUid/helper-uid/email"), "someone-else@example.test"));
+  await assertFails(set(ref(helper, "staffByUid/admin-uid/email"), "new-helper@example.test"));
+  await assertFails(update(ref(helper, "staffByUid/helper-uid"), {
+    email: "new-helper@example.test",
+    role: "owner",
+  }));
+  await assertFails(
+    set(ref(db("helper-uid", false, "new-helper@example.test"), "staffByUid/helper-uid/email"), "new-helper@example.test"),
+  );
+});
+
 test("paused accounts cannot read staff data or regain access through alternate paths", async () => {
   for (const [uid, username] of [
     ["paused-owner-uid", "pausedowner"],
