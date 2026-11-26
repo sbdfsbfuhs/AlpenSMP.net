@@ -64,7 +64,9 @@ export function PlayerCommands({ initiallyCollapsed = false }: { initiallyCollap
             />
           </label>
           <p className="mt-2 text-xs text-faint">
-            {query ? `${filteredGroups.reduce((count, group) => count + group.rows.length, 0)} Treffer` : "Wähle eine Gruppe oder suche direkt."}
+            {query
+              ? `${filteredGroups.reduce((count, group) => count + group.rows.length, 0)} Treffer`
+              : "Wähle eine Gruppe oder suche direkt."}
           </p>
           <div className="mt-5 space-y-3">
             {filteredGroups.map((group) => (
@@ -74,9 +76,16 @@ export function PlayerCommands({ initiallyCollapsed = false }: { initiallyCollap
                 className="player-command-group scroll-mt-24"
                 open={query.trim() ? true : undefined}
               >
-                <summary className="flex cursor-pointer items-center justify-between gap-3 p-4">
-                  <span className="font-semibold">{group.title}</span>
-                  <span className="text-sm text-faint">{group.rows.length}</span>
+                <summary className="player-command-group-summary">
+                  <span className="min-w-0">
+                    <span className="block font-semibold">{group.title}</span>
+                    <span className="mt-1 block text-xs text-faint">
+                      {group.rows.length} {group.rows.length === 1 ? "Befehl" : "Befehle"}
+                    </span>
+                  </span>
+                  <span className="player-command-group-count" aria-hidden="true">
+                    {group.rows.length}
+                  </span>
                 </summary>
                 <div className="px-4 pb-4">
                   {group.note ? <p className="mb-3 text-sm text-muted">{group.note}</p> : null}
@@ -90,7 +99,8 @@ export function PlayerCommands({ initiallyCollapsed = false }: { initiallyCollap
             ))}
             {!filteredGroups.length ? (
               <p className="rounded-md border border-line p-4 text-sm text-muted">
-                Keine passenden Befehle gefunden. Prüfe die Schreibweise oder suche nach einem Thema wie „Team“ oder „Teleport“.
+                Keine passenden Befehle gefunden. Prüfe die Schreibweise oder suche nach einem Thema
+                wie „Team“ oder „Teleport“.
               </p>
             ) : null}
           </div>
@@ -105,11 +115,12 @@ function CommandRow({ item }: { item: EditableCommandGroup["rows"][number] }) {
   const bedrock = item.bedrockCmd ?? item.cmd.replaceAll("Spieler", ".Spieler");
   const same = java === bedrock;
   return (
-    <li className="card card-still p-4">
-      <p className="text-sm text-muted">{item.text}</p>
+    <li className="card card-still player-command-item p-4">
+      <p className="text-sm leading-relaxed text-muted">{item.text}</p>
       {same ? (
-        <div className="mt-3 flex items-center gap-3">
-          <code className="min-w-0 flex-1 font-semibold text-brand">{java}</code>
+        <div className="command-copy-row mt-3">
+          <span className="command-copy-platform">Java + Bedrock</span>
+          <code className="command-copy-value">{java}</code>
           <CopyBurstButton value={java} ariaLabel={`${java} kopieren`}>
             Kopieren
           </CopyBurstButton>
@@ -131,9 +142,9 @@ function CommandRow({ item }: { item: EditableCommandGroup["rows"][number] }) {
 
 function CommandCopy({ label, command }: { label: string; command: string }) {
   return (
-    <div className="flex items-center gap-3">
-      <span className="w-16 shrink-0 text-xs text-faint">{label}</span>
-      <code className="min-w-0 flex-1 font-semibold text-brand">{command}</code>
+    <div className="command-copy-row">
+      <span className="command-copy-platform">{label}</span>
+      <code className="command-copy-value">{command}</code>
       <CopyBurstButton value={command} ariaLabel={`${command} kopieren`}>
         Kopieren
       </CopyBurstButton>

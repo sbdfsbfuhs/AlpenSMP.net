@@ -14,6 +14,14 @@ export function normalizeRecoveryEmail(value: string) {
   return email;
 }
 
+export function isInternalStaffEmail(value: string) {
+  return value.trim().toLowerCase().endsWith("@staff.alpensmp.net");
+}
+
+export function requiresPersonalStaffEmail(email: string, emailVerified: boolean) {
+  return !emailVerified || isInternalStaffEmail(email);
+}
+
 export function temporaryStaffPassword() {
   const bytes = globalThis.crypto.getRandomValues(new Uint8Array(32));
   return `Alpen!${Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;

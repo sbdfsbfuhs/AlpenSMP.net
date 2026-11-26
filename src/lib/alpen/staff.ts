@@ -3,6 +3,7 @@ import { asRole } from "@/lib/alpen/roles";
 import {
   changeOwnPassword,
   clearFirebaseLogin,
+  clearFirebaseAccessToken,
   createFirebaseUser,
   deleteFirebaseUser,
   ensureIdToken,
@@ -22,7 +23,12 @@ import {
   type MinecraftPlayersSnapshot,
 } from "@/lib/alpen/minecraft";
 import { isPermanentBan, shouldArchivePermanentBan } from "./moderation.ts";
-import { normalizeStaffEmail, temporaryStaffPassword } from "./staff-account-flow.ts";
+import {
+  isInternalStaffEmail,
+  normalizeStaffEmail,
+  requiresPersonalStaffEmail,
+  temporaryStaffPassword,
+} from "./staff-account-flow.ts";
 import { captureStaffLoginSideEffect } from "./staff-login-audit.ts";
 import {
   hasCurrentStaffActivityConsent,
@@ -48,12 +54,29 @@ export type StaffSession = {
   role: "owner" | "admin" | "helper" | string;
   mustChangePw: boolean;
   email: string;
+  emailVerified?: boolean;
   uid: string;
   mfaEnabled?: boolean;
   displayName?: string;
   profileColor?: StaffProfileColor;
   loginWarning?: string;
 };
+
+export class StaffPersonalEmailRequired extends Error {
+  constructor(
+    readonly currentEmail: string,
+    readonly uid: string,
+    readonly mfaEnabled: boolean,
+    readonly needsPersonalAddress: boolean,
+  ) {
+    super(
+      needsPersonalAddress
+        ? "Hinterlege zuerst eine persönliche E-Mail-Adresse."
+        : "Bestätige zuerst deine persönliche E-Mail-Adresse.",
+    );
+    this.name = "StaffPersonalEmailRequired";
+  }
+}
 
 export const STAFF_PROFILE_COLORS = [
   { value: "#e1062c", label: "Rot" },
@@ -908,6 +931,15 @@ export async function loginStaff(
     if (lastError && !/ungültig/i.test(lastError.message)) throw lastError;
     throw new Error("Name oder Passwort stimmt nicht.");
   }
+  if (requiresPersonalStaffEmail(signed.email, signed.emailVerified === true)) {
+    clearFirebaseAccessToken();
+    throw new StaffPersonalEmailRequired(
+      signed.email,
+      signed.uid,
+      signed.mfaEnabled,
+      isInternalStaffEmail(signed.email),
+    );
+  }
   let link = await fbGet<{ username?: string; role?: string; disabled?: boolean }>(
     `staffByUid/${signed.uid}`,
   );
@@ -992,6 +1024,7 @@ export async function loginStaff(
     role: row.role || link.role || "helper",
     mustChangePw: Boolean(row.mustChangePw),
     email: signed.email,
+    emailVerified: signed.emailVerified,
     uid: signed.uid,
     mfaEnabled: signed.mfaEnabled,
     ...(loginWarnings.length ? { loginWarning: `Anmeldung erfolgreich. ${loginWarnings.join(" ")}` } : {}),

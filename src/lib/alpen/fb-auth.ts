@@ -7,7 +7,6 @@ import {
   inMemoryPersistence,
   initializeAuth,
   multiFactor,
-  sendEmailVerification,
   signInWithEmailAndPassword,
   signOut,
   TotpMultiFactorGenerator,
@@ -15,8 +14,11 @@ import {
   type MultiFactorError,
   type MultiFactorResolver,
   type User,
-  verifyBeforeUpdateEmail,
 } from "firebase/auth";
+import {
+  requestStaffEmailVerification,
+  requestStaffPasswordReset,
+} from "./staff-email.ts";
 import { normalizeRecoveryEmail } from "./staff-account-flow.ts";
 
 const KEY = "alpen-fb-token";
@@ -26,6 +28,7 @@ type Stored = {
   refreshToken: string;
   expiresAt: number;
   email: string;
+  emailVerified?: boolean;
   uid: string;
   mfaEnabled?: boolean;
 };
@@ -34,6 +37,7 @@ export type FirebaseLogin = {
   email: string;
   uid: string;
   mfaEnabled: boolean;
+  emailVerified?: boolean;
 };
 
 export class FirebaseMfaChallengeRequired extends Error {
@@ -70,6 +74,7 @@ function getStaffAuth() {
       throw error;
     staffAuthInstance = getAuth(app);
   }
+  staffAuthInstance.languageCode = "de";
   return staffAuthInstance;
 }
 
@@ -111,8 +116,9 @@ async function saveSdkUser(user: User): Promise<FirebaseLogin> {
     email: user.email || "",
     uid: user.uid,
     mfaEnabled,
+    emailVerified: user.emailVerified,
   });
-  return { email: user.email || "", uid: user.uid, mfaEnabled };
+  return { email: user.email || "", uid: user.uid, mfaEnabled, emailVerified: user.emailVerified };
 }
 
 function getTotpHint(resolver: MultiFactorResolver) {
@@ -211,6 +217,10 @@ export function clearFirebaseLogin() {
   }
 }
 
+export function clearFirebaseAccessToken() {
+  writeStored(null);
+}
+
 export async function ensureIdToken(): Promise<string | null> {
   const stored = readStored();
   if (!stored) return null;
@@ -291,8 +301,8 @@ export async function requestOwnEmailVerification(
     return { email: nextEmail, alreadyVerified: true };
   }
   try {
-    if (alreadyCurrent) await sendEmailVerification(user);
-    else await verifyBeforeUpdateEmail(user, nextEmail);
+    const idToken = await user.getIdToken(true);
+    await requestStaffEmailVerification({ idToken, expectedUid, newEmail: nextEmail });
   } catch (error) {
     throw new Error(authErrorMessage(error));
   }
@@ -310,17 +320,7 @@ export async function changeOwnPassword(password: string) {
 export async function sendPasswordResetEmail(email: string) {
   const clean = email.trim().toLowerCase();
   if (!clean || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) throw new Error("Bitte eine gültige E-Mail-Adresse eingeben.");
-  const continueUrl = typeof window === "undefined" ? undefined : `${window.location.origin}/team`;
-  try {
-    await authPost("accounts:sendOobCode", {
-      requestType: "PASSWORD_RESET",
-      email: clean,
-      ...(continueUrl ? { continueUrl } : {}),
-    });
-  } catch (error) {
-    if (error instanceof Error && error.message === "E-Mail oder Passwort falsch") return;
-    throw error;
-  }
+  await requestStaffPasswordReset(clean);
 }
 
 export async function createFirebaseUser(email: string, password: string) {

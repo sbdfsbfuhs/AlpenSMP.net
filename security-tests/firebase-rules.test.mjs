@@ -89,8 +89,8 @@ after(async () => {
   await environment?.cleanup();
 });
 
-function db(uid) {
-  return environment.authenticatedContext(uid).database();
+function db(uid, emailVerified = true, email = `${uid}@example.test`) {
+  return environment.authenticatedContext(uid, { email, email_verified: emailVerified }).database();
 }
 
 test("staff directories reveal only the sanitized directory to active non-owner staff", async () => {
@@ -115,6 +115,19 @@ test("staff directories reveal only the sanitized directory to active non-owner 
   await assertSucceeds(get(ref(owner, "staffGate/owner")));
   await assertFails(get(ref(owner, "staffOpen/owner")));
   await assertFails(get(ref(environment.unauthenticatedContext().database(), "staffDirectory")));
+});
+
+test("unverified accounts cannot access staff data", async () => {
+  const unverified = db("helper-uid", false);
+  await assertFails(get(ref(unverified, "staffUsers/helper")));
+  await assertFails(get(ref(unverified, "staffByUid/helper-uid")));
+  await assertFails(get(ref(unverified, "tickets")));
+  await assertFails(get(ref(unverified, "staffDirectory/helper")));
+  await assertFails(set(ref(unverified, "presence/helper"), { online: true }));
+
+  const internalEmail = db("helper-uid", true, "helper@staff.alpensmp.net");
+  await assertFails(get(ref(internalEmail, "staffUsers/helper")));
+  await assertFails(get(ref(internalEmail, "tickets")));
 });
 
 test("paused accounts cannot read staff data or regain access through alternate paths", async () => {
@@ -348,7 +361,10 @@ test("owner bootstrap is limited to a pre-provisioned active owner identity", as
   });
 
   const bootstrapOwner = environment
-    .authenticatedContext("bootstrap-owner-uid", { email: "owner@example.test" })
+    .authenticatedContext("bootstrap-owner-uid", {
+      email: "owner@example.test",
+      email_verified: true,
+    })
     .database();
   await assertSucceeds(get(ref(bootstrapOwner, "staffUsers/owner")));
   await assertSucceeds(get(ref(bootstrapOwner, "staffByUid/bootstrap-owner-uid")));
@@ -378,7 +394,10 @@ test("owner bootstrap is limited to a pre-provisioned active owner identity", as
     await set(ref(context.database(), "staffByUid/paused-bootstrap-uid"), null);
   });
   const pausedBootstrap = environment
-    .authenticatedContext("paused-bootstrap-uid", { email: "owner@example.test" })
+    .authenticatedContext("paused-bootstrap-uid", {
+      email: "owner@example.test",
+      email_verified: true,
+    })
     .database();
   await assertFails(get(ref(pausedBootstrap, "staffUsers/owner")));
   await assertFails(

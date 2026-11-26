@@ -2,8 +2,10 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { describe, it } from "node:test";
 import {
+  isInternalStaffEmail,
   normalizeRecoveryEmail,
   normalizeStaffEmail,
+  requiresPersonalStaffEmail,
   temporaryStaffPassword,
 } from "./staff-account-flow.ts";
 import { createTicketCode, normalizeTicketCode, ticketAccessIsValid, TICKET_ACCESS_TTL_MS } from "./ticket-access.ts";
@@ -102,6 +104,14 @@ describe("staff account email recovery", () => {
   it("requires a personal address for account recovery", () => {
     assert.equal(normalizeRecoveryEmail("  Owner@example.com "), "owner@example.com");
     assert.throws(() => normalizeRecoveryEmail("owner@staff.alpensmp.net"), /persönliche E-Mail/);
+  });
+
+  it("requires a verified personal address before staff access", () => {
+    assert.equal(isInternalStaffEmail("member@staff.alpensmp.net"), true);
+    assert.equal(isInternalStaffEmail("member@example.com"), false);
+    assert.equal(requiresPersonalStaffEmail("member@example.com", true), false);
+    assert.equal(requiresPersonalStaffEmail("member@example.com", false), true);
+    assert.equal(requiresPersonalStaffEmail("member@staff.alpensmp.net", true), true);
   });
 
   it("generates an unpredictable one-time password without exposing it in the account flow", () => {

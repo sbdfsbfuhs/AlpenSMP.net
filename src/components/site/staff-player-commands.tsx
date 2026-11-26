@@ -75,6 +75,17 @@ export function PlayerCommandEditor({
     );
   }
 
+  function changeGroup(
+    groupId: string,
+    changes: Partial<Pick<EditableCommandGroup, "title" | "note">>,
+  ) {
+    dirtyRef.current = true;
+    setDirty(true);
+    setGroups((current) =>
+      current.map((group) => (group.id === groupId ? { ...group, ...changes } : group)),
+    );
+  }
+
   function addCommand() {
     if (!editable) return note("Deine echte Rolle darf Befehle nicht bearbeiten");
     const cmd = newCommand.cmd.trim();
@@ -130,6 +141,7 @@ export function PlayerCommandEditor({
   async function save() {
     if (!editable) return note("Deine echte Rolle darf Befehle nicht bearbeiten");
     if (!dirty) return note("Es gibt keine ungespeicherten Änderungen");
+    if (groups.some((group) => !group.title.trim())) return note("Jede Gruppe braucht einen Namen");
     setSaving(true);
     try {
       await fbSet("playerCommands/catalog", toPlayerCommandCatalog(groups, username));
@@ -151,81 +163,135 @@ export function PlayerCommandEditor({
 
   const selectedGroup = groups.find((group) => group.id === groupId);
   const normalizedCommandQuery = commandQuery.trim().toLocaleLowerCase();
-  const visibleRows = selectedGroup?.rows
-    .filter((row) =>
-      row.id === editingCommandId || [row.cmd, row.bedrockCmd, row.text]
-          .filter(Boolean)
-          .join(" ")
-          .toLocaleLowerCase()
-          .includes(normalizedCommandQuery),
-    )
-    .sort((first, second) => first.cmd.localeCompare(second.cmd, "de")) ?? [];
+  const visibleRows =
+    selectedGroup?.rows
+      .filter(
+        (row) =>
+          row.id === editingCommandId ||
+          [row.cmd, row.bedrockCmd, row.text]
+            .filter(Boolean)
+            .join(" ")
+            .toLocaleLowerCase()
+            .includes(normalizedCommandQuery),
+      )
+      .sort((first, second) => first.cmd.localeCompare(second.cmd, "de")) ?? [];
 
   return (
     <section className="card card-still space-y-5 p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold">Spieler-Befehle</h2>
-          <p className="mt-1 text-sm text-muted">
-            Gemeinsamer Katalog für Guide, Features-Seite und Website-Suche. Wähle eine Gruppe und bearbeite einzelne Befehle bei Bedarf.
+          <p className="kicker">Website-Inhalte</p>
+          <h2 className="display mt-2 text-3xl">Spieler-Befehle</h2>
+          <p className="mt-2 max-w-2xl text-sm text-muted">
+            Dieser Katalog erscheint im Guide und in der Website-Suche. Änderungen werden erst nach
+            dem Speichern veröffentlicht.
           </p>
         </div>
         {editable && dirty ? (
-          <button
-            className="btn-brand"
-            type="button"
-            disabled={saving}
-            onClick={() => void save()}
-          >
+          <button className="btn-brand" type="button" disabled={saving} onClick={() => void save()}>
             {saving ? "Speichert…" : "Änderungen speichern"}
           </button>
-        ) : editable ? <span className="rounded-full border border-line px-3 py-1 text-sm text-muted">Änderungen gespeichert</span> : null}
+        ) : editable ? (
+          <span className="rounded-full border border-line px-3 py-1 text-sm text-muted">
+            Änderungen gespeichert
+          </span>
+        ) : null}
       </div>
 
-      <label className="grid max-w-md gap-1 text-sm font-medium">
-        Befehlsgruppe
-        <select
-          className="field"
-          value={groupId}
-          onChange={(event) => {
-            setGroupId(event.target.value);
-            setEditingCommandId(null);
-            setCommandQuery("");
-          }}
-        >
+      <div>
+        <p className="mb-2 text-sm font-semibold">Befehlsgruppen</p>
+        <div className="command-group-picker" role="group" aria-label="Befehlsgruppe auswählen">
           {groups.map((group) => (
-            <option key={group.id} value={group.id}>
-              {group.title} ({group.rows.length})
-            </option>
+            <button
+              key={group.id}
+              type="button"
+              className={
+                group.id === groupId ? "command-group-option is-active" : "command-group-option"
+              }
+              aria-pressed={group.id === groupId}
+              onClick={() => {
+                setGroupId(group.id);
+                setEditingCommandId(null);
+                setCommandQuery("");
+              }}
+            >
+              <span>{group.title}</span>
+              <span className="command-group-option-count">{group.rows.length}</span>
+            </button>
           ))}
-        </select>
-      </label>
+        </div>
+      </div>
 
       {selectedGroup ? (
         <div className="space-y-3">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <p className="text-sm text-muted">{selectedGroup.rows.length} {selectedGroup.rows.length === 1 ? "Befehl" : "Befehle"} in „{selectedGroup.title}“</p>
-            {selectedGroup.rows.length > 0 ? (
-              <label className="block w-full text-sm font-medium sm:max-w-sm">
-                Befehle in dieser Gruppe suchen
-                <input
-                  className="field mt-1"
-                  type="search"
-                  value={commandQuery}
-                  onChange={(event) => setCommandQuery(event.target.value)}
-                  placeholder="Befehl oder Beschreibung"
-                />
-              </label>
+          <div className="rounded-xl border border-brand/25 bg-brand/5 p-4">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-brand">
+                  Aktive Gruppe
+                </p>
+                <h3 className="mt-1 text-lg font-semibold">{selectedGroup.title}</h3>
+              </div>
+              <span className="rounded-full border border-line px-3 py-1 text-sm text-muted">
+                {selectedGroup.rows.length} {selectedGroup.rows.length === 1 ? "Befehl" : "Befehle"}
+              </span>
+            </div>
+            {editable ? (
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                <label className="grid gap-1 text-sm font-medium">
+                  Gruppenname
+                  <input
+                    className="field"
+                    value={selectedGroup.title}
+                    onChange={(event) =>
+                      changeGroup(selectedGroup.id, { title: event.target.value })
+                    }
+                  />
+                </label>
+                <label className="grid gap-1 text-sm font-medium">
+                  Hinweis für Spieler <span className="font-normal text-muted">(optional)</span>
+                  <textarea
+                    className="field min-h-20"
+                    value={selectedGroup.note ?? ""}
+                    onChange={(event) =>
+                      changeGroup(selectedGroup.id, { note: event.target.value })
+                    }
+                    placeholder="Kurzer Hinweis zur Befehlsgruppe"
+                  />
+                </label>
+              </div>
+            ) : selectedGroup.note ? (
+              <p className="mt-3 text-sm text-muted">{selectedGroup.note}</p>
             ) : null}
+          </div>
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <p className="text-sm text-muted">
+              {visibleRows.length} {visibleRows.length === 1 ? "Befehl" : "Befehle"} in dieser
+              Gruppe
+            </p>
+            <label className="block w-full text-sm font-medium sm:max-w-sm">
+              Befehle in dieser Gruppe suchen
+              <input
+                className="field mt-1"
+                type="search"
+                value={commandQuery}
+                onChange={(event) => setCommandQuery(event.target.value)}
+                placeholder="Befehl oder Beschreibung"
+              />
+            </label>
           </div>
           {visibleRows.map((row) => {
             const editing = editingCommandId === row.id;
             return (
-              <article key={row.id} className="rounded-lg border border-line p-3 sm:p-4">
+              <article key={row.id} className="staff-player-command-card">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <code className="font-semibold text-brand">{row.cmd}</code>
-                    {row.bedrockCmd ? <p className="mt-1 text-xs text-faint">Bedrock: <code>{row.bedrockCmd}</code></p> : null}
+                    {row.bedrockCmd ? (
+                      <p className="mt-1 text-xs text-faint">
+                        Bedrock: <code>{row.bedrockCmd}</code>
+                      </p>
+                    ) : null}
                     <p className="mt-2 text-sm text-muted">{row.text}</p>
                   </div>
                   {editable ? (
@@ -240,7 +306,7 @@ export function PlayerCommandEditor({
                   ) : null}
                 </div>
                 {editing ? (
-                  <div className="mt-4 grid gap-2 border-t border-line pt-4 md:grid-cols-2">
+                  <div className="staff-player-command-edit">
                     <label className="grid gap-1 text-xs text-muted">
                       Java-Befehl
                       <input
@@ -260,7 +326,9 @@ export function PlayerCommandEditor({
                         disabled={!editable}
                         placeholder="Wie Java, falls gleich"
                         onChange={(event) =>
-                          changeCommand(selectedGroup.id, row.id, { bedrockCmd: event.target.value })
+                          changeCommand(selectedGroup.id, row.id, {
+                            bedrockCmd: event.target.value,
+                          })
                         }
                       />
                     </label>
@@ -302,8 +370,16 @@ export function PlayerCommandEditor({
       )}
 
       {editable ? (
-        <details className="rounded-lg border border-line p-3">
-          <summary className="cursor-pointer font-semibold">Befehl zu „{selectedGroup?.title || "Gruppe"}“ hinzufügen</summary>
+        <details className="staff-command-add">
+          <summary>
+            <span>
+              <span className="block font-semibold">Befehl hinzufügen</span>
+              <span className="mt-1 block text-sm text-muted">
+                Wird zu „{selectedGroup?.title || "Gruppe"}“ hinzugefügt.
+              </span>
+            </span>
+            <span aria-hidden="true">+</span>
+          </summary>
           <fieldset className="mt-3 grid gap-2 md:grid-cols-2" disabled={saving || !selectedGroup}>
             <label className="grid gap-1 text-xs text-muted">
               Java-Befehl
@@ -320,7 +396,9 @@ export function PlayerCommandEditor({
                 className="field"
                 placeholder="Wie Java, falls gleich"
                 value={newCommand.bedrockCmd}
-                onChange={(event) => setNewCommand({ ...newCommand, bedrockCmd: event.target.value })}
+                onChange={(event) =>
+                  setNewCommand({ ...newCommand, bedrockCmd: event.target.value })
+                }
               />
             </label>
             <label className="grid gap-1 text-xs text-muted md:col-span-2">
@@ -332,7 +410,7 @@ export function PlayerCommandEditor({
                 onChange={(event) => setNewCommand({ ...newCommand, text: event.target.value })}
               />
             </label>
-            <button className="btn-ghost justify-self-start" type="button" onClick={addCommand}>
+            <button className="btn-brand justify-self-start" type="button" onClick={addCommand}>
               Zur Gruppe hinzufügen
             </button>
           </fieldset>

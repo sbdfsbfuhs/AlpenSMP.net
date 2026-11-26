@@ -7,8 +7,19 @@ import { PlayerSearch } from "@/components/site/staff-search";
 import { useLive } from "@/components/site/staff-live";
 import { can, roleLabel, ROLES, asRole, type Role } from "@/lib/alpen/roles";
 import { moveStaffLayoutTab, normalizeStaffLayout, reorderStaffLayoutTab, type StaffLayout } from "@/lib/alpen/staff-layout";
-import { FirebaseMfaChallengeRequired, sendPasswordResetEmail } from "@/lib/alpen/fb-auth";
+import {
+  clearFirebaseAccessToken,
+  FirebaseMfaChallengeRequired,
+  requestOwnEmailVerification,
+  sendPasswordResetEmail,
+} from "@/lib/alpen/fb-auth";
+import {
+  remainingPasswordResetCooldownSeconds,
+  STAFF_PASSWORD_RESET_COOLDOWN_KEY,
+  STAFF_PASSWORD_RESET_COOLDOWN_MS,
+} from "@/lib/alpen/staff-email-cooldown";
 import { securityJson } from "@/lib/alpen/security";
+import { requiresPersonalStaffEmail } from "@/lib/alpen/staff-account-flow";
 
 const AbsenceBoard = lazy(() => import("@/components/site/staff-extra").then((m) => ({ default: m.AbsenceBoard })));
 const BanGuideEditor = lazy(() => import("@/components/site/staff-extra").then((m) => ({ default: m.BanGuideEditor })));
@@ -44,6 +55,7 @@ import {
   isValidMinecraftUsername,
   shouldArchivePermanentBan,
   loginStaff,
+  StaffPersonalEmailRequired,
   StaffActivityConsentRequired,
   executeMinecraftUnban,
   fetchMinecraftPlayersSnapshot,
@@ -160,6 +172,11 @@ function StaffPage() {
   useEffect(() => {
     const saved = readSession();
     if (!saved) {
+      setReady(true);
+      return;
+    }
+    if (requiresPersonalStaffEmail(saved.email, saved.emailVerified === true)) {
+      writeSession(null);
       setReady(true);
       return;
     }
@@ -295,6 +312,8 @@ function Login({
   const [recoveryMessage, setRecoveryMessage] = useState("");
   const [recoveryError, setRecoveryError] = useState("");
   const [recoveryBusy, setRecoveryBusy] = useState(false);
+  const [recoveryCooldownUntil, setRecoveryCooldownUntil] = useState(0);
+  const [recoveryClock, setRecoveryClock] = useState(0);
   const [consentRequired, setConsentRequired] = useState(false);
   const [consentAccepted, setConsentAccepted] = useState(false);
   const [minecraftName, setMinecraftName] = useState("");
@@ -303,6 +322,43 @@ function Login({
   const [checkingMinecraftName, setCheckingMinecraftName] = useState(false);
   const [mfaRequired, setMfaRequired] = useState(false);
   const [mfaCode, setMfaCode] = useState("");
+  const [emailSetup, setEmailSetup] = useState<StaffPersonalEmailRequired | null>(null);
+  const [emailSetupAddress, setEmailSetupAddress] = useState("");
+  const [emailSetupPassword, setEmailSetupPassword] = useState("");
+  const [emailSetupMfaCode, setEmailSetupMfaCode] = useState("");
+  const [emailSetupBusy, setEmailSetupBusy] = useState(false);
+  const [emailSetupSentTo, setEmailSetupSentTo] = useState("");
+  const [emailSetupMessage, setEmailSetupMessage] = useState("");
+  const [emailSetupError, setEmailSetupError] = useState("");
+
+  useEffect(() => {
+    try {
+      const savedUntil = Number(window.localStorage.getItem(STAFF_PASSWORD_RESET_COOLDOWN_KEY));
+      if (remainingPasswordResetCooldownSeconds(savedUntil, Date.now()) > 0) {
+        setRecoveryCooldownUntil(savedUntil);
+        setRecoveryClock(Date.now());
+      }
+    } catch (storageError) {
+      console.warn("[Staff Center] Passwort-Reset-Countdown konnte nicht gespeichert werden.", storageError);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!recoveryCooldownUntil) return;
+    const timer = window.setInterval(() => {
+      const now = Date.now();
+      setRecoveryClock(now);
+      if (remainingPasswordResetCooldownSeconds(recoveryCooldownUntil, now) === 0) {
+        setRecoveryCooldownUntil(0);
+        try {
+          window.localStorage.removeItem(STAFF_PASSWORD_RESET_COOLDOWN_KEY);
+        } catch (storageError) {
+          console.warn("[Staff Center] Abgelaufener Passwort-Reset-Countdown konnte nicht entfernt werden.", storageError);
+        }
+      }
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [recoveryCooldownUntil]);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -335,6 +391,17 @@ function Login({
       if (err instanceof StaffActivityConsentRequired) {
         setConsentRequired(true);
         setError("");
+      } else if (err instanceof StaffPersonalEmailRequired) {
+        setEmailSetup(err);
+        setEmailSetupAddress(err.needsPersonalAddress ? "" : err.currentEmail);
+        setEmailSetupPassword("");
+        setEmailSetupMfaCode("");
+        setEmailSetupSentTo("");
+        setEmailSetupMessage("");
+        setEmailSetupError("");
+        setPassword("");
+        setMfaCode("");
+        setError("");
       } else if (err instanceof FirebaseMfaChallengeRequired) {
         setMfaRequired(true);
         setError("");
@@ -344,6 +411,50 @@ function Login({
     } finally {
       setBusy(false);
     }
+  }
+
+  async function sendPersonalEmailVerification(event: FormEvent) {
+    event.preventDefault();
+    if (!emailSetup) return;
+    setEmailSetupBusy(true);
+    setEmailSetupError("");
+    try {
+      const result = await requestOwnEmailVerification(
+        emailSetup.currentEmail,
+        emailSetupAddress,
+        emailSetupPassword,
+        emailSetup.uid,
+        emailSetupMfaCode,
+      );
+      setEmailSetupSentTo(result.email);
+      setEmailSetupMessage(
+        result.alreadyVerified
+          ? "Diese Adresse ist bereits bestätigt. Du kannst dich jetzt damit anmelden."
+          : `Bestätigungslink an ${result.email} gesendet. Öffne den Link und melde dich danach mit dieser Adresse erneut an.`,
+      );
+      setEmailSetupPassword("");
+      setEmailSetupMfaCode("");
+    } catch (verificationError) {
+      setEmailSetupError(
+        verificationError instanceof Error
+          ? verificationError.message
+          : "Der Bestätigungslink konnte nicht gesendet werden.",
+      );
+    } finally {
+      clearFirebaseAccessToken();
+      setEmailSetupBusy(false);
+    }
+  }
+
+  function returnToEmailLogin() {
+    setName(emailSetupSentTo || emailSetupAddress);
+    setPassword("");
+    setEmailSetup(null);
+    setEmailSetupSentTo("");
+    setEmailSetupMessage("");
+    setEmailSetupError("");
+    setMfaRequired(false);
+    setMfaCode("");
   }
 
   async function checkMinecraftName() {
@@ -389,11 +500,104 @@ function Login({
     try {
       await sendPasswordResetEmail(recoveryEmail);
       setRecoveryMessage("Falls ein Konto zu dieser Adresse gehört, wurde ein Passwort-Link gesendet.");
+      const expiresAt = Date.now() + STAFF_PASSWORD_RESET_COOLDOWN_MS;
+      setRecoveryCooldownUntil(expiresAt);
+      setRecoveryClock(Date.now());
+      try {
+        window.localStorage.setItem(STAFF_PASSWORD_RESET_COOLDOWN_KEY, String(expiresAt));
+      } catch (storageError) {
+        console.warn("[Staff Center] Passwort-Reset-Countdown konnte nicht gespeichert werden.", storageError);
+      }
     } catch (err) {
       setRecoveryError(err instanceof Error ? err.message : "Der Passwort-Link konnte nicht angefordert werden.");
     } finally {
       setRecoveryBusy(false);
     }
+  }
+
+  const recoveryCooldownSeconds = remainingPasswordResetCooldownSeconds(
+    recoveryCooldownUntil,
+    recoveryClock || Date.now(),
+  );
+
+  if (emailSetup) {
+    return (
+      <div className="mx-auto max-w-md space-y-4">
+        <form className="card card-still panel-in p-6" onSubmit={sendPersonalEmailVerification}>
+          <p className="kicker">Zugang schützen</p>
+          <h2 className="display mt-2 text-2xl">Persönliche E-Mail bestätigen</h2>
+          <p className="mt-3 text-sm text-muted">
+            {emailSetup.needsPersonalAddress
+              ? "Dein Konto verwendet noch eine interne Team-Adresse. Hinterlege eine persönliche Adresse. Das Staff-Center bleibt bis zur Bestätigung gesperrt."
+              : "Deine persönliche Adresse ist noch nicht bestätigt. Bestätige sie oder trage eine andere persönliche Adresse ein. Das Staff-Center bleibt bis dahin gesperrt."}
+          </p>
+          {emailSetupSentTo ? (
+            <div className="mt-5 space-y-3 rounded-xl border border-brand/40 bg-brand/5 p-4">
+              <p className="font-semibold" role="status">{emailSetupMessage}</p>
+              <ol className="list-inside list-decimal space-y-1 text-sm text-muted">
+                <li>Öffne den Link in deinem Posteingang.</li>
+                <li>Melde dich danach mit der bestätigten E-Mail-Adresse an.</li>
+              </ol>
+              {emailSetupError ? <p className="text-sm text-ember" role="alert">{emailSetupError}</p> : null}
+              <button className="btn-brand w-full" type="button" onClick={returnToEmailLogin}>
+                Zur Anmeldung
+              </button>
+              <button
+                className="btn-ghost w-full"
+                type="button"
+                onClick={() => setEmailSetupSentTo("")}
+              >
+                Keinen Link erhalten? Erneut senden
+              </button>
+            </div>
+          ) : (
+            <>
+              <label className="mt-5 block text-sm">
+                Persönliche E-Mail-Adresse
+                <input
+                  className="field mt-1"
+                  type="email"
+                  value={emailSetupAddress}
+                  onChange={(event) => setEmailSetupAddress(event.target.value)}
+                  autoComplete="email"
+                  required
+                  autoFocus
+                />
+              </label>
+              <label className="mt-3 block text-sm">
+                Aktuelles Konto-Passwort
+                <input
+                  className="field mt-1"
+                  type="password"
+                  value={emailSetupPassword}
+                  onChange={(event) => setEmailSetupPassword(event.target.value)}
+                  autoComplete="current-password"
+                  required
+                />
+              </label>
+              {emailSetup.mfaEnabled ? (
+                <label className="mt-3 block text-sm">
+                  Authenticator-Code
+                  <input
+                    className="field mt-1"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    pattern="[0-9]{6}"
+                    value={emailSetupMfaCode}
+                    onChange={(event) => setEmailSetupMfaCode(event.target.value)}
+                    required
+                  />
+                </label>
+              ) : null}
+              {emailSetupError ? <p className="mt-3 text-sm text-ember" role="alert">{emailSetupError}</p> : null}
+              <button className="btn-brand mt-5 w-full" type="submit" disabled={emailSetupBusy}>
+                {emailSetupBusy ? "Link wird gesendet…" : "Bestätigungslink senden"}
+              </button>
+            </>
+          )}
+        </form>
+      </div>
+    );
   }
 
   return (
@@ -492,8 +696,16 @@ function Login({
         </label>
         {recoveryMessage ? <p className="mt-3 text-sm text-muted" role="status">{recoveryMessage}</p> : null}
         {recoveryError ? <p className="mt-3 text-sm text-ember" role="alert">{recoveryError}</p> : null}
-        <button className="btn-ghost mt-4 w-full" type="submit" disabled={recoveryBusy}>
-          {recoveryBusy ? "Sende…" : "Passwort-Link anfordern"}
+        <button
+          className="btn-ghost mt-4 w-full"
+          type="submit"
+          disabled={recoveryBusy || recoveryCooldownSeconds > 0}
+        >
+          {recoveryBusy
+            ? "Sende…"
+            : recoveryCooldownSeconds > 0
+              ? `Erneut anfordern in ${recoveryCooldownSeconds}s`
+              : "Passwort-Link anfordern"}
         </button>
       </form>
     </div>
