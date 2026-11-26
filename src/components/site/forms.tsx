@@ -6,6 +6,11 @@ import { DiscordLink } from "@/components/site/shell";
 
 const COOLDOWN = 60_000;
 const STAR_LINE = ["", "Autsch 😬", "Na ja...", "Solide", "Stark!", "Legendär! 🏔️"];
+const REVIEW_KINDS = [
+  ["both", "Beides"],
+  ["image", "Nur Screenshot"],
+  ["review", "Nur Rezension"],
+] as const;
 const IMAGE_OK = /image\/(png|jpeg|webp)/;
 
 function imageFile(file: File) {
@@ -17,14 +22,14 @@ export function ReviewForm() {
   const [text, setText] = useState("");
   const [rating, setRating] = useState(5);
   const [hover, setHover] = useState(0);
+  const [starPulse, setStarPulse] = useState(0);
   const [kind, setKind] = useState<"both" | "image" | "review">("both");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [submissionAcknowledged, setSubmissionAcknowledged] = useState(false);
-  const [reviewPublicationConsent, setReviewPublicationConsent] = useState(false);
-  const [imagePublicationConsent, setImagePublicationConsent] = useState(false);
+  const [publicationConsent, setPublicationConsent] = useState(false);
   const [rights, setRights] = useState(false);
   const [over, setOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -32,13 +37,6 @@ export function ReviewForm() {
   const sent = note.startsWith("Danke.");
   const textNeeded = kind !== "image";
   const imageNeeded = kind !== "review";
-  const gaps = communitySubmissionGaps({
-    name,
-    text,
-    kind,
-    hasFile: Boolean(file),
-    submissionAcknowledged,
-  });
 
   useEffect(() => {
     if (!file) {
@@ -74,7 +72,7 @@ export function ReviewForm() {
     e.preventDefault();
     if (busy) return;
     const cleanName = name.trim().slice(0, 32);
-    const cleanText = text.trim().slice(0, 800);
+    const cleanText = textNeeded ? text.trim().slice(0, 800) : "";
     const missing = communitySubmissionGaps({
       name: cleanName,
       text: cleanText,
@@ -103,8 +101,8 @@ export function ReviewForm() {
         kind,
         imageUrl,
         submissionAcknowledged,
-        reviewPublicationConsent: textNeeded && reviewPublicationConsent,
-        imagePublicationConsent: imageNeeded && imagePublicationConsent,
+        reviewPublicationConsent: textNeeded && publicationConsent,
+        imagePublicationConsent: imageNeeded && publicationConsent,
         imageRightsConfirmed: imageNeeded && rights,
       });
       localStorage.setItem("alpensmp_last_submit", String(Date.now()));
@@ -112,12 +110,26 @@ export function ReviewForm() {
       setText("");
       pickFile(null);
       setSubmissionAcknowledged(false);
-      setReviewPublicationConsent(false);
-      setImagePublicationConsent(false);
+      setPublicationConsent(false);
       setRights(false);
       setNote(
         "Danke. Dein Beitrag ist zur internen Prüfung eingegangen. Veröffentlicht wird nur, wofür du separat zugestimmt hast.",
       );
+      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        void import("canvas-confetti").then(({ default: confetti }) => {
+          void confetti({
+            particleCount: 72,
+            spread: 72,
+            startVelocity: 28,
+            ticks: 72,
+            gravity: 1.1,
+            scalar: 0.8,
+            origin: { x: 0.5, y: 0.62 },
+            colors: ["#E1062C", "#F5C451", "#ffffff", "#9a9a9a"],
+            disableForReducedMotion: true,
+          });
+        });
+      }
     } catch (err) {
       setNote(
         err instanceof Error ? err.message : "Senden fehlgeschlagen. Alternativ über Discord.",
@@ -128,7 +140,10 @@ export function ReviewForm() {
   }
 
   return (
-    <form className={`card card-still review-form${sent ? " is-live" : ""} space-y-5 p-5`} onSubmit={onSubmit}>
+    <form
+      className={`card card-still review-form${sent ? " is-live" : ""} space-y-5 p-5`}
+      onSubmit={onSubmit}
+    >
       <div>
         <h3 className="text-lg font-semibold">Reiche deinen Community-Beitrag ein</h3>
         <p className="mt-1 text-sm text-muted">
@@ -139,6 +154,24 @@ export function ReviewForm() {
               : "Bild und Text, beides."}
         </p>
       </div>
+      {sent ? (
+        <div className="review-success-card" role="status">
+          <div className="review-success-stars" aria-hidden="true">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <span key={star} style={{ animationDelay: `${(star - 1) * 70}ms` }}>
+                ★
+              </span>
+            ))}
+          </div>
+          <div>
+            <h4 className="font-semibold text-fg">Dein Beitrag ist angekommen!</h4>
+            <p className="mt-1 text-sm text-muted">
+              Das Team prüft ihn jetzt. Öffentlich erscheint er nur, wenn du der Veröffentlichung
+              zugestimmt hast.
+            </p>
+          </div>
+        </div>
+      ) : null}
       <label className="block text-sm" htmlFor="review-name">
         Name (Ingame-Name)
         <input
@@ -162,11 +195,20 @@ export function ReviewForm() {
               onMouseEnter={() => setHover(n)}
               onFocus={() => setHover(n)}
               onBlur={() => setHover(0)}
-              onClick={() => setRating(n)}
+              onClick={() => {
+                setRating(n);
+                setStarPulse((current) => current + 1);
+              }}
               aria-pressed={n === rating}
               aria-label={`${n} Sterne`}
             >
-              ★
+              <span
+                key={starPulse}
+                className={starPulse ? "review-star-icon is-pulsing" : "review-star-icon"}
+                style={{ animationDelay: `${(n - 1) * 45}ms` }}
+              >
+                ★
+              </span>
             </button>
           ))}
         </div>
@@ -176,22 +218,36 @@ export function ReviewForm() {
       </fieldset>
       <fieldset className="review-block">
         <legend className="text-sm">Was du einreichst</legend>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {(
-            [
-              ["both", "Beides"],
-              ["image", "Nur Screenshot"],
-              ["review", "Nur Rezension"],
-            ] as const
-          ).map(([value, label]) => (
+        <div className="mt-2 flex flex-wrap gap-2" role="radiogroup" aria-label="Art des Beitrags">
+          {REVIEW_KINDS.map(([value, label]) => (
             <button
               key={value}
               type="button"
+              role="radio"
+              aria-checked={kind === value}
+              tabIndex={kind === value ? 0 : -1}
+              data-kind={value}
               className={
                 kind === value ? "btn-brand review-kind is-on px-3" : "btn-ghost review-kind px-3"
               }
               onClick={() => setKind(value)}
-              aria-pressed={kind === value}
+              onKeyDown={(event) => {
+                const currentIndex = REVIEW_KINDS.findIndex(([option]) => option === value);
+                const delta =
+                  event.key === "ArrowRight" || event.key === "ArrowDown"
+                    ? 1
+                    : event.key === "ArrowLeft" || event.key === "ArrowUp"
+                      ? -1
+                      : 0;
+                if (!delta) return;
+                event.preventDefault();
+                const next =
+                  REVIEW_KINDS[(currentIndex + delta + REVIEW_KINDS.length) % REVIEW_KINDS.length];
+                setKind(next[0]);
+                event.currentTarget.parentElement
+                  ?.querySelector<HTMLButtonElement>(`[data-kind="${next[0]}"]`)
+                  ?.focus();
+              }}
             >
               {label}
             </button>
@@ -252,47 +308,20 @@ export function ReviewForm() {
           ) : null}
         </div>
       ) : null}
-      <label className="review-block block text-sm" htmlFor="review-text">
-        Text{textNeeded ? "" : " · optional"}
-        <textarea
-          id="review-text"
-          className="field mt-1 min-h-28"
-          name="text"
-          value={text}
-          maxLength={800}
-          placeholder={
-            textNeeded
-              ? "Was hat dich begeistert? Was könnte besser sein?"
-              : "Optional. Ein Bild allein reicht."
-          }
-          onChange={(e) => setText(e.target.value)}
-        />
-      </label>
-      <ul className="review-list text-sm">
-        <Check ok={name.trim().length >= 2} label="Name eingetragen" />
-        <Check ok label={`Sterne: ${rating} · ${STAR_LINE[rating]}`} />
-        {imageNeeded ? <Check ok={Boolean(file)} label="Bild ausgewählt" /> : null}
-        <Check
-          ok={text.trim().length >= 4}
-          optional={!textNeeded && text.trim().length < 4}
-          label={textNeeded ? "Text ergänzt" : "Text"}
-        />
-        <Check ok={submissionAcknowledged} label="Interne Prüfung bestätigt" />
-        {textNeeded ? (
-          <Check ok={reviewPublicationConsent} optional label="Rezension öffentlich freigegeben" />
-        ) : null}
-        {imageNeeded ? (
-          <Check ok={imagePublicationConsent} optional label="Bild öffentlich freigegeben" />
-        ) : null}
-        {imageNeeded ? <Check ok={rights} optional label="Bildrechte bestätigt" /> : null}
-      </ul>
-      {gaps.length ? (
-        <p className="text-sm text-brand">Vor dem Absenden noch: {gaps.join(", ")}.</p>
-      ) : (
-        <p className="text-sm text-muted">
-          Die Prüfung ist bestätigt. Öffentliche Freigaben bleiben freiwillig.
-        </p>
-      )}
+      {textNeeded ? (
+        <label className="review-block block text-sm" htmlFor="review-text">
+          Text
+          <textarea
+            id="review-text"
+            className="field mt-1 min-h-28"
+            name="text"
+            value={text}
+            maxLength={800}
+            placeholder="Was hat dich begeistert? Was könnte besser sein?"
+            onChange={(e) => setText(e.target.value)}
+          />
+        </label>
+      ) : null}
       <label className="review-check text-sm" htmlFor="review-submission">
         <input
           id="review-submission"
@@ -311,84 +340,49 @@ export function ReviewForm() {
           .
         </span>
       </label>
-      {textNeeded ? (
-        <label className="review-check text-sm" htmlFor="review-publication">
+      <label className="review-check text-sm" htmlFor="community-publication">
+        <input
+          id="community-publication"
+          className="review-check-input"
+          type="checkbox"
+          checked={publicationConsent}
+          onChange={(e) => setPublicationConsent(e.target.checked)}
+        />
+        <span>
+          Ich willige freiwillig ein, dass mein Ingame-Name und die von mir ausgewählten Inhalte
+          (Rezensionstext und/oder Screenshot) nach Freigabe öffentlich gezeigt werden dürfen. Ich
+          kann diese Einwilligung jederzeit für die Zukunft widerrufen oder die Entfernung
+          verlangen.
+        </span>
+      </label>
+      {imageNeeded ? (
+        <label className="review-check text-sm" htmlFor="review-rights">
           <input
-            id="review-publication"
+            id="review-rights"
             className="review-check-input"
             type="checkbox"
-            checked={reviewPublicationConsent}
-            onChange={(e) => setReviewPublicationConsent(e.target.checked)}
+            checked={rights}
+            onChange={(e) => setRights(e.target.checked)}
           />
           <span>
-            Ich willige freiwillig ein, dass mein Ingame-Name, Rezensionstext und Sterne nach
-            Freigabe öffentlich gezeigt werden. Ich kann diese Einwilligung für die Zukunft
-            widerrufen oder die Entfernung verlangen.
+            Ich darf dieses Bild zur Veröffentlichung freigeben. Es zeigt keine privaten Angaben und
+            keine fremden Personen ohne deren Zustimmung.
           </span>
         </label>
-      ) : null}
-      {imageNeeded ? (
-        <>
-          <label className="review-check text-sm" htmlFor="image-publication">
-            <input
-              id="image-publication"
-              className="review-check-input"
-              type="checkbox"
-              checked={imagePublicationConsent}
-              onChange={(e) => setImagePublicationConsent(e.target.checked)}
-            />
-            <span>
-              Ich willige freiwillig ein, dass mein Ingame-Name, die Bildunterschrift und der
-              Screenshot nach Freigabe öffentlich gezeigt werden. Ich kann diese Einwilligung für
-              die Zukunft widerrufen oder die Entfernung verlangen.
-            </span>
-          </label>
-          <label className="review-check text-sm" htmlFor="review-rights">
-            <input
-              id="review-rights"
-              className="review-check-input"
-              type="checkbox"
-              checked={rights}
-              onChange={(e) => setRights(e.target.checked)}
-            />
-            <span>
-              Ich darf dieses Bild zur Veröffentlichung freigeben. Es zeigt keine privaten Angaben
-              und keine fremden Personen ohne deren Zustimmung.
-            </span>
-          </label>
-        </>
       ) : null}
       <button
         className={sent ? "btn-brand review-send is-sent" : "btn-brand review-send"}
         type="submit"
         disabled={busy}
       >
-        {busy ? "Wird gesendet…" : sent ? "Angekommen" : "Zur Prüfung absenden"}
+        {busy ? "Wird gesendet…" : sent ? "Weiteren Beitrag einreichen" : "Zur Prüfung absenden"}
       </button>
-      <p className={sent ? "review-ok review-success text-sm" : "text-sm text-muted"} role="status">
-        {sent ? <span className="review-success-plane" aria-hidden="true">✈</span> : null}
-        {note ||
-          "Das Team prüft deinen Beitrag intern. Öffentlich erscheint nur, was du separat freigibst."}
-      </p>
+      {!sent ? (
+        <p className="text-sm text-muted" role="status">
+          {note || "Das Team prüft deinen Beitrag intern. Die Veröffentlichung bleibt freiwillig."}
+        </p>
+      ) : null}
     </form>
-  );
-}
-
-function Check({
-  ok,
-  label,
-  optional = false,
-}: {
-  ok: boolean;
-  label: string;
-  optional?: boolean;
-}) {
-  return (
-    <li className={ok ? "is-ok" : ""}>
-      <span aria-hidden="true">{ok ? "✓" : optional ? "–" : "○"}</span>
-      {label}
-      {optional ? <span className="text-faint"> · optional</span> : null}
-    </li>
   );
 }
 

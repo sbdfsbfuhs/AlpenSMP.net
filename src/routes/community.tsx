@@ -141,7 +141,9 @@ function CommunityPage() {
         <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="kicker">Stimmen</p>
-            <h2 id="community-reviews-title" className="display mt-3 text-4xl">Was die Community sagt</h2>
+            <h2 id="community-reviews-title" className="display mt-3 text-4xl">
+              Was die Community sagt
+            </h2>
             <p className="mt-3 max-w-2xl text-muted">
               Echte Bewertungen von Spielern – geprüft, bevor sie hier erscheinen.
             </p>
@@ -152,9 +154,7 @@ function CommunityPage() {
               <span>
                 <span className="block text-xl leading-none text-star" aria-hidden="true">
                   {"★".repeat(roundedRating)}
-                  <span className="text-faint">
-                    {"☆".repeat(5 - roundedRating)}
-                  </span>
+                  <span className="text-faint">{"☆".repeat(5 - roundedRating)}</span>
                 </span>
                 <span className="mt-1 block text-sm text-muted">
                   {reviews.length} {reviews.length === 1 ? "Stimme" : "Stimmen"}
@@ -164,32 +164,43 @@ function CommunityPage() {
           ) : null}
         </div>
 
-        {reviews === null ? (
-          <p className="mt-6 text-sm text-muted" role="status">Freigegebene Stimmen werden geladen…</p>
-        ) : reviews.length === 0 ? (
-          <div className="card mt-6 flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="font-semibold text-fg">Noch keine freigegebenen Stimmen</p>
-              <p className="mt-1 text-sm text-muted">Deine Bewertung kann die erste sein. Das Team prüft jeden Beitrag vor der Veröffentlichung.</p>
-            </div>
-            <a className="btn-brand shrink-0" href="#community-review-form">Bewertung abgeben</a>
+        <div className="mt-8 grid items-start gap-8 xl:grid-cols-[minmax(0,1.1fr)_minmax(28rem,0.9fr)]">
+          <div className="order-2 xl:order-1">
+            {reviews === null ? (
+              <p className="text-sm text-muted" role="status">
+                Freigegebene Stimmen werden geladen…
+              </p>
+            ) : reviews.length === 0 ? (
+              <div className="card flex flex-col gap-3 p-5">
+                <p className="font-semibold text-fg">Noch keine freigegebenen Stimmen</p>
+                <p className="text-sm text-muted">
+                  Deine Bewertung kann die erste sein. Das Team prüft jeden Beitrag vor der
+                  Veröffentlichung.
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {reviews.map((review) => (
+                  <ReviewCard key={review.name + review.ts} review={review} />
+                ))}
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {reviews.map((review) => (
-              <ReviewCard key={review.name + review.ts} review={review} />
-            ))}
-          </div>
-        )}
 
-        <div id="community-review-form" className="mx-auto mt-10 max-w-3xl scroll-mt-24">
-          <ReviewForm />
+          <div id="community-review-form" className="order-1 scroll-mt-24 xl:order-2">
+            <ReviewForm />
+          </div>
         </div>
       </section>
 
       {active && typeof document !== "undefined"
         ? createPortal(
-            <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/88 p-3 sm:p-6" role="dialog" aria-modal="true" aria-label="Bild groß">
+            <div
+              className="fixed inset-0 z-[80] flex items-center justify-center bg-black/88 p-3 sm:p-6"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Bild groß"
+            >
               <button type="button" className="absolute inset-0" aria-label="Schließen" onClick={() => setActive(null)} />
               <button
                 type="button"

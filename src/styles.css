@@ -4596,6 +4596,21 @@ html[data-season="halloween"] {
   transition: transform 160ms ease, color 160ms ease, text-shadow 160ms ease;
 }
 
+.review-star-icon {
+  display: inline-block;
+  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1), filter 180ms ease;
+}
+
+.review-star:hover .review-star-icon,
+.review-star:focus-visible .review-star-icon {
+  filter: drop-shadow(0 0 8px rgb(245 196 81 / 0.8));
+  transform: translateY(-3px) scale(1.16) rotate(-8deg);
+}
+
+.review-star-icon.is-pulsing {
+  animation: review-star-pop 440ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
 .review-star.is-on {
   color: #e1062c;
   text-shadow: 0 0 12px rgb(225 6 44 / 0.7);
@@ -4612,6 +4627,11 @@ html[data-season="halloween"] {
 
 .review-kind.is-on {
   box-shadow: 0 0 0 1px rgb(225 6 44 / 0.45);
+}
+
+.review-kind:focus-visible {
+  outline: 2px solid var(--color-ice);
+  outline-offset: 3px;
 }
 
 .review-preview {
@@ -4730,6 +4750,8 @@ html[data-season="halloween"] {
 
 @media (prefers-reduced-motion: reduce) {
   .review-star,
+  .review-star-icon,
+  .review-star-icon.is-pulsing,
   .review-kind.is-on,
   .review-send,
   .review-check-input:checked::after {
@@ -4768,20 +4790,6 @@ html[data-season="halloween"] {
 .review-picked .review-preview {
   max-height: 5.5rem;
   margin-top: 0;
-}
-
-.review-list {
-  display: grid;
-  gap: 0.3rem;
-  padding: 0.75rem 0.85rem;
-  border-radius: 0.8rem;
-  background: color-mix(in oklab, var(--color-bg) 55%, transparent);
-}
-
-.review-list li {
-  display: flex;
-  gap: 0.45rem;
-  color: var(--color-muted);
 }
 
 .site-more-menu {
@@ -5051,15 +5059,6 @@ html[data-season="halloween"] {
   }
 }
 
-.review-list li.is-ok {
-  color: var(--color-fg);
-}
-
-.review-ok {
-  color: var(--color-fg);
-  font-weight: 650;
-}
-
 .review-motion {
   display: flex;
   align-items: center;
@@ -5081,19 +5080,42 @@ html[data-season="halloween"] {
   animation: review-tick 180ms ease;
 }
 
-.review-success-plane {
-  display: inline-block;
-  margin-right: 0.45rem;
-  color: var(--color-brand);
-  font-size: 1.15rem;
-  transform-origin: center;
-  animation: review-flight 850ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+.review-success-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+  overflow: hidden;
+  border: 1px solid color-mix(in oklab, var(--color-brand) 50%, var(--color-line));
+  border-radius: 1rem;
+  padding: 1rem 1.15rem;
+  background:
+    radial-gradient(ellipse at 0% 50%, rgb(225 6 44 / 0.18), transparent 55%),
+    color-mix(in oklab, var(--color-surface) 85%, transparent);
+  animation: review-success-in 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
-@keyframes review-flight {
-  0% { opacity: 0; transform: translate(-0.7rem, 0.6rem) rotate(-35deg) scale(0.65); }
-  60% { opacity: 1; transform: translate(0.2rem, -0.15rem) rotate(12deg) scale(1.15); }
-  100% { opacity: 1; transform: translate(0, 0) rotate(0) scale(1); }
+.review-success-stars {
+  display: flex;
+  gap: 0.08rem;
+  color: var(--color-star);
+  font-size: 1.35rem;
+}
+
+.review-success-stars span {
+  display: inline-block;
+  animation: review-star-pop 620ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes review-star-pop {
+  0% { opacity: 0.45; transform: scale(0.45) rotate(-22deg); }
+  65% { opacity: 1; transform: scale(1.35) rotate(9deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+
+@keyframes review-success-in {
+  from { opacity: 0; transform: translateY(0.65rem) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes review-glow {
@@ -5113,7 +5135,8 @@ html[data-season="halloween"] {
   .review-form.is-live .review-picked,
   .review-form.is-live .review-send.is-sent,
   .review-form.is-live .review-check-input:checked::after,
-  .review-success-plane {
+  .review-success-card,
+  .review-success-stars span {
     animation: none;
   }
 }
