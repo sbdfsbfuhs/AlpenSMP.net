@@ -12,7 +12,8 @@ const REVIEW_KINDS = [
   ["review", "Nur Rezension"],
 ] as const;
 const IMAGE_OK = /image\/(png|jpeg|webp)/;
-type ReviewConsentKey = "submissionAcknowledged" | "publicationConsent" | "imageRightsConfirmed";
+type ReviewConsentKey = "submissionAcknowledged" | "imageRightsConfirmed";
+type ReviewFieldKey = "name" | "text" | "image";
 
 function imageFile(file: File) {
   return IMAGE_OK.test(file.type) || /\.(png|jpe?g|webp)$/i.test(file.name);
@@ -32,16 +33,22 @@ export function ReviewForm() {
   const [submissionAcknowledged, setSubmissionAcknowledged] = useState(false);
   const [publicationConsent, setPublicationConsent] = useState(false);
   const [rights, setRights] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<ReviewFieldKey, boolean>>({
+    name: false,
+    text: false,
+    image: false,
+  });
   const [checkboxErrors, setCheckboxErrors] = useState<Record<ReviewConsentKey, boolean>>({
     submissionAcknowledged: false,
-    publicationConsent: false,
     imageRightsConfirmed: false,
   });
   const [shakingCheckboxes, setShakingCheckboxes] = useState<ReviewConsentKey[]>([]);
   const [over, setOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const textRef = useRef<HTMLTextAreaElement>(null);
+  const imagePickerRef = useRef<HTMLButtonElement>(null);
   const submissionAcknowledgementRef = useRef<HTMLInputElement>(null);
-  const publicationConsentRef = useRef<HTMLInputElement>(null);
   const imageRightsRef = useRef<HTMLInputElement>(null);
   const lit = hover || rating;
   const sent = note.startsWith("Danke.");
@@ -76,6 +83,14 @@ export function ReviewForm() {
     }
     setNote("");
     setFile(next);
+    setFieldErrors((current) => ({ ...current, image: false }));
+  }
+
+  function focusFirstInvalid(element: HTMLElement | null) {
+    if (!element) return;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    element.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+    element.focus({ preventScroll: true });
   }
 
   async function onSubmit(e: FormEvent) {
@@ -93,39 +108,47 @@ export function ReviewForm() {
       imageRightsConfirmed: rights,
     });
     if (missing.length) {
+      const currentFieldErrors: Record<ReviewFieldKey, boolean> = {
+        name: missing.includes("Name"),
+        text: missing.includes("Text"),
+        image: missing.includes("Bild"),
+      };
       const errors: Record<ReviewConsentKey, boolean> = {
         submissionAcknowledged: missing.includes("Bestätigung zur Prüfung"),
-        publicationConsent: missing.includes("Zustimmung zur Veröffentlichung"),
         imageRightsConfirmed: missing.includes("Bestätigung der Bildrechte"),
       };
+      setFieldErrors(currentFieldErrors);
       setCheckboxErrors(errors);
       const missingCheckboxes = (Object.keys(errors) as ReviewConsentKey[]).filter(
         (key) => errors[key],
       );
       setShakingCheckboxes([]);
-      if (missingCheckboxes.length > 0) {
+      const firstMissing = missing[0];
+      if (firstMissing) {
         window.requestAnimationFrame(() => {
-          if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+          if (
+            missingCheckboxes.length > 0 &&
+            !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ) {
             setShakingCheckboxes(missingCheckboxes);
           }
-          const firstMissing = missingCheckboxes[0];
-          if (firstMissing === "submissionAcknowledged") submissionAcknowledgementRef.current?.focus();
-          if (firstMissing === "publicationConsent") publicationConsentRef.current?.focus();
-          if (firstMissing === "imageRightsConfirmed") imageRightsRef.current?.focus();
+          if (firstMissing === "Name") focusFirstInvalid(nameRef.current);
+          if (firstMissing === "Text") focusFirstInvalid(textRef.current);
+          if (firstMissing === "Bild") focusFirstInvalid(imagePickerRef.current);
+          if (firstMissing === "Bestätigung zur Prüfung") {
+            focusFirstInvalid(submissionAcknowledgementRef.current);
+          }
+          if (firstMissing === "Bestätigung der Bildrechte") {
+            focusFirstInvalid(imageRightsRef.current);
+          }
         });
       }
-      const otherMissing = missing.filter(
-        (gap) =>
-          gap !== "Bestätigung zur Prüfung" &&
-          gap !== "Zustimmung zur Veröffentlichung" &&
-          gap !== "Bestätigung der Bildrechte",
-      );
-      setNote(otherMissing.length ? `Noch fehlt: ${otherMissing.join(", ")}.` : "");
+      setNote("");
       return;
     }
+    setFieldErrors({ name: false, text: false, image: false });
     setCheckboxErrors({
       submissionAcknowledged: false,
-      publicationConsent: false,
       imageRightsConfirmed: false,
     });
     const last = Number(localStorage.getItem("alpensmp_last_submit") || 0);
@@ -156,9 +179,9 @@ export function ReviewForm() {
       setSubmissionAcknowledged(false);
       setPublicationConsent(false);
       setRights(false);
+      setFieldErrors({ name: false, text: false, image: false });
       setCheckboxErrors({
         submissionAcknowledged: false,
-        publicationConsent: false,
         imageRightsConfirmed: false,
       });
       setShakingCheckboxes([]);
@@ -191,7 +214,7 @@ export function ReviewForm() {
 
   return (
     <form
-      className={`card card-still review-form${sent ? " is-live" : ""} space-y-5 p-5`}
+      className={`card card-still review-form${sent ? " is-live" : ""} space-y-4 p-4 sm:p-5`}
       onSubmit={onSubmit}
     >
       <div>
@@ -202,6 +225,9 @@ export function ReviewForm() {
             : kind === "review"
               ? "Nur der Text. Ein Bild brauchst du nicht."
               : "Bild und Text, beides."}
+        </p>
+        <p className="mt-1 text-xs text-muted">
+          <span className="review-required">*</span> Pflichtangabe · Veröffentlichung ist optional
         </p>
       </div>
       {sent ? (
@@ -223,16 +249,30 @@ export function ReviewForm() {
         </div>
       ) : null}
       <label className="block text-sm" htmlFor="review-name">
-        Name (Ingame-Name)
+        Name (Ingame-Name) <span className="review-required">*</span>
         <input
+          ref={nameRef}
           id="review-name"
-          className="field mt-1"
+          className={`field mt-1${fieldErrors.name ? " is-invalid" : ""}`}
           name="name"
           autoComplete="nickname"
+          aria-required="true"
+          aria-invalid={fieldErrors.name}
+          aria-describedby={fieldErrors.name ? "review-name-error" : undefined}
           value={name}
           maxLength={32}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => {
+            setName(e.target.value);
+            if (e.target.value.trim().length >= 2) {
+              setFieldErrors((current) => ({ ...current, name: false }));
+            }
+          }}
         />
+        {fieldErrors.name ? (
+          <span id="review-name-error" className="review-field-error" role="alert">
+            Bitte gib mindestens 2 Zeichen ein.
+          </span>
+        ) : null}
       </label>
       <fieldset className="review-block">
         <legend className="text-sm">Sterne</legend>
@@ -306,9 +346,15 @@ export function ReviewForm() {
       </fieldset>
       {imageNeeded ? (
         <div className="review-block text-sm">
-          <p>Bild{kind === "both" ? "" : " · reicht allein"}</p>
+          <p id="review-file-label">
+            Bild{kind === "both" ? "" : " · reicht allein"}{" "}
+            <span className="review-required">*</span>
+          </p>
           <div
-            className={over ? "review-drop is-over" : "review-drop"}
+            className={`review-drop${over ? " is-over" : ""}${fieldErrors.image ? " is-invalid" : ""}`}
+            role="group"
+            aria-labelledby="review-file-label"
+            aria-describedby={fieldErrors.image ? "review-file-error" : undefined}
             onDragOver={(event) => {
               event.preventDefault();
               setOver(true);
@@ -326,9 +372,17 @@ export function ReviewForm() {
               className="sr-only"
               type="file"
               accept="image/png,image/jpeg,image/webp"
+              aria-required="true"
+              aria-invalid={fieldErrors.image}
+              aria-describedby={fieldErrors.image ? "review-file-error" : undefined}
               onChange={(event) => pickFile(event.target.files?.[0] ?? null)}
             />
-            <button type="button" className="btn-ghost" onClick={() => fileRef.current?.click()}>
+            <button
+              ref={imagePickerRef}
+              type="button"
+              className="btn-ghost"
+              onClick={() => fileRef.current?.click()}
+            >
               Bild wählen
             </button>
             <p className="text-xs text-faint">
@@ -336,6 +390,11 @@ export function ReviewForm() {
               ohne Zustimmung zeigen.
             </p>
           </div>
+          {fieldErrors.image ? (
+            <p id="review-file-error" className="review-field-error" role="alert">
+              Bitte wähle ein Bild aus.
+            </p>
+          ) : null}
           {preview && file ? (
             <div className="review-picked">
               <img src={preview} alt="Vorschau deines Bildes" className="review-preview" />
@@ -360,162 +419,169 @@ export function ReviewForm() {
       ) : null}
       {textNeeded ? (
         <label className="review-block block text-sm" htmlFor="review-text">
-          Text
+          Text <span className="review-required">*</span>
           <textarea
+            ref={textRef}
             id="review-text"
-            className="field mt-1 min-h-28"
+            className={`field mt-1 min-h-28${fieldErrors.text ? " is-invalid" : ""}`}
             name="text"
             value={text}
             maxLength={800}
             placeholder="Was hat dich begeistert? Was könnte besser sein?"
-            onChange={(e) => setText(e.target.value)}
-          />
-        </label>
-      ) : null}
-      <label
-        className={`review-check text-sm${checkboxErrors.submissionAcknowledged ? " is-invalid" : ""}${shakingCheckboxes.includes("submissionAcknowledged") ? " is-shaking" : ""}`}
-        htmlFor="review-submission"
-        onAnimationEnd={(event) => {
-          if (event.animationName === "review-checkbox-shake") {
-            setShakingCheckboxes((current) =>
-              current.filter((key) => key !== "submissionAcknowledged"),
-            );
-          }
-        }}
-      >
-        <input
-          ref={submissionAcknowledgementRef}
-          id="review-submission"
-          className="review-check-input"
-          type="checkbox"
-          checked={submissionAcknowledged}
-          aria-invalid={checkboxErrors.submissionAcknowledged}
-          aria-describedby={
-            checkboxErrors.submissionAcknowledged ? "review-submission-error" : undefined
-          }
-          onChange={(e) => {
-            setSubmissionAcknowledged(e.target.checked);
-            if (e.target.checked) {
-              setCheckboxErrors((current) => ({ ...current, submissionAcknowledged: false }));
-              setShakingCheckboxes((current) =>
-                current.filter((key) => key !== "submissionAcknowledged"),
-              );
-            }
-          }}
-        />
-        <span>
-          Ich reiche den Beitrag zur internen Prüfung ein. Dafür wird er gespeichert und ist
-          zunächst nur für das Team sichtbar. Eine öffentliche Veröffentlichung ist nicht Teil
-          dieser Bestätigung. Details stehen in der{" "}
-          <Link to="/datenschutz" className="text-brand underline">
-            Datenschutzerklärung
-          </Link>
-          .
-          {checkboxErrors.submissionAcknowledged ? (
-            <span
-              id="review-submission-error"
-              className="mt-2 block font-semibold text-red-300"
-              role="alert"
-            >
-              Bitte bestätige die interne Prüfung.
-            </span>
-          ) : null}
-        </span>
-      </label>
-      <label
-        className={`review-check text-sm${checkboxErrors.publicationConsent ? " is-invalid" : ""}${shakingCheckboxes.includes("publicationConsent") ? " is-shaking" : ""}`}
-        htmlFor="community-publication"
-        onAnimationEnd={(event) => {
-          if (event.animationName === "review-checkbox-shake") {
-            setShakingCheckboxes((current) =>
-              current.filter((key) => key !== "publicationConsent"),
-            );
-          }
-        }}
-      >
-        <input
-          ref={publicationConsentRef}
-          id="community-publication"
-          className="review-check-input"
-          type="checkbox"
-          checked={publicationConsent}
-          aria-invalid={checkboxErrors.publicationConsent}
-          aria-describedby={
-            checkboxErrors.publicationConsent ? "community-publication-error" : undefined
-          }
-          onChange={(e) => {
-            setPublicationConsent(e.target.checked);
-            if (e.target.checked) {
-              setCheckboxErrors((current) => ({ ...current, publicationConsent: false }));
-              setShakingCheckboxes((current) =>
-                current.filter((key) => key !== "publicationConsent"),
-              );
-            }
-          }}
-        />
-        <span>
-          Ich willige ein, dass mein Ingame-Name und die von mir ausgewählten Inhalte
-          (Rezensionstext und/oder Screenshot) nach Freigabe öffentlich gezeigt werden dürfen. Ich
-          kann diese Einwilligung jederzeit für die Zukunft widerrufen oder die Entfernung
-          verlangen.
-          {checkboxErrors.publicationConsent ? (
-            <span
-              id="community-publication-error"
-              className="mt-2 block font-semibold text-red-300"
-              role="alert"
-            >
-              Bitte bestätige die Zustimmung zur Veröffentlichung.
-            </span>
-          ) : null}
-        </span>
-      </label>
-      {imageNeeded ? (
-        <label
-          className={`review-check text-sm${checkboxErrors.imageRightsConfirmed ? " is-invalid" : ""}${shakingCheckboxes.includes("imageRightsConfirmed") ? " is-shaking" : ""}`}
-          htmlFor="review-rights"
-          onAnimationEnd={(event) => {
-            if (event.animationName === "review-checkbox-shake") {
-              setShakingCheckboxes((current) =>
-                current.filter((key) => key !== "imageRightsConfirmed"),
-              );
-            }
-          }}
-        >
-          <input
-            ref={imageRightsRef}
-            id="review-rights"
-            className="review-check-input"
-            type="checkbox"
-            checked={rights}
-            aria-invalid={checkboxErrors.imageRightsConfirmed}
-            aria-describedby={
-              checkboxErrors.imageRightsConfirmed ? "review-rights-error" : undefined
-            }
+            aria-required="true"
+            aria-invalid={fieldErrors.text}
+            aria-describedby={fieldErrors.text ? "review-text-error" : undefined}
             onChange={(e) => {
-              setRights(e.target.checked);
-              if (e.target.checked) {
-                setCheckboxErrors((current) => ({ ...current, imageRightsConfirmed: false }));
-                setShakingCheckboxes((current) =>
-                  current.filter((key) => key !== "imageRightsConfirmed"),
-                );
+              setText(e.target.value);
+              if (e.target.value.trim().length >= 4) {
+                setFieldErrors((current) => ({ ...current, text: false }));
               }
             }}
           />
-          <span>
-            Ich darf dieses Bild zur Veröffentlichung freigeben. Es zeigt keine privaten Angaben und
-            keine fremden Personen ohne deren Zustimmung.
-            {checkboxErrors.imageRightsConfirmed ? (
-              <span
-                id="review-rights-error"
-                className="mt-2 block font-semibold text-red-300"
-                role="alert"
-              >
-                Bitte bestätige die Bildrechte.
-              </span>
-            ) : null}
-          </span>
+          {fieldErrors.text ? (
+            <span id="review-text-error" className="review-field-error" role="alert">
+              Bitte gib mindestens 4 Zeichen ein.
+            </span>
+          ) : null}
         </label>
       ) : null}
+      <fieldset className="review-block review-consent-group">
+        <legend className="text-sm">Bestätigungen</legend>
+        <p className="mt-1 text-xs text-muted">
+          Interne Prüfung ist erforderlich. Veröffentlichung ist optional; für eine Bildfreigabe
+          brauchst du zusätzlich eine Rechtebestätigung.
+        </p>
+        <div className="mt-3 grid gap-3">
+          <label
+            className={`review-check text-sm${checkboxErrors.submissionAcknowledged ? " is-invalid" : ""}${shakingCheckboxes.includes("submissionAcknowledged") ? " is-shaking" : ""}`}
+            htmlFor="review-submission"
+            onAnimationEnd={(event) => {
+              if (event.animationName === "review-checkbox-shake") {
+                setShakingCheckboxes((current) =>
+                  current.filter((key) => key !== "submissionAcknowledged"),
+                );
+              }
+            }}
+          >
+            <input
+              ref={submissionAcknowledgementRef}
+              id="review-submission"
+              className="review-check-input"
+              type="checkbox"
+              checked={submissionAcknowledged}
+              aria-required="true"
+              aria-invalid={checkboxErrors.submissionAcknowledged}
+              aria-describedby={
+                checkboxErrors.submissionAcknowledged ? "review-submission-error" : undefined
+              }
+              onChange={(e) => {
+                setSubmissionAcknowledged(e.target.checked);
+                if (e.target.checked) {
+                  setCheckboxErrors((current) => ({ ...current, submissionAcknowledged: false }));
+                  setShakingCheckboxes((current) =>
+                    current.filter((key) => key !== "submissionAcknowledged"),
+                  );
+                }
+              }}
+            />
+            <span>
+              <span className="review-consent-tag is-required">Pflicht</span>
+              Ich reiche den Beitrag zur internen Prüfung ein. Dafür wird er gespeichert und ist
+              zunächst nur für das Team sichtbar. Eine öffentliche Veröffentlichung ist nicht Teil
+              dieser Bestätigung. Details stehen in der{" "}
+              <Link to="/datenschutz" className="text-brand underline">
+                Datenschutzerklärung
+              </Link>
+              .
+              {checkboxErrors.submissionAcknowledged ? (
+                <span
+                  id="review-submission-error"
+                  className="review-field-error"
+                  role="alert"
+                >
+                  Bitte bestätige die interne Prüfung.
+                </span>
+              ) : null}
+            </span>
+          </label>
+          <label className="review-check text-sm" htmlFor="community-publication">
+            <input
+              id="community-publication"
+              className="review-check-input"
+              type="checkbox"
+              checked={publicationConsent}
+              onChange={(e) => {
+                setPublicationConsent(e.target.checked);
+                if (!e.target.checked) {
+                  setRights(false);
+                  setCheckboxErrors((current) => ({
+                    ...current,
+                    imageRightsConfirmed: false,
+                  }));
+                  setShakingCheckboxes((current) =>
+                    current.filter((key) => key !== "imageRightsConfirmed"),
+                  );
+                }
+              }}
+            />
+            <span>
+              <span className="review-consent-tag">Optional</span>
+              Ich willige ein, dass mein Ingame-Name und die von mir ausgewählten Inhalte
+              (Rezensionstext und/oder Screenshot) nach Freigabe öffentlich gezeigt werden dürfen.
+              Ohne diese Zustimmung bleibt der Beitrag intern. Ich kann die Einwilligung jederzeit
+              für die Zukunft widerrufen oder die Entfernung verlangen.
+            </span>
+          </label>
+          {imageNeeded && publicationConsent ? (
+            <label
+              className={`review-check text-sm${checkboxErrors.imageRightsConfirmed ? " is-invalid" : ""}${shakingCheckboxes.includes("imageRightsConfirmed") ? " is-shaking" : ""}`}
+              htmlFor="review-rights"
+              onAnimationEnd={(event) => {
+                if (event.animationName === "review-checkbox-shake") {
+                  setShakingCheckboxes((current) =>
+                    current.filter((key) => key !== "imageRightsConfirmed"),
+                  );
+                }
+              }}
+            >
+              <input
+                ref={imageRightsRef}
+                id="review-rights"
+                className="review-check-input"
+                type="checkbox"
+                checked={rights}
+                aria-required="true"
+                aria-invalid={checkboxErrors.imageRightsConfirmed}
+                aria-describedby={
+                  checkboxErrors.imageRightsConfirmed ? "review-rights-error" : undefined
+                }
+                onChange={(e) => {
+                  setRights(e.target.checked);
+                  if (e.target.checked) {
+                    setCheckboxErrors((current) => ({
+                      ...current,
+                      imageRightsConfirmed: false,
+                    }));
+                    setShakingCheckboxes((current) =>
+                      current.filter((key) => key !== "imageRightsConfirmed"),
+                    );
+                  }
+                }}
+              />
+              <span>
+                <span className="review-consent-tag is-required">Pflicht für Bildfreigabe</span>
+                Ich darf dieses Bild zur Veröffentlichung freigeben. Es zeigt keine privaten
+                Angaben und keine fremden Personen ohne deren Zustimmung.
+                {checkboxErrors.imageRightsConfirmed ? (
+                  <span id="review-rights-error" className="review-field-error" role="alert">
+                    Bitte bestätige die Bildrechte.
+                  </span>
+                ) : null}
+              </span>
+            </label>
+          ) : null}
+        </div>
+      </fieldset>
       <button
         className={sent ? "btn-brand review-send is-sent" : "btn-brand review-send"}
         type="submit"
@@ -525,7 +591,7 @@ export function ReviewForm() {
       </button>
       {!sent ? (
         <p className="text-sm text-muted" role="status">
-          {note || "Bitte bestätige alle angezeigten Angaben, bevor du den Beitrag absendest."}
+          {note || "Fülle die Pflichtfelder aus und bestätige die interne Prüfung."}
         </p>
       ) : null}
     </form>

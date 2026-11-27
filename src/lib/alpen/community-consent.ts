@@ -21,8 +21,11 @@ export function communitySubmissionGaps(input: {
   if (input.kind !== "image" && input.text.trim().length < 4) gaps.push("Text");
   if (input.kind !== "review" && !input.hasFile) gaps.push("Bild");
   if (!input.submissionAcknowledged) gaps.push("Bestätigung zur Prüfung");
-  if (!input.publicationConsent) gaps.push("Zustimmung zur Veröffentlichung");
-  if (input.kind !== "review" && !input.imageRightsConfirmed) {
+  if (
+    input.publicationConsent &&
+    input.kind !== "review" &&
+    !input.imageRightsConfirmed
+  ) {
     gaps.push("Bestätigung der Bildrechte");
   }
   return gaps;

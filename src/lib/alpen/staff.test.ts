@@ -134,7 +134,7 @@ describe("permanent-ban archiving", () => {
 });
 
 describe("community publication consent", () => {
-  it("requires the visible consent checkboxes before submission", () => {
+  it("allows internal submissions without public consent", () => {
     assert.deepEqual(
       communitySubmissionGaps({
         name: "Spieler",
@@ -145,11 +145,19 @@ describe("community publication consent", () => {
         publicationConsent: false,
         imageRightsConfirmed: false,
       }),
-      [
-        "Bestätigung zur Prüfung",
-        "Zustimmung zur Veröffentlichung",
-        "Bestätigung der Bildrechte",
-      ],
+      ["Bestätigung zur Prüfung"],
+    );
+    assert.deepEqual(
+      communitySubmissionGaps({
+        name: "Spieler",
+        text: "Guter Server",
+        kind: "both",
+        hasFile: true,
+        submissionAcknowledged: true,
+        publicationConsent: false,
+        imageRightsConfirmed: false,
+      }),
+      [],
     );
     assert.deepEqual(
       communitySubmissionGaps({
@@ -158,10 +166,22 @@ describe("community publication consent", () => {
         kind: "review",
         hasFile: false,
         submissionAcknowledged: true,
-        publicationConsent: true,
+        publicationConsent: false,
         imageRightsConfirmed: false,
       }),
       [],
+    );
+    assert.deepEqual(
+      communitySubmissionGaps({
+        name: "Spieler",
+        text: "Guter Server",
+        kind: "both",
+        hasFile: true,
+        submissionAcknowledged: true,
+        publicationConsent: true,
+        imageRightsConfirmed: false,
+      }),
+      ["Bestätigung der Bildrechte"],
     );
   });
 
