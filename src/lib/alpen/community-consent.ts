@@ -13,12 +13,18 @@ export function communitySubmissionGaps(input: {
   kind: CommunityKind;
   hasFile: boolean;
   submissionAcknowledged: boolean;
+  publicationConsent: boolean;
+  imageRightsConfirmed: boolean;
 }) {
   const gaps: string[] = [];
   if (input.name.trim().length < 2) gaps.push("Name");
   if (input.kind !== "image" && input.text.trim().length < 4) gaps.push("Text");
   if (input.kind !== "review" && !input.hasFile) gaps.push("Bild");
   if (!input.submissionAcknowledged) gaps.push("Bestätigung zur Prüfung");
+  if (!input.publicationConsent) gaps.push("Zustimmung zur Veröffentlichung");
+  if (input.kind !== "review" && !input.imageRightsConfirmed) {
+    gaps.push("Bestätigung der Bildrechte");
+  }
   return gaps;
 }
 

@@ -134,7 +134,23 @@ describe("permanent-ban archiving", () => {
 });
 
 describe("community publication consent", () => {
-  it("allows internal review without requiring public publication consent", () => {
+  it("requires the visible consent checkboxes before submission", () => {
+    assert.deepEqual(
+      communitySubmissionGaps({
+        name: "Spieler",
+        text: "Guter Server",
+        kind: "both",
+        hasFile: true,
+        submissionAcknowledged: false,
+        publicationConsent: false,
+        imageRightsConfirmed: false,
+      }),
+      [
+        "Bestätigung zur Prüfung",
+        "Zustimmung zur Veröffentlichung",
+        "Bestätigung der Bildrechte",
+      ],
+    );
     assert.deepEqual(
       communitySubmissionGaps({
         name: "Spieler",
@@ -142,6 +158,8 @@ describe("community publication consent", () => {
         kind: "review",
         hasFile: false,
         submissionAcknowledged: true,
+        publicationConsent: true,
+        imageRightsConfirmed: false,
       }),
       [],
     );
