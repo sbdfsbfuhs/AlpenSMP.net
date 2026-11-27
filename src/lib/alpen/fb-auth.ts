@@ -206,6 +206,10 @@ export function currentLogin(): FirebaseLogin | null {
   return { email: stored.email, uid: stored.uid, mfaEnabled: Boolean(stored.mfaEnabled) };
 }
 
+export function hasCurrentFirebaseLogin(uid: string) {
+  return getStaffAuth().currentUser?.uid === uid;
+}
+
 export function clearFirebaseLogin() {
   writeStored(null);
   pendingMfaResolver = null;
@@ -279,13 +283,21 @@ export async function requestOwnEmailVerification(
   password: string,
   expectedUid: string,
   totpCode = "",
+  allowRecentLogin = false,
 ) {
   const nextEmail = normalizeRecoveryEmail(nextEmailValue);
   const current = currentEmail.trim().toLowerCase();
   if (!current) throw new Error("Bitte melde dich erneut an.");
-  if (!password) throw new Error("Bitte gib dein aktuelles Konto-Passwort ein.");
 
-  const signed = await signInEmail(current, password, totpCode);
+  const recentUser = allowRecentLogin ? getStaffAuth().currentUser : null;
+  let signed: FirebaseLogin;
+  if (recentUser?.uid === expectedUid && recentUser.email?.trim().toLowerCase() === current) {
+    signed = await saveSdkUser(recentUser);
+  } else if (password) {
+    signed = await signInEmail(current, password, totpCode);
+  } else {
+    throw new Error("Bitte melde dich erneut an und gib dein aktuelles Konto-Passwort ein.");
+  }
   if (signed.uid !== expectedUid) {
     clearFirebaseLogin();
     throw new Error("Der angemeldete Account hat sich geändert. Bitte melde dich erneut an.");
@@ -298,15 +310,63 @@ export async function requestOwnEmailVerification(
 
   const alreadyCurrent = user.email?.trim().toLowerCase() === nextEmail;
   if (alreadyCurrent && user.emailVerified) {
-    return { email: nextEmail, alreadyVerified: true };
+    return { email: nextEmail, alreadyVerified: true, firstPasswordSetupRequired: false };
   }
   try {
     const idToken = await user.getIdToken(true);
-    await requestStaffEmailVerification({ idToken, expectedUid, newEmail: nextEmail });
+    const result = await requestStaffEmailVerification({ idToken, expectedUid, newEmail: nextEmail });
+    return {
+      email: nextEmail,
+      alreadyVerified: false,
+      firstPasswordSetupRequired: result.firstPasswordSetupRequired === true,
+    };
   } catch (error) {
     throw new Error(authErrorMessage(error));
   }
-  return { email: nextEmail, alreadyVerified: false };
+}
+
+export async function refreshVerifiedStaffLogin(expectedEmail: string, expectedUid: string) {
+  const stored = readStored();
+  if (!stored || stored.uid !== expectedUid) {
+    throw new Error("Die sichere Ersteinrichtungssitzung ist nicht mehr verfügbar. Gib bitte deinen Einrichtungscode ein.");
+  }
+  const response = await fetch(`https://securetoken.googleapis.com/v1/token?key=${SITE.fbKey}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: stored.refreshToken }),
+  });
+  const tokenData = await response.json() as {
+    id_token?: string;
+    refresh_token?: string;
+    expires_in?: string;
+    user_id?: string;
+    error?: { message?: string };
+  };
+  if (!response.ok || !tokenData.id_token || !tokenData.refresh_token || tokenData.user_id !== expectedUid) {
+    throw new Error("Die sichere Ersteinrichtungssitzung ist abgelaufen. Gib bitte deinen Einrichtungscode ein.");
+  }
+  const nextStored: Stored = {
+    ...stored,
+    idToken: tokenData.id_token,
+    refreshToken: tokenData.refresh_token,
+    expiresAt: Date.now() + Number(tokenData.expires_in || 3600) * 1000,
+    uid: expectedUid,
+  };
+  writeStored(nextStored);
+  const lookup = await authPost("accounts:lookup", { idToken: nextStored.idToken }) as {
+    users?: Array<{ localId?: string; email?: string; emailVerified?: boolean }>;
+  };
+  const user = lookup.users?.[0];
+  if (
+    !user ||
+    user.localId !== expectedUid ||
+    user.emailVerified !== true ||
+    user.email?.trim().toLowerCase() !== expectedEmail.trim().toLowerCase()
+  ) {
+    throw new Error("Bitte bestätige zuerst die persönliche E-Mail-Adresse, die mit diesem Konto verknüpft ist.");
+  }
+  writeStored({ ...nextStored, email: user.email, emailVerified: true });
+  return { email: user.email, uid: expectedUid, mfaEnabled: Boolean(stored.mfaEnabled), emailVerified: true };
 }
 
 export async function changeOwnPassword(password: string) {

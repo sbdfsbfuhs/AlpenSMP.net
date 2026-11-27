@@ -335,7 +335,7 @@ export async function sendStaffEmailVerification(input: {
     throw new Error("Der angemeldete Account hat sich geändert. Bitte melde dich erneut an.");
   }
   if (user.email === targetEmail && user.emailVerified) {
-    return { email: targetEmail, alreadyVerified: true };
+    return { email: targetEmail, alreadyVerified: true, firstPasswordSetupRequired: false };
   }
 
   const firstPasswordSetupRequired = await isAwaitingFirstPasswordSetup(user.uid);
@@ -361,5 +361,5 @@ export async function sendStaffEmailVerification(input: {
     throw error;
   }
   await sendWithResend("email-verification", targetEmail, actionUrl);
-  return { email: targetEmail, alreadyVerified: false };
+  return { email: targetEmail, alreadyVerified: false, firstPasswordSetupRequired };
 }

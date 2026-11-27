@@ -3,11 +3,12 @@ import { asRole } from "@/lib/alpen/roles";
 import {
   changeOwnPassword,
   clearFirebaseLogin,
-  clearFirebaseAccessToken,
   createFirebaseUser,
   deleteFirebaseUser,
   ensureIdToken,
   FirebaseMfaChallengeRequired,
+  currentLogin,
+  refreshVerifiedStaffLogin,
   sendPasswordResetEmail,
   signInEmail,
   type FirebaseLogin,
@@ -496,11 +497,18 @@ export async function completeFirstStaffPasswordSetup(
   password: string,
 ) {
   const email = normalizeRecoveryEmail(emailValue);
-  if (!setupCode) throw new Error("Bitte gib deinen Einrichtungscode ein.");
   if (password.length < 8) throw new Error("Das eigene Passwort muss mindestens 8 Zeichen haben.");
 
   try {
-    const signed = await signInEmail(email, setupCode);
+    const savedLogin = currentLogin();
+    let signed: FirebaseLogin;
+    if (setupCode) {
+      signed = await signInEmail(email, setupCode);
+    } else if (savedLogin) {
+      signed = await refreshVerifiedStaffLogin(email, savedLogin.uid);
+    } else {
+      throw new Error("Die sichere Sitzung fehlt. Bitte gib deinen Einrichtungscode ein.");
+    }
     if (!signed.emailVerified || normalizeStaffEmail(signed.email) !== email) {
       throw new Error("Bitte bestätige zuerst diese persönliche E-Mail-Adresse.");
     }
@@ -1024,7 +1032,6 @@ export async function loginStaff(
     throw new Error("Name oder Passwort stimmt nicht.");
   }
   if (requiresPersonalStaffEmail(signed.email, signed.emailVerified === true)) {
-    clearFirebaseAccessToken();
     throw new StaffPersonalEmailRequired(
       signed.email,
       signed.uid,

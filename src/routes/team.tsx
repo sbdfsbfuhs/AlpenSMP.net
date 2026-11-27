@@ -10,6 +10,7 @@ import { moveStaffLayoutTab, normalizeStaffLayout, reorderStaffLayoutTab, staffL
 import {
   clearFirebaseAccessToken,
   FirebaseMfaChallengeRequired,
+  hasCurrentFirebaseLogin,
   requestOwnEmailVerification,
   sendPasswordResetEmail,
 } from "@/lib/alpen/fb-auth";
@@ -164,6 +165,11 @@ const DEFAULT_LAYOUT = normalizeStaffLayout(
 
 function clearStaffSetupReturnMarker() {
   const url = new URL(window.location.href);
+  try {
+    window.sessionStorage.removeItem("alpen-staff-setup-email");
+  } catch (storageError) {
+    console.warn("[Staff Center] Ersteinrichtungs-E-Mail konnte nicht entfernt werden.", storageError);
+  }
   if (url.searchParams.get("staffSetup") !== "verified") return;
   url.searchParams.delete("staffSetup");
   window.history.replaceState(
@@ -346,7 +352,14 @@ function FirstPasswordSetup({
   onComplete: (email: string) => void;
   onLogin: (email: string) => void;
 }) {
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() => {
+    try {
+      return window.sessionStorage.getItem("alpen-staff-setup-email") || "";
+    } catch (storageError) {
+      console.warn("[Staff Center] Ersteinrichtungs-E-Mail konnte nicht gelesen werden.", storageError);
+      return "";
+    }
+  });
   const [setupCode, setSetupCode] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
@@ -377,9 +390,8 @@ function FirstPasswordSetup({
         <p className="kicker">E-Mail bestätigt</p>
         <h2 className="display mt-2 text-2xl">Eigenes Passwort festlegen</h2>
         <p className="mt-3 text-sm text-muted">
-          Wenn du dein Konto zum ersten Mal einrichtest, gib deine persönliche E-Mail und den
-          Einrichtungscode erneut ein. Danach kannst du dich mit deinem neuen Passwort anmelden
-          und die Einwilligung sowie deinen Minecraft-Namen bestätigen.
+          Deine E-Mail wurde bestätigt. Lege jetzt dein persönliches Passwort fest. Wenn du den
+          Link im selben Browser-Tab geöffnet hast, brauchst du den Einrichtungscode nicht erneut.
         </p>
         <label className="mt-5 block text-sm">
           Bestätigte persönliche E-Mail-Adresse
@@ -393,15 +405,18 @@ function FirstPasswordSetup({
           />
         </label>
         <label className="mt-3 block text-sm">
-          Einrichtungscode
+          Einrichtungscode (nur falls nötig)
           <input
             className="field mt-1"
             type="password"
             value={setupCode}
             onChange={(event) => setSetupCode(event.target.value)}
             autoComplete="current-password"
-            required
           />
+          <span className="mt-1 block text-xs text-muted">
+            Nur eingeben, wenn du den Bestätigungslink in einem anderen Tab/Browser geöffnet hast
+            oder deine Sitzung abgelaufen ist.
+          </span>
         </label>
         <label className="mt-3 block text-sm">
           Neues Passwort (mindestens 8 Zeichen)
@@ -476,6 +491,8 @@ function Login({
   const [emailSetupPassword, setEmailSetupPassword] = useState("");
   const [emailSetupMfaCode, setEmailSetupMfaCode] = useState("");
   const [emailSetupBusy, setEmailSetupBusy] = useState(false);
+  const [emailSetupFirstPasswordRequired, setEmailSetupFirstPasswordRequired] = useState(false);
+  const [emailSetupRequirePassword, setEmailSetupRequirePassword] = useState(false);
   const [emailSetupSentTo, setEmailSetupSentTo] = useState("");
   const [emailSetupAlreadyVerified, setEmailSetupAlreadyVerified] = useState(false);
   const [emailSetupMessage, setEmailSetupMessage] = useState("");
@@ -546,6 +563,7 @@ function Login({
         setEmailSetupAddress(err.needsPersonalAddress ? "" : err.currentEmail);
         setEmailSetupPassword("");
         setEmailSetupMfaCode("");
+        setEmailSetupRequirePassword(false);
         setEmailSetupSentTo("");
         setEmailSetupMessage("");
         setEmailSetupError("");
@@ -568,6 +586,7 @@ function Login({
     if (!emailSetup) return;
     setEmailSetupBusy(true);
     setEmailSetupError("");
+    let preserveSetupSession = false;
     try {
       const result = await requestOwnEmailVerification(
         emailSetup.currentEmail,
@@ -575,24 +594,37 @@ function Login({
         emailSetupPassword,
         emailSetup.uid,
         emailSetupMfaCode,
+        true,
       );
+      preserveSetupSession = result.firstPasswordSetupRequired;
+      if (result.firstPasswordSetupRequired) {
+        try {
+          window.sessionStorage.setItem("alpen-staff-setup-email", result.email);
+        } catch (storageError) {
+          console.warn("[Staff Center] Ersteinrichtungs-E-Mail konnte nicht gespeichert werden.", storageError);
+        }
+      }
       setEmailSetupSentTo(result.email);
       setEmailSetupAlreadyVerified(result.alreadyVerified);
+      setEmailSetupFirstPasswordRequired(result.firstPasswordSetupRequired);
       setEmailSetupMessage(
         result.alreadyVerified
           ? "Diese Adresse ist bereits bestätigt. Du kannst dich jetzt damit anmelden."
-          : `Bestätigungslink an ${result.email} gesendet. Öffne den Link: Bei der Ersteinrichtung kannst du danach direkt dein eigenes Passwort festlegen; anschließend meldest du dich neu an.`,
+          : result.firstPasswordSetupRequired
+            ? `Bestätigungslink an ${result.email} gesendet. Öffne den Link und lege danach dein persönliches Passwort fest.`
+            : `Bestätigungslink an ${result.email} gesendet. Öffne den Link und melde dich danach mit deinem bestehenden Passwort an.`,
       );
       setEmailSetupPassword("");
       setEmailSetupMfaCode("");
     } catch (verificationError) {
+      setEmailSetupRequirePassword(true);
       setEmailSetupError(
         verificationError instanceof Error
           ? verificationError.message
           : "Der Bestätigungslink konnte nicht gesendet werden.",
       );
     } finally {
-      clearFirebaseAccessToken();
+      if (!preserveSetupSession) clearFirebaseAccessToken();
       setEmailSetupBusy(false);
     }
   }
@@ -689,8 +721,14 @@ function Login({
               {emailSetupAlreadyVerified ? null : (
                 <ol className="list-inside list-decimal space-y-1 text-sm text-muted">
                   <li>Öffne den Link in deinem Posteingang.</li>
-                  <li>Lege auf der zurückkehrenden Seite dein eigenes Passwort fest.</li>
-                  <li>Melde dich mit deiner bestätigten E-Mail und dem neuen Passwort an.</li>
+                  <li>
+                    {emailSetupFirstPasswordRequired
+                      ? "Lege auf der zurückkehrenden Seite dein eigenes Passwort fest."
+                      : "Melde dich danach mit deinem bestehenden Passwort an."}
+                  </li>
+                  {emailSetupFirstPasswordRequired ? (
+                    <li>Melde dich anschließend mit deiner bestätigten E-Mail und dem neuen Passwort an.</li>
+                  ) : null}
                 </ol>
               )}
               {emailSetupError ? <p className="text-sm text-ember" role="alert">{emailSetupError}</p> : null}
@@ -724,18 +762,24 @@ function Login({
                   autoFocus
                 />
               </label>
-              <label className="mt-3 block text-sm">
-                Aktuelles Konto-Passwort
-                <input
-                  className="field mt-1"
-                  type="password"
-                  value={emailSetupPassword}
-                  onChange={(event) => setEmailSetupPassword(event.target.value)}
-                  autoComplete="current-password"
-                  required
-                />
-              </label>
-              {emailSetup.mfaEnabled ? (
+              {hasCurrentFirebaseLogin(emailSetup.uid) && !emailSetupRequirePassword ? (
+                <p className="mt-3 rounded-lg border border-brand/30 bg-brand/5 p-3 text-sm text-muted">
+                  Deine Anmeldung ist bestätigt. Du musst dein Passwort nicht erneut eingeben.
+                </p>
+              ) : (
+                <label className="mt-3 block text-sm">
+                  Aktuelles Konto-Passwort
+                  <input
+                    className="field mt-1"
+                    type="password"
+                    value={emailSetupPassword}
+                    onChange={(event) => setEmailSetupPassword(event.target.value)}
+                    autoComplete="current-password"
+                    required
+                  />
+                </label>
+              )}
+              {emailSetup.mfaEnabled && (!hasCurrentFirebaseLogin(emailSetup.uid) || emailSetupRequirePassword) ? (
                 <label className="mt-3 block text-sm">
                   Authenticator-Code
                   <input
@@ -770,13 +814,13 @@ function Login({
           <input className="field mt-1" value={name} onChange={(e) => setName(e.target.value)} autoComplete="username" required />
         </label>
         <label className="mt-3 block text-sm">
-          Passwort
+          Passwort oder Einrichtungscode
           <input className="field mt-1" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
         </label>
         <p className="mt-2 text-sm text-muted">
-          Nur neu angelegte Konten benötigen zur ersten Anmeldung den Einrichtungscode statt eines
-          eigenen Passworts. Nach der E-Mail-Bestätigung legen sie ihr persönliches Passwort fest.
-          Für bestehende Konten ist kein Einrichtungscode nötig.
+          Neue Teammitglieder verwenden für die erste Anmeldung den einmaligen Einrichtungscode.
+          Nach der E-Mail-Bestätigung legen sie ihr persönliches Passwort fest. Bestehende Konten
+          melden sich mit ihrem eigenen Passwort an.
         </p>
         {mfaRequired ? (
           <label className="mt-3 block text-sm">
