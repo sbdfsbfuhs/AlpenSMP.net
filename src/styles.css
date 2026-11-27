@@ -4827,6 +4827,22 @@ html[data-season="halloween"] {
   gap: 0.75rem;
 }
 
+.review-check.is-invalid {
+  border: 1px solid #ef4444;
+  border-radius: 0.75rem;
+  padding: 0.7rem;
+  background: rgb(127 29 29 / 0.14);
+}
+
+.review-check.is-invalid .review-check-input {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgb(239 68 68 / 0.18);
+}
+
+.review-check.is-shaking {
+  animation: review-checkbox-shake 420ms ease-in-out;
+}
+
 .review-check-input {
   appearance: none;
   width: 1.2rem;
@@ -4857,6 +4873,12 @@ html[data-season="halloween"] {
 .review-check-input:focus-visible {
   outline: 2px solid var(--color-brand);
   outline-offset: 2px;
+}
+
+@keyframes review-checkbox-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
 }
 
 .review-send:hover:not(:disabled) {
@@ -4932,6 +4954,7 @@ html[data-season="halloween"] {
   .review-star-icon.is-pulsing,
   .review-kind.is-on,
   .review-send,
+  .review-check.is-shaking,
   .review-check-input:checked::after {
     animation: none;
     transition: none;

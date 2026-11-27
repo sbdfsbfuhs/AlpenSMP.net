@@ -29,10 +29,13 @@ export function ReviewForm() {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [submissionAcknowledged, setSubmissionAcknowledged] = useState(false);
+  const [submissionAcknowledgementError, setSubmissionAcknowledgementError] = useState(false);
+  const [shakeSubmissionAcknowledgement, setShakeSubmissionAcknowledgement] = useState(false);
   const [publicationConsent, setPublicationConsent] = useState(false);
   const [rights, setRights] = useState(false);
   const [over, setOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const submissionAcknowledgementRef = useRef<HTMLInputElement>(null);
   const lit = hover || rating;
   const sent = note.startsWith("Danke.");
   const textNeeded = kind !== "image";
@@ -81,9 +84,22 @@ export function ReviewForm() {
       submissionAcknowledged,
     });
     if (missing.length) {
-      setNote(`Noch fehlt: ${missing.join(", ")}.`);
+      const missingAcknowledgement = missing.includes("Bestätigung zur Prüfung");
+      setSubmissionAcknowledgementError(missingAcknowledgement);
+      if (missingAcknowledgement) {
+        setShakeSubmissionAcknowledgement(false);
+        window.requestAnimationFrame(() => {
+          setShakeSubmissionAcknowledgement(
+            !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+          );
+          submissionAcknowledgementRef.current?.focus();
+        });
+      }
+      const otherMissing = missing.filter((gap) => gap !== "Bestätigung zur Prüfung");
+      setNote(otherMissing.length ? `Noch fehlt: ${otherMissing.join(", ")}.` : "");
       return;
     }
+    setSubmissionAcknowledgementError(false);
     const last = Number(localStorage.getItem("alpensmp_last_submit") || 0);
     if (Date.now() - last < COOLDOWN) {
       setNote("Bitte warte eine Minute zwischen Beiträgen.");
@@ -322,13 +338,30 @@ export function ReviewForm() {
           />
         </label>
       ) : null}
-      <label className="review-check text-sm" htmlFor="review-submission">
+      <label
+        className={`review-check text-sm${submissionAcknowledgementError ? " is-invalid" : ""}${shakeSubmissionAcknowledgement ? " is-shaking" : ""}`}
+        htmlFor="review-submission"
+        onAnimationEnd={(event) => {
+          if (event.animationName === "review-checkbox-shake") {
+            setShakeSubmissionAcknowledgement(false);
+          }
+        }}
+      >
         <input
+          ref={submissionAcknowledgementRef}
           id="review-submission"
           className="review-check-input"
           type="checkbox"
           checked={submissionAcknowledged}
-          onChange={(e) => setSubmissionAcknowledged(e.target.checked)}
+          aria-invalid={submissionAcknowledgementError}
+          aria-describedby={submissionAcknowledgementError ? "review-submission-error" : undefined}
+          onChange={(e) => {
+            setSubmissionAcknowledged(e.target.checked);
+            if (e.target.checked) {
+              setSubmissionAcknowledgementError(false);
+              setShakeSubmissionAcknowledgement(false);
+            }
+          }}
         />
         <span>
           Ich reiche den Beitrag zur internen Prüfung ein. Dafür wird er gespeichert und ist
@@ -338,6 +371,11 @@ export function ReviewForm() {
             Datenschutzerklärung
           </Link>
           .
+          {submissionAcknowledgementError ? (
+            <span id="review-submission-error" className="mt-2 block font-semibold text-red-300" role="alert">
+              Bitte bestätige die interne Prüfung.
+            </span>
+          ) : null}
         </span>
       </label>
       <label className="review-check text-sm" htmlFor="community-publication">
